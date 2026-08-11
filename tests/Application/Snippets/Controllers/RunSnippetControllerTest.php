@@ -12,3 +12,8 @@ test('requires code', function (): void {
     $this->postJson('/snippets/executions', [])
         ->assertInvalid(['code']);
 });
+
+test('requires code to be a string', function (): void {
+    $this->postJson('/snippets/executions', ['code' => 123])
+        ->assertInvalid(['code']);
+});

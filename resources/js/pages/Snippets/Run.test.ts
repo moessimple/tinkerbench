@@ -49,4 +49,17 @@ describe('Snippets/Run', () => {
         capturedPost?.onSuccess({ output: 'hi' });
         await screen.findByText('hi');
     });
+
+    test('disables the run button and shows a running label while processing', () => {
+        httpState.processing = true;
+
+        render(Run);
+
+        const button = screen.getByRole('button', {
+            name: 'Running…',
+        }) as HTMLButtonElement;
+        expect(button.disabled).toBe(true);
+
+        httpState.processing = false;
+    });
 });

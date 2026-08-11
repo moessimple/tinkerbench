@@ -37,3 +37,13 @@ test('surfaces a thrown exception via the process error output', function (): vo
 
     expect($result->output)->toContain('boom');
 });
+
+test('cleans up the temp snippet file after running', function (): void {
+    $before = glob(sys_get_temp_dir().'/tinkerbench-snippet-*.php');
+
+    new Herd()->runSnippet("return 'cleanup check';");
+
+    $after = glob(sys_get_temp_dir().'/tinkerbench-snippet-*.php');
+
+    expect($after)->toBe($before);
+});
