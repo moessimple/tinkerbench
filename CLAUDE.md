@@ -1,4 +1,78 @@
 <laravel-boost-guidelines>
+=== .ai/architecture rules ===
+
+# Architecture guidelines
+
+This application uses a Beyond CRUD layering: `src/Application`, `src/Domain`, `src/Support`. `app/` is
+reserved for framework mandatory glue only (service providers, middleware registration), never for new
+business logic.
+
+- `src/Domain` holds business rules and state. It knows nothing about HTTP, routing, or how it is reached.
+- `src/Application` holds HTTP facing classes that orchestrate Domain classes (controllers, requests,
+  resources, middleware). It may depend on Domain, never the other way around.
+- `src/Support` holds generic building blocks with no business meaning. Any layer may depend on it.
+- Namespace domain first, not type first: `Domain\{Area}\Actions`, not `Domain\Actions\{Area}`.
+- Suffix classes by their build type: Action, Controller, Query, Request, Resource, Job, Middleware. Models
+  and Enums are the exception, they carry no suffix (a plain domain noun, for example `Post`, not `PostModel`).
+- Every class in `src/` gets a 1:1 mirrored test class in `tests/` (for example
+  `src/Domain/Billing/Actions/CreateInvoiceAction.php` mirrors
+  `tests/Domain/Billing/Actions/CreateInvoiceActionTest.php`). This is mandatory. `tests/Architecture` is the
+  only exception, since it checks relationships across all layers instead of mirroring a single class.
+
+<!-- Example action class -->
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace Domain\Billing\Actions;
+
+final readonly class CreateInvoiceAction
+{
+    public function __construct(private InvoiceRepository $invoices) {}
+
+    public function execute(Order $order): Invoice
+    {
+        return $this->invoices->createFor($order);
+    }
+}
+```
+
+=== .ai/testing rules ===
+
+# Testing guidelines
+
+- Test level (unit vs feature/HTTP) does not matter as long as the observable behavior is covered end to end.
+  Prefer unit tests for Domain classes, add feature/HTTP tests where routing, serialization, or the interaction
+  of several classes needs proving.
+- Assert behavior and observable effects (return values, persisted state, dispatched events/jobs, HTTP
+  responses), not implementation details (no private methods, no internal call order, unless that delegation
+  itself is a documented contract).
+- Once a class has its own complete test, fake or mock it in its callers' tests instead of re-proving its
+  behavior there. A caller's test only proves the caller's own responsibility (delegation, wiring, its own
+  transformation).
+
+<!-- Action test proves the real behavior, controller test mocks the already-tested action -->
+```php
+// tests/Domain/Billing/Actions/CreateInvoiceActionTest.php
+it('creates an invoice for the order', function () {
+    $order = Order::factory()->create();
+
+    $invoice = app(CreateInvoiceAction::class)->execute($order);
+
+    $this->assertDatabaseHas('invoices', ['order_id' => $order->id]);
+});
+
+// tests/Application/Billing/Controllers/CreateInvoiceControllerTest.php
+it('delegates to CreateInvoiceAction and returns the created invoice', function () {
+    $order = Order::factory()->create();
+    $this->mock(CreateInvoiceAction::class)
+        ->shouldReceive('execute')->once()->with($order)->andReturn(new Invoice(['order_id' => $order->id]));
+
+    $this->postJson("/orders/{$order->id}/invoices")->assertCreated();
+});
+```
+
 === foundation rules ===
 
 # Laravel Boost Guidelines
