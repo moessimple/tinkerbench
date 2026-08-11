@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Support;
 
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Foundation\Application;
+use RuntimeException;
 
 final class SnippetRunner
 {
@@ -14,6 +16,9 @@ final class SnippetRunner
         // autoloader has been required so far, the Laravel container that base_path() reads from
         // doesn't exist until bootstrap/app.php below has run.
         $app = require dirname(__DIR__, 2).'/bootstrap/app.php';
+
+        throw_unless($app instanceof Application, RuntimeException::class, 'bootstrap/app.php did not return an Application instance.');
+
         $app->make(Kernel::class)->bootstrap();
 
         $returned = require $snippetPath;
