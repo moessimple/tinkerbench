@@ -8,7 +8,7 @@ use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Application;
 use RuntimeException;
 
-final class SnippetRunner
+class SnippetRunner
 {
     public function run(string $snippetPath): void
     {

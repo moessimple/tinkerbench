@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use Domain\Snippets\Actions\RunSnippetAction;
-use Support\HerdContract;
+use Support\Herd;
 use Support\SnippetRunResult;
 
-test('uses HerdContract to run the code', function (): void {
-    $this->mock(HerdContract::class)
+it('runs the code and returns the output', function (): void {
+    $this->mock(Herd::class)
         ->shouldReceive('runSnippet')->once()->with('return 1 + 1;')
         ->andReturn(new SnippetRunResult('2'));
 

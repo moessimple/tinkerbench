@@ -7,7 +7,7 @@ namespace Support;
 use Illuminate\Support\Facades\Process;
 use InvalidArgumentException;
 
-final class Herd implements HerdContract
+class Herd
 {
     public function phpBinary(): string
     {

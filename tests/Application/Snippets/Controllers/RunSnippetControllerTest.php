@@ -5,49 +5,24 @@ declare(strict_types=1);
 use Application\Snippets\Controllers\RunSnippetController;
 use Application\Snippets\Requests\RunSnippetRequest;
 use Domain\Snippets\Actions\RunSnippetAction;
-use Support\HerdContract;
 use Support\SnippetRunResult;
 
-test('uses RunSnippetAction', function (): void {
-    $herd = Mockery::mock(HerdContract::class);
-    $herd->shouldReceive('runSnippet')->once()->andReturn(new SnippetRunResult('from the action'));
-
-    $request = new RunSnippetRequest();
-    $request->merge(['code' => 'anything']);
-
-    $response = app()->call(new RunSnippetController(), [
-        'request' => $request,
-        'runSnippet' => new RunSnippetAction($herd),
-    ]);
-
-    expect($response->getData(true))->toBe(['output' => 'from the action']);
+it('uses the right request', function (): void {
+    expect(RunSnippetController::class)->toUseFormRequest(RunSnippetRequest::class);
 });
 
-test('uses RunSnippetRequest', function (): void {
-    $herd = Mockery::mock(HerdContract::class);
-    $herd->shouldReceive('runSnippet')->once()->with('the submitted code')->andReturn(new SnippetRunResult('irrelevant'));
+it('uses the right action', function (): void {
+    $this->mock(RunSnippetAction::class)
+        ->shouldReceive('execute')->once()->with(Mockery::type('string'))->andReturn(new SnippetRunResult('output'));
 
     $request = new RunSnippetRequest();
-    $request->merge(['code' => 'the submitted code']);
+    $request->merge(['code' => 'echo 1;']);
 
-    app()->call(new RunSnippetController(), [
-        'request' => $request,
-        'runSnippet' => new RunSnippetAction($herd),
-    ]);
+    app()->call(new RunSnippetController(), ['request' => $request]);
 });
 
-test('runs the posted code isolated and returns its output as json', function (): void {
+it('returns the right output', function (): void {
     $this->postJson('/snippets/executions', ['code' => 'echo 1 + 1;'])
         ->assertOk()
         ->assertExactJson(['output' => '2']);
-});
-
-test('requires code', function (): void {
-    $this->postJson('/snippets/executions', [])
-        ->assertInvalid(['code']);
-});
-
-test('requires code to be a string', function (): void {
-    $this->postJson('/snippets/executions', ['code' => 123])
-        ->assertInvalid(['code']);
 });

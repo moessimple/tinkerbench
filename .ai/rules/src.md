@@ -16,3 +16,6 @@ Suffix by type: Action, Controller, Query, Request, Resource, Job, Middleware. M
 
 ## Every src class needs a 1:1 mirrored test
 Each class in src/Domain, src/Application, src/Support gets a matching test at the same relative path under tests/ (src/Domain/Billing/Actions/CreateInvoiceAction.php mirrors tests/Domain/Billing/Actions/CreateInvoiceActionTest.php). Mandatory. tests/Architecture is the only exception, it checks cross-layer relationships instead of mirroring one class.
+
+## No final, no readonly on classes
+Domain/Application/Support classes are not `final` and not `readonly` (neither class-level nor per-property). Both block Mockery from creating a class double (final: "cannot override methods of a final class"; readonly: "non-readonly class cannot extend readonly class"), which forces awkward workarounds when a test needs to mock a class directly. Decided after hitting this concretely with RunSnippetAction. Rector's ReadOnlyPropertyRector and Pint's final_class/final_internal_class/final_public_method_for_abstract_class are disabled in rector.php/pint.json so neither gets re-added automatically.

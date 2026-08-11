@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Illuminate\Foundation\Http\FormRequest;
+use PHPUnit\Framework\Assert;
 use Tests\TestCase;
 
 /*
@@ -30,6 +32,35 @@ pest()->extend(TestCase::class)
 */
 
 expect()->extend('toBeOne', fn () => $this->toBe(1));
+
+/**
+ * Proves an invokable class (every controller here is one) declares a dependency of the
+ * given type on __invoke(), without instantiating or mocking anything. Use for wiring
+ * checks; it proves the type is declared, not that it's used correctly, pair with a
+ * behavior-level test for that.
+ */
+expect()->extend('toUseType', function (string $type): self {
+    $parameters = new ReflectionMethod($this->value, '__invoke')->getParameters();
+
+    $usesType = collect($parameters)->contains(
+        fn (ReflectionParameter $parameter): bool => $parameter->getType() instanceof ReflectionNamedType
+            && $parameter->getType()->getName() === $type
+    );
+
+    Assert::assertTrue($usesType, "{$this->value}::__invoke() has no parameter of type {$type}.");
+
+    return $this;
+});
+
+/**
+ * Like toUseType(), plus proves the type is actually a FormRequest, not just a class that
+ * happens to share its name.
+ */
+expect()->extend('toUseFormRequest', function (string $type): self {
+    Assert::assertTrue(is_subclass_of($type, FormRequest::class), "{$type} is not a FormRequest.");
+
+    return $this->toUseType($type);
+});
 
 /*
 |--------------------------------------------------------------------------

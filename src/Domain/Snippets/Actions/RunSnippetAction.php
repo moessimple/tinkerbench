@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Domain\Snippets\Actions;
 
-use Support\HerdContract;
+use Support\Herd;
 use Support\SnippetRunResult;
 
-final readonly class RunSnippetAction
+class RunSnippetAction
 {
-    public function __construct(private HerdContract $herd) {}
+    public function __construct(private Herd $herd) {}
 
     public function execute(string $code): SnippetRunResult
     {

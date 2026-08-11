@@ -8,11 +8,11 @@ use Application\Snippets\Requests\RunSnippetRequest;
 use Domain\Snippets\Actions\RunSnippetAction;
 use Illuminate\Http\JsonResponse;
 
-final class RunSnippetController
+class RunSnippetController
 {
-    public function __invoke(RunSnippetRequest $request, RunSnippetAction $runSnippet): JsonResponse
+    public function __invoke(RunSnippetRequest $request, RunSnippetAction $action): JsonResponse
     {
-        $result = $runSnippet->execute($request->code());
+        $result = $action->execute($request->code());
 
         return response()->json(['output' => $result->output]);
     }

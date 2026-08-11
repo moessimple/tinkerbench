@@ -6,13 +6,8 @@ namespace Application\Snippets\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-final class RunSnippetRequest extends FormRequest
+class RunSnippetRequest extends FormRequest
 {
-    public function authorize(): bool
-    {
-        return true;
-    }
-
     /** @return array<string, list<string>> */
     public function rules(): array
     {

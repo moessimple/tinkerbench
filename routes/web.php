@@ -8,4 +8,4 @@ use Inertia\Inertia;
 
 Route::get('/', fn () => Inertia::render('Snippets/Run'));
 
-Route::post('/snippets/executions', RunSnippetController::class);
+Route::post('snippets/executions', RunSnippetController::class);
