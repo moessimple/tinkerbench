@@ -31,3 +31,33 @@ declare module 'vue' {
         $headManager: ReturnType<typeof createHeadManager>;
     }
 }
+
+declare global {
+    interface MonacoEditorInstance {
+        dispose(): void;
+        focus(): void;
+        getValue(): string;
+        layout(): void;
+        onDidChangeModelContent(callback: () => void): void;
+    }
+
+    interface MonacoApi {
+        editor: {
+            create(
+                element: HTMLElement,
+                options: Record<string, unknown>,
+            ): MonacoEditorInstance;
+            defineTheme(name: string, theme: Record<string, unknown>): void;
+        };
+    }
+
+    interface AmdRequire {
+        (modules: string[], callback: () => void): void;
+        config(options: { paths: { vs: string } }): void;
+    }
+
+    interface Window {
+        monaco: MonacoApi;
+        require: AmdRequire;
+    }
+}
