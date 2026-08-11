@@ -45,21 +45,37 @@ vi.mock('@inertiajs/vue3', () => ({
     useHttp: () => httpState,
 }));
 
+// MonacoEditor has its own test (MonacoEditor.test.ts) proving it renders the editor and
+// emits `change`; here it's replaced with a plain textarea so this test can drive the same
+// contract without loading real Monaco.
+vi.mock('@/components/MonacoEditor.vue', () => ({
+    default: {
+        props: ['initialValue'],
+        emits: ['change'],
+        template:
+            '<textarea aria-label="Snippet code" :value="initialValue" @input="$emit(\'change\', $event.target.value)" />',
+    },
+}));
+
 const { default: Run } = await import('./Run.vue');
+const props = { laravelVersion: '13.0.0', phpVersion: '8.5.0' };
 
 it('sets the page title', () => {
-    render(Run);
+    render(Run, { props });
 
     expect(capturedTitle).toBe('Snippets');
 });
 
-it('sends the entered code to the run endpoint', async () => {
-    render(Run);
+it('shows the running PHP and Laravel version', () => {
+    render(Run, { props });
 
-    await fireEvent.update(
-        screen.getByPlaceholderText("echo 'hello world';"),
-        "echo 'hi';",
-    );
+    screen.getByText('PHP 8.5.0 · Laravel 13.0.0');
+});
+
+it('sends the entered code to the run endpoint', async () => {
+    render(Run, { props });
+
+    await fireEvent.update(screen.getByLabelText('Snippet code'), "echo 'hi';");
     await fireEvent.click(screen.getByRole('button', { name: 'Run' }));
 
     expect(capturedPost?.url).toBe('/snippets/executions');
@@ -67,7 +83,7 @@ it('sends the entered code to the run endpoint', async () => {
 });
 
 it('shows the returned output', async () => {
-    render(Run);
+    render(Run, { props });
 
     await fireEvent.click(screen.getByRole('button', { name: 'Run' }));
     capturedPost?.onSuccess({ output: 'hi' });
@@ -76,7 +92,7 @@ it('shows the returned output', async () => {
 });
 
 it('shows a validation error message when the request fails', async () => {
-    render(Run);
+    render(Run, { props });
 
     await fireEvent.click(screen.getByRole('button', { name: 'Run' }));
     capturedPost?.onError({ code: 'The code field is required.' });
@@ -85,7 +101,7 @@ it('shows a validation error message when the request fails', async () => {
 });
 
 it('shows a generic error message when the server request fails', async () => {
-    render(Run);
+    render(Run, { props });
 
     await fireEvent.click(screen.getByRole('button', { name: 'Run' }));
     capturedPost?.onHttpException({ status: 500 });
@@ -96,7 +112,7 @@ it('shows a generic error message when the server request fails', async () => {
 it('disables the run button and shows a running label while processing', () => {
     httpState.processing = true;
 
-    render(Run);
+    render(Run, { props });
 
     const button = screen.getByRole('button', {
         name: 'Running…',
