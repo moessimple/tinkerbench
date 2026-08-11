@@ -30,6 +30,20 @@ test('falls back to the system PHP binary when the configured herd path does not
     expect($result->output)->toBe('fallback works');
 });
 
+test('prefers the configured herd binary when it exists', function (): void {
+    $binDir = sys_get_temp_dir().'/herd-bin-'.bin2hex(random_bytes(8));
+    mkdir($binDir);
+    symlink(PHP_BINARY, $binDir.'/php');
+    config(['services.herd.bin' => $binDir]);
+
+    $result = new Herd()->runSnippet("return 'used the configured binary';");
+
+    unlink($binDir.'/php');
+    rmdir($binDir);
+
+    expect($result->output)->toBe('used the configured binary');
+});
+
 test('two snippets that redeclare the same class both succeed', function (): void {
     $herd = new Herd();
 
