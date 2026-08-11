@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Application\Snippets\Controllers\DeleteSnippetController;
 use Application\Snippets\Controllers\ListSnippetsController;
 use Application\Snippets\Controllers\OpenSnippetController;
 use Application\Snippets\Controllers\RunSnippetController;
@@ -17,6 +18,7 @@ Route::prefix('api/snippets')->group(function (): void {
     Route::get('', ListSnippetsController::class);
     Route::put('{snippet}', UpdateSnippetContentController::class);
     Route::patch('{snippet}', UpdateSnippetNameController::class);
+    Route::delete('{snippet}', DeleteSnippetController::class);
 });
 
 Route::get('{snippet?}', OpenSnippetController::class);
