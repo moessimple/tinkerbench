@@ -1,6 +1,5 @@
 {
     "preset": "laravel",
-    "exclude": [".ai"],
     "rules": {
         "array_push": true,
         "backtick_to_shell_exec": true,

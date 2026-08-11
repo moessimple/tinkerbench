@@ -44,7 +44,6 @@ return RectorConfig::configure()
         AddOverrideAttributeToOverriddenMethodsRector::class,
         MakeInheritedMethodVisibilitySameAsParentRector::class,
         AddOverrideAttributeToOverriddenPropertiesRector::class,
-        __DIR__.'/.ai/*',
     ])
     ->withPreparedSets(
         deadCode: true,
