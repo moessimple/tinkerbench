@@ -24,8 +24,8 @@ it('creates an invoice for the order', function () {
 });
 
 // tests/Application/Billing/Controllers/CreateInvoiceControllerTest.php
-// proves only that the controller delegates to the already-tested action, nothing about the response
-it('delegates to CreateInvoiceAction', function () {
+// proves only that the controller uses the already-tested action, nothing about the response
+it('uses CreateInvoiceAction', function () {
     $order = Order::factory()->create();
 
     $this->mock(CreateInvoiceAction::class)
