@@ -22,6 +22,14 @@ test('runs a snippet in a subprocess and returns its output', function (): void 
     expect($result->output)->toBe('from the subprocess');
 });
 
+test('falls back to the system PHP binary when the configured herd path does not exist', function (): void {
+    config(['services.herd.bin' => '/nonexistent-herd-bin']);
+
+    $result = new Herd()->runSnippet("return 'fallback works';");
+
+    expect($result->output)->toBe('fallback works');
+});
+
 test('two snippets that redeclare the same class both succeed', function (): void {
     $herd = new Herd();
 
