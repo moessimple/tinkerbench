@@ -19,3 +19,6 @@ A test proving a mocked collaborator was used and a test proving the actual resp
 
 ## Name tests with plain words, not pattern jargon
 Prefer "uses" over "delegates", generally the plainest accurate verb over pattern-language terms (delegation, orchestration, composition, ...).
+
+## Every public method gets its own isolated test
+Test coverage is measured per public method, not per "is this method called by something today". If a class/interface declares a public method, it gets its own test proving that method's behavior in isolation, independent of whether a current caller happens to exercise it. Do not skip a public method's test just because nothing in the codebase calls it yet.

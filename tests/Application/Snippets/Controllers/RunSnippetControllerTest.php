@@ -2,6 +2,18 @@
 
 declare(strict_types=1);
 
+use Application\Snippets\Controllers\RunSnippetController;
+use Application\Snippets\Requests\RunSnippetRequest;
+
+test('invokes RunSnippetAction and returns its output as json', function (): void {
+    $request = new RunSnippetRequest();
+    $request->merge(['code' => "echo 'hi';"]);
+
+    $response = resolve(RunSnippetController::class)($request);
+
+    expect($response->getData(true))->toBe(['output' => 'hi']);
+});
+
 test('runs the posted code isolated and returns its output as json', function (): void {
     $this->postJson('/snippets/executions', ['code' => 'echo 1 + 1;'])
         ->assertOk()
