@@ -47,10 +47,6 @@ Run the full quality gate (formatting, static analysis, type coverage, and the t
 composer test
 ```
 
-## Credits
-
-* [Maurice Hadamczyk](https://github.com/moessimple)
-
 ## License
 
 The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
