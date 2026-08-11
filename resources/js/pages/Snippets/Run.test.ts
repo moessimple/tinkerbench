@@ -42,7 +42,11 @@ vi.mock('@inertiajs/vue3', () => ({
 
         return null;
     },
-    useHttp: () => httpState,
+    useHttp: (initial: { code: string }) => {
+        httpState.code = initial.code;
+
+        return httpState;
+    },
 }));
 
 // MonacoEditor has its own test (MonacoEditor.test.ts) proving it renders the editor and
@@ -70,6 +74,13 @@ it('shows the running PHP and Laravel version', () => {
     render(Run, { props });
 
     screen.getByText('PHP 8.5.0 · Laravel 13.0.0');
+});
+
+it('pre-fills the editor with a runnable example, without a <?php tag the backend already adds', () => {
+    render(Run, { props });
+
+    const editor = screen.getByLabelText('Snippet code') as HTMLTextAreaElement;
+    expect(editor.value).toBe("echo 'hello world';");
 });
 
 it('sends the entered code to the run endpoint', async () => {

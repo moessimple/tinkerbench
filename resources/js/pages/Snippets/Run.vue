@@ -10,7 +10,7 @@ const output = ref('');
 const errorMessage = ref('');
 
 const http = useHttp<{ code: string }, { output: string }>({
-    code: '',
+    code: "echo 'hello world';",
 });
 
 function run(): void {
