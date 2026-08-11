@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Support\Herd;
+use Support\HerdContract;
 
 final class AppServiceProvider extends ServiceProvider
 {
@@ -13,7 +15,7 @@ final class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(HerdContract::class, Herd::class);
     }
 
     /**
