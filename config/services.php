@@ -37,4 +37,8 @@ return [
         ],
     ],
 
+    'herd' => [
+        'bin' => env('HERD_BIN', env('HOME').'/Library/Application Support/Herd/bin'),
+    ],
+
 ];
