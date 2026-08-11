@@ -1,17 +1,50 @@
 <script setup lang="ts">
 import { Head, useHttp } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { onBeforeUnmount, ref } from 'vue';
 import RunSnippetController from '@/actions/Application/Snippets/Controllers/RunSnippetController';
+import UpdateSnippetContentController from '@/actions/Application/Snippets/Controllers/UpdateSnippetContentController';
 import MonacoEditor from '@/components/MonacoEditor.vue';
+import SnippetList from '@/components/SnippetList.vue';
+import { xsrfHeader } from '@/lib/csrf';
 
-defineProps<{ laravelVersion: string; phpVersion: string }>();
+const props = defineProps<{
+    content: string;
+    laravelVersion: string;
+    phpVersion: string;
+    snippetName: string;
+}>();
 
 const output = ref('');
 const errorMessage = ref('');
 
 const http = useHttp<{ code: string }, { output: string }>({
-    code: "echo 'hello world';",
+    code: props.content,
 });
+
+let saveTimer: ReturnType<typeof window.setTimeout> | undefined;
+let pendingSave = Promise.resolve();
+
+function persistSnippet(content: string): Promise<void> {
+    return fetch(UpdateSnippetContentController.url(props.snippetName), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...xsrfHeader() },
+        body: JSON.stringify({ content }),
+    }).then(() => undefined);
+}
+
+function queueSnippetSave(content: string): Promise<void> {
+    pendingSave = pendingSave.then(() => persistSnippet(content));
+
+    return pendingSave;
+}
+
+function onEditorChange(content: string): void {
+    http.code = content;
+    window.clearTimeout(saveTimer);
+    saveTimer = window.setTimeout(() => void queueSnippetSave(content), 500);
+}
+
+onBeforeUnmount(() => window.clearTimeout(saveTimer));
 
 function run(): void {
     errorMessage.value = '';
@@ -98,11 +131,12 @@ function run(): void {
                                 />
                             </svg>
                         </button>
+                        <SnippetList :current-snippet="snippetName" />
                     </div>
                     <div class="h-96 min-w-0 flex-1">
                         <MonacoEditor
                             :initial-value="http.code"
-                            @change="(content) => (http.code = content)"
+                            @change="onEditorChange"
                         />
                     </div>
                 </div>

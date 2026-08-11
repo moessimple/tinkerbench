@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/vue';
-import { expect, it, vi } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import { reactive } from 'vue';
 
 let capturedPost: {
@@ -61,8 +61,26 @@ vi.mock('@/components/MonacoEditor.vue', () => ({
     },
 }));
 
+// SnippetList has its own test (SnippetList.test.ts) proving switching/creating/renaming/
+// deleting; replaced here so this test stays focused on Run.vue's own responsibilities.
+vi.mock('@/components/SnippetList.vue', () => ({
+    default: {
+        props: ['currentSnippet'],
+        template: '<div />',
+    },
+}));
+
 const { default: Run } = await import('./Run.vue');
-const props = { laravelVersion: '13.0.0', phpVersion: '8.5.0' };
+const props = {
+    content: "echo 'hello world';",
+    laravelVersion: '13.0.0',
+    phpVersion: '8.5.0',
+    snippetName: 'scratch',
+};
+
+afterEach(() => {
+    vi.useRealTimers();
+});
 
 it('sets the page title', () => {
     render(Run, { props });
@@ -76,7 +94,7 @@ it('shows the running PHP and Laravel version', () => {
     screen.getByText('PHP 8.5.0 · Laravel 13.0.0');
 });
 
-it('pre-fills the editor with a runnable example, without a <?php tag the backend already adds', () => {
+it('pre-fills the editor with the snippet content from its props', () => {
     render(Run, { props });
 
     const editor = screen.getByLabelText('Snippet code') as HTMLTextAreaElement;
@@ -131,4 +149,54 @@ it('disables the run button and shows a running label while processing', () => {
     expect(button.disabled).toBe(true);
 
     httpState.processing = false;
+});
+
+it('saves edited content 500ms after the last change', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ ok: true }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    vi.useFakeTimers();
+    render(Run, { props });
+
+    await fireEvent.update(
+        screen.getByLabelText('Snippet code'),
+        "echo 'edited';",
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+        '/api/snippets/scratch',
+        expect.objectContaining({
+            method: 'PUT',
+            body: JSON.stringify({ content: "echo 'edited';" }),
+        }),
+    );
+});
+
+it('collapses rapid edits into a single save of the latest content', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ ok: true }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    vi.useFakeTimers();
+    render(Run, { props });
+    const editor = screen.getByLabelText('Snippet code');
+
+    await fireEvent.update(editor, "echo 'first';");
+    await vi.advanceTimersByTimeAsync(200);
+    await fireEvent.update(editor, "echo 'second';");
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+        '/api/snippets/scratch',
+        expect.objectContaining({
+            body: JSON.stringify({ content: "echo 'second';" }),
+        }),
+    );
 });
