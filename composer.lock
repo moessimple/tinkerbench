@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2e0e2a88768ae737e30924fd3fd4ae3c",
+    "content-hash": "a4ed7033112de2ee1808bc50cea3faee",
     "packages": [
         {
             "name": "brick/math",
@@ -2592,6 +2592,84 @@
                 "source": "https://github.com/nikic/PHP-Parser/tree/v5.8.0"
             },
             "time": "2026-07-04T14:30:18+00:00"
+        },
+        {
+            "name": "nunomaduro/essentials",
+            "version": "v1.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/nunomaduro/essentials.git",
+                "reference": "c5458ca21a395e592ba7d2ae16ec62632f7c7f3a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/nunomaduro/essentials/zipball/c5458ca21a395e592ba7d2ae16ec62632f7c7f3a",
+                "reference": "c5458ca21a395e592ba7d2ae16ec62632f7c7f3a",
+                "shasum": ""
+            },
+            "require": {
+                "laravel/framework": "^11.44.2|^12.52.0|^13.0",
+                "php": "^8.3.0"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.27.1",
+                "orchestra/testbench": "^9.0|^10.9.0|^11.0",
+                "pestphp/pest": "^3.8.5|^4.4.1",
+                "pestphp/pest-plugin-type-coverage": "^3.6.1|^4.0.3",
+                "phpstan/phpstan": "^2.1.39",
+                "rector/rector": "^2.3.6",
+                "symfony/var-dumper": "^7.4.4|^8.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "NunoMaduro\\Essentials\\EssentialsServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "NunoMaduro\\Essentials\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Nuno Maduro",
+                    "email": "enunomaduro@gmail.com"
+                }
+            ],
+            "description": "Just better defaults for your Laravel projects.",
+            "keywords": [
+                "essentials",
+                "laravel",
+                "laravel-essentials",
+                "package",
+                "php"
+            ],
+            "support": {
+                "issues": "https://github.com/nunomaduro/essentials/issues",
+                "source": "https://github.com/nunomaduro/essentials/tree/v1.2.0"
+            },
+            "funding": [
+                {
+                    "url": "https://www.paypal.com/paypalme/enunomaduro",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://github.com/nunomaduro",
+                    "type": "github"
+                },
+                {
+                    "url": "https://www.patreon.com/nunomaduro",
+                    "type": "patreon"
+                }
+            ],
+            "time": "2026-02-23T09:37:58+00:00"
         },
         {
             "name": "nunomaduro/termwind",
@@ -6405,6 +6483,42 @@
             "time": "2026-02-07T07:09:04+00:00"
         },
         {
+            "name": "driftingly/rector-laravel",
+            "version": "2.5.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/driftingly/rector-laravel.git",
+                "reference": "0dbdd842dfdbc821cfe5f47ca7326e2502b2a107"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/driftingly/rector-laravel/zipball/0dbdd842dfdbc821cfe5f47ca7326e2502b2a107",
+                "reference": "0dbdd842dfdbc821cfe5f47ca7326e2502b2a107",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.4 || ^8.0",
+                "rector/rector": "^2.2.7",
+                "webmozart/assert": "^1.11 || ^2.0"
+            },
+            "type": "rector-extension",
+            "autoload": {
+                "psr-4": {
+                    "RectorLaravel\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Rector upgrades rules for Laravel Framework",
+            "support": {
+                "issues": "https://github.com/driftingly/rector-laravel/issues",
+                "source": "https://github.com/driftingly/rector-laravel/tree/2.5.0"
+            },
+            "time": "2026-06-02T16:22:14+00:00"
+        },
+        {
             "name": "fakerphp/faker",
             "version": "v1.24.1",
             "source": {
@@ -7643,6 +7757,85 @@
             "time": "2026-07-15T19:09:14+00:00"
         },
         {
+            "name": "nunomaduro/pokio",
+            "version": "v1.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/nunomaduro/pokio.git",
+                "reference": "fc7884ebc5b0fabd6e267c0b4e6f750ba69cee5b"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/nunomaduro/pokio/zipball/fc7884ebc5b0fabd6e267c0b4e6f750ba69cee5b",
+                "reference": "fc7884ebc5b0fabd6e267c0b4e6f750ba69cee5b",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.3.0"
+            },
+            "conflict": {
+                "symplify/easy-parallel": "<11.2.2"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.29.0",
+                "peckphp/peck": "^0.1.3",
+                "pestphp/pest": "^4.5.0",
+                "pestphp/pest-plugin-type-coverage": "^4.0.3",
+                "phpstan/phpstan": "^2.1.46",
+                "symfony/var-dumper": "^7.4.8 || ^8.0.8"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-main": "0.1.x-dev"
+                }
+            },
+            "autoload": {
+                "files": [
+                    "src/Functions.php"
+                ],
+                "psr-4": {
+                    "Pokio\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Nuno Maduro",
+                    "email": "enunomaduro@gmail.com"
+                }
+            ],
+            "description": "Pokio is a dead simple asynchronous API for PHP that just works",
+            "keywords": [
+                "asynchronous",
+                "library",
+                "php",
+                "pokio"
+            ],
+            "support": {
+                "issues": "https://github.com/nunomaduro/pokio/issues",
+                "source": "https://github.com/nunomaduro/pokio/tree/v1.0.1"
+            },
+            "funding": [
+                {
+                    "url": "https://www.paypal.com/paypalme/enunomaduro",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://github.com/nunomaduro",
+                    "type": "github"
+                },
+                {
+                    "url": "https://www.patreon.com/nunomaduro",
+                    "type": "patreon"
+                }
+            ],
+            "time": "2026-04-12T12:06:31+00:00"
+        },
+        {
             "name": "pestphp/pest",
             "version": "v5.1.0",
             "source": {
@@ -8062,6 +8255,97 @@
             "time": "2026-08-10T11:01:27+00:00"
         },
         {
+            "name": "pestphp/pest-plugin-phpstan",
+            "version": "v5.0.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/pestphp/pest-plugin-phpstan.git",
+                "reference": "6a84a5ea7b7f464d56dac5c11e8f470d3f3d768c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/pestphp/pest-plugin-phpstan/zipball/6a84a5ea7b7f464d56dac5c11e8f470d3f3d768c",
+                "reference": "6a84a5ea7b7f464d56dac5c11e8f470d3f3d768c",
+                "shasum": ""
+            },
+            "require": {
+                "pestphp/pest": "^5.0.0",
+                "php": "^8.4",
+                "phpstan/phpstan": "^2.2.5"
+            },
+            "conflict": {
+                "pestphp/pest": "<5.0.0"
+            },
+            "require-dev": {
+                "laravel/pao": "^1.1.2",
+                "laravel/pint": "^1.29.3",
+                "pestphp/pest-plugin-rector": "^5.0",
+                "phpstan/extension-installer": "^1.4.3",
+                "phpstan/phpstan-strict-rules": "^2.0.12",
+                "rector/rector": "^2.5.7"
+            },
+            "type": "phpstan-extension",
+            "extra": {
+                "phpstan": {
+                    "includes": [
+                        "extension.neon"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Pest\\PHPStan\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Punyapal Shah",
+                    "email": "mrpunyapal@gmail.com"
+                },
+                {
+                    "name": "Nuno Maduro",
+                    "email": "enunomaduro@gmail.com"
+                }
+            ],
+            "description": "PHPStan plugin for Pest",
+            "keywords": [
+                "PHPStan",
+                "framework",
+                "pest",
+                "php",
+                "plugin",
+                "test",
+                "testing",
+                "unit"
+            ],
+            "support": {
+                "source": "https://github.com/pestphp/pest-plugin-phpstan/tree/v5.0.2"
+            },
+            "funding": [
+                {
+                    "url": "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=66BYDWAT92N6L",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://github.com/mrpunyapal",
+                    "type": "github"
+                },
+                {
+                    "url": "https://github.com/nunomaduro",
+                    "type": "github"
+                },
+                {
+                    "url": "https://www.patreon.com/nunomaduro",
+                    "type": "patreon"
+                }
+            ],
+            "time": "2026-08-08T08:25:25+00:00"
+        },
+        {
             "name": "pestphp/pest-plugin-profanity",
             "version": "v5.0.0",
             "source": {
@@ -8119,6 +8403,79 @@
                 "source": "https://github.com/pestphp/pest-plugin-profanity/tree/v5.0.0"
             },
             "time": "2026-07-21T07:48:56+00:00"
+        },
+        {
+            "name": "pestphp/pest-plugin-type-coverage",
+            "version": "v5.0.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/pestphp/pest-plugin-type-coverage.git",
+                "reference": "6bcd630c6ee6bc06b0ae54a9d35fef0f4087efd7"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/pestphp/pest-plugin-type-coverage/zipball/6bcd630c6ee6bc06b0ae54a9d35fef0f4087efd7",
+                "reference": "6bcd630c6ee6bc06b0ae54a9d35fef0f4087efd7",
+                "shasum": ""
+            },
+            "require": {
+                "nunomaduro/pokio": "^1.0.1",
+                "pestphp/pest-plugin": "^5.0.0",
+                "php": "^8.4",
+                "phpstan/phpstan": "^2.2.7",
+                "tomasvotruba/type-coverage": "^2.3.0"
+            },
+            "conflict": {
+                "pestphp/pest": "<5.0.0",
+                "phpstan/phpstan": "<2.2.7"
+            },
+            "require-dev": {
+                "pestphp/pest": "^5.0.3",
+                "pestphp/pest-dev-tools": "^5.0.0"
+            },
+            "type": "library",
+            "extra": {
+                "pest": {
+                    "plugins": [
+                        "Pest\\TypeCoverage\\Plugin"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Pest\\TypeCoverage\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "The Type Coverage plugin for Pest PHP.",
+            "keywords": [
+                "coverage",
+                "framework",
+                "pest",
+                "php",
+                "plugin",
+                "test",
+                "testing",
+                "type-coverage",
+                "unit"
+            ],
+            "support": {
+                "source": "https://github.com/pestphp/pest-plugin-type-coverage/tree/v5.0.2"
+            },
+            "funding": [
+                {
+                    "url": "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=66BYDWAT92N6L",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://github.com/nunomaduro",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-08-04T16:35:23+00:00"
         },
         {
             "name": "phar-io/manifest",
@@ -8477,6 +8834,55 @@
                 }
             ],
             "time": "2026-08-04T22:21:45+00:00"
+        },
+        {
+            "name": "phpstan/phpstan-mockery",
+            "version": "2.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/phpstan/phpstan-mockery.git",
+                "reference": "89a949d0ac64298e88b7c7fa00caee565c198394"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/phpstan/phpstan-mockery/zipball/89a949d0ac64298e88b7c7fa00caee565c198394",
+                "reference": "89a949d0ac64298e88b7c7fa00caee565c198394",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.4 || ^8.0",
+                "phpstan/phpstan": "^2.0"
+            },
+            "require-dev": {
+                "mockery/mockery": "^1.6.11",
+                "php-parallel-lint/php-parallel-lint": "^1.2",
+                "phpstan/phpstan-phpunit": "^2.0",
+                "phpstan/phpstan-strict-rules": "^2.0",
+                "phpunit/phpunit": "^9.6"
+            },
+            "type": "phpstan-extension",
+            "extra": {
+                "phpstan": {
+                    "includes": [
+                        "extension.neon"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "PHPStan\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "PHPStan Mockery extension",
+            "support": {
+                "issues": "https://github.com/phpstan/phpstan-mockery/issues",
+                "source": "https://github.com/phpstan/phpstan-mockery/tree/2.0.0"
+            },
+            "time": "2024-10-14T03:18:12+00:00"
         },
         {
             "name": "phpunit/php-code-coverage",
@@ -8952,6 +9358,66 @@
                 }
             ],
             "time": "2026-08-07T07:37:01+00:00"
+        },
+        {
+            "name": "rector/rector",
+            "version": "2.6.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/rectorphp/rector.git",
+                "reference": "b8e68f058bca43e01a2e1caa51ef022d6551ed95"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/rectorphp/rector/zipball/b8e68f058bca43e01a2e1caa51ef022d6551ed95",
+                "reference": "b8e68f058bca43e01a2e1caa51ef022d6551ed95",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.4|^8.0",
+                "phpstan/phpstan": "^2.2.6"
+            },
+            "conflict": {
+                "rector/rector-doctrine": "*",
+                "rector/rector-downgrade-php": "*",
+                "rector/rector-phpunit": "*",
+                "rector/rector-symfony": "*"
+            },
+            "suggest": {
+                "ext-dom": "To manipulate phpunit.xml via the custom-rule command"
+            },
+            "bin": [
+                "bin/rector"
+            ],
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "bootstrap.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Instant Upgrade and Automated Refactoring of any PHP code",
+            "homepage": "https://getrector.com/",
+            "keywords": [
+                "automation",
+                "dev",
+                "migration",
+                "refactoring"
+            ],
+            "support": {
+                "issues": "https://github.com/rectorphp/rector/issues",
+                "source": "https://github.com/rectorphp/rector/tree/2.6.1"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/tomasvotruba",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-08-03T17:30:34+00:00"
         },
         {
             "name": "sebastian/cli-parser",
@@ -10298,6 +10764,76 @@
             "time": "2025-12-08T11:19:18+00:00"
         },
         {
+            "name": "tomasvotruba/type-coverage",
+            "version": "2.3.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/TomasVotruba/type-coverage.git",
+                "reference": "7ba48c1bf3bbb7ffe99caacc7017bae5ee72d644"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/TomasVotruba/type-coverage/zipball/7ba48c1bf3bbb7ffe99caacc7017bae5ee72d644",
+                "reference": "7ba48c1bf3bbb7ffe99caacc7017bae5ee72d644",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.4",
+                "phpstan/phpstan": "^2.2",
+                "webmozart/assert": "^1.11 || ^2.1"
+            },
+            "require-dev": {
+                "phpstan/extension-installer": "^1.4",
+                "phpunit/phpunit": "^13.2",
+                "rector/jack": "^1.0",
+                "rector/rector": "^2.5",
+                "shipmonk/composer-dependency-analyser": "^1.8",
+                "symfony/dom-crawler": "^8.1",
+                "symplify/easy-coding-standard": "^13.2",
+                "tomasvotruba/unused-public": "^2.2",
+                "tracy/tracy": "^2.12"
+            },
+            "type": "phpstan-extension",
+            "extra": {
+                "phpstan": {
+                    "includes": [
+                        "config/extension.neon",
+                        "packages/type-perfect/config/extension.neon"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Rector\\TypePerfect\\": "packages/type-perfect/src",
+                    "TomasVotruba\\TypeCoverage\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Measure type coverage of your project",
+            "keywords": [
+                "phpstan-extension",
+                "static analysis"
+            ],
+            "support": {
+                "issues": "https://github.com/TomasVotruba/type-coverage/issues",
+                "source": "https://github.com/TomasVotruba/type-coverage/tree/2.3.0"
+            },
+            "funding": [
+                {
+                    "url": "https://www.paypal.me/rectorphp",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://github.com/tomasvotruba",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-07-29T20:32:37+00:00"
+        },
+        {
             "name": "webmozart/assert",
             "version": "2.4.1",
             "source": {
@@ -10370,7 +10906,7 @@
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
-        "php": "^8.3"
+        "php": "^8.5"
     },
     "platform-dev": {},
     "plugin-api-version": "2.9.0"

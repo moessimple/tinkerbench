@@ -1,21 +1,23 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/blank-vue-starter-kit",
+    "name": "moessimple/tinkerbench",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "A Laravel, Inertia, and Vue application.",
     "keywords": [
         "laravel",
         "framework"
     ],
     "license": "MIT",
     "require": {
-        "php": "^8.3",
+        "php": "^8.5",
         "inertiajs/inertia-laravel": "^3.0",
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0",
-        "laravel/wayfinder": "^0.1.14"
+        "laravel/wayfinder": "^0.1.14",
+        "nunomaduro/essentials": "^1.2"
     },
     "require-dev": {
+        "driftingly/rector-laravel": "^2.5",
         "fakerphp/faker": "^1.24",
         "larastan/larastan": "^3.9",
         "laravel/boost": "^2.2",
@@ -26,7 +28,11 @@
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.9.3",
         "pestphp/pest": "^5.1",
-        "pestphp/pest-plugin-laravel": "^5.0"
+        "pestphp/pest-plugin-laravel": "^5.0",
+        "pestphp/pest-plugin-phpstan": "^5.0",
+        "pestphp/pest-plugin-type-coverage": "^5.0",
+        "phpstan/phpstan-mockery": "^2.0",
+        "rector/rector": "^2.6"
     },
     "autoload": {
         "psr-4": {
@@ -54,26 +60,32 @@
             "@php artisan dev"
         ],
         "lint": [
-            "pint --parallel"
+            "rector",
+            "pint --parallel",
+            "npm run lint"
         ],
-        "lint:check": [
-            "pint --parallel --test"
+        "test:type-coverage": [
+            "php -d memory_limit=512M vendor/bin/pest --type-coverage --min=100"
         ],
-        "ci:check": [
-            "Composer\\Config::disableProcessTimeout",
-            "npm run lint:check",
-            "npm run format:check",
-            "npm run types:check",
-            "@test"
+        "test:lint": [
+            "pint --parallel --test",
+            "rector --dry-run",
+            "npm run test:lint"
         ],
-        "types:check": [
-            "phpstan analyse"
+        "test:unit": [
+            "sh -c 'pest=\"vendor/bin/pest --coverage --exactly=100.0\"; command -v herd >/dev/null 2>&1 && herd coverage $pest || XDEBUG_MODE=coverage $pest'",
+            "npm run test:unit"
+        ],
+        "test:types": [
+            "phpstan analyse --memory-limit=512M",
+            "npm run test:types"
         ],
         "test": [
             "@php artisan config:clear --ansi",
-            "@lint:check",
-            "@types:check",
-            "@php artisan test"
+            "@test:type-coverage",
+            "@test:unit",
+            "@test:lint",
+            "@test:types"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
