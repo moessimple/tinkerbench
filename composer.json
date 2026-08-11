@@ -2,7 +2,7 @@
     "$schema": "https://getcomposer.org/schema.json",
     "name": "moessimple/tinkerbench",
     "type": "project",
-    "description": "A Laravel Inertia/Vue application, spun off from tinkerwell.",
+    "description": "A Laravel, Inertia, and Vue application.",
     "keywords": [
         "laravel",
         "framework"
