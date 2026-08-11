@@ -19,3 +19,6 @@ Each class in src/Domain, src/Application, src/Support gets a matching test at t
 
 ## No final, no readonly on classes
 Domain/Application/Support classes are not `final` and not `readonly` (neither class-level nor per-property). Both block Mockery from creating a class double (final: "cannot override methods of a final class"; readonly: "non-readonly class cannot extend readonly class"), which forces awkward workarounds when a test needs to mock a class directly. Decided after hitting this concretely with RunSnippetAction. Rector's ReadOnlyPropertyRector and Pint's final_class/final_internal_class/final_public_method_for_abstract_class are disabled in rector.php/pint.json so neither gets re-added automatically.
+
+## Don't keep single-implementation interfaces for mockability
+Now that classes aren't final/readonly (see "No final, no readonly on classes"), an interface with exactly one implementation and no second caller has no reason to exist just to enable mocking, mock the concrete class's own leaf dependency instead. Removed HerdContract for exactly this reason: RunSnippetAction's only real dependency was Herd itself, mocking Herd directly works fine once it's not final. Before adding an interface "for testability", check whether the class it would wrap is even blocked from direct mocking.
