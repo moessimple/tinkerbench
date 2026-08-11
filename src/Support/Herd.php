@@ -6,8 +6,6 @@ namespace Support;
 
 use Illuminate\Support\Facades\Process;
 use InvalidArgumentException;
-use RuntimeException;
-use Symfony\Component\Process\PhpExecutableFinder;
 
 final class Herd implements HerdContract
 {
@@ -23,14 +21,12 @@ final class Herd implements HerdContract
         // fatally time out from under a snippet that is still running fine.
         set_time_limit(0);
 
-        $php = $this->resolvePhpBinary();
-
         $snippetPath = sys_get_temp_dir().'/tinkerbench-snippet-'.bin2hex(random_bytes(16)).'.php';
         file_put_contents($snippetPath, "<?php\n\n{$code}");
 
         try {
             $result = Process::forever()->run([
-                $php,
+                $this->phpBinary(),
                 base_path('src/Support/bin/run-snippet.php'),
                 $snippetPath,
             ]);
@@ -39,23 +35,6 @@ final class Herd implements HerdContract
         }
 
         return new SnippetRunResult($result->output() !== '' ? $result->output() : $result->errorOutput());
-    }
-
-    // Falls back to the PHP CLI binary running this process when the configured Herd path
-    // doesn't exist, so the app also runs where Herd isn't installed (CI, other machines).
-    private function resolvePhpBinary(): string
-    {
-        $configured = $this->phpBinary();
-
-        if (is_executable($configured)) {
-            return $configured;
-        }
-
-        $found = new PhpExecutableFinder()->find();
-
-        throw_if($found === false, RuntimeException::class, 'Could not locate a PHP executable to run the snippet with.');
-
-        return $found;
     }
 
     private function bin(): string
