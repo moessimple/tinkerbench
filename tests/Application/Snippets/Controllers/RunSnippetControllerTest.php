@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 use Application\Snippets\Controllers\RunSnippetController;
 use Application\Snippets\Requests\RunSnippetRequest;
+use Domain\Snippets\Actions\RunSnippetAction;
+use Support\HerdContract;
+use Support\SnippetRunResult;
 
-test('invokes RunSnippetAction and returns its output as json', function (): void {
+test('uses RunSnippetAction and RunSnippetRequest', function (): void {
+    $herd = Mockery::mock(HerdContract::class);
+    $herd->shouldReceive('runSnippet')->once()->with("echo 'hi';")->andReturn(new SnippetRunResult('hi'));
+
     $request = new RunSnippetRequest();
     $request->merge(['code' => "echo 'hi';"]);
 
-    $response = resolve(RunSnippetController::class)($request);
+    $response = new RunSnippetController()($request, new RunSnippetAction($herd));
 
     expect($response->getData(true))->toBe(['output' => 'hi']);
 });
