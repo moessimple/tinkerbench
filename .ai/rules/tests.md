@@ -19,3 +19,12 @@ A test proving a mocked collaborator was used and a test proving the actual resp
 
 ## Name tests with plain words, not pattern jargon
 Prefer "uses" over "delegates", generally the plainest accurate verb over pattern-language terms (delegation, orchestration, composition, ...).
+
+## Every public method gets its own isolated test
+Test coverage is measured per public method, not per "is this method called by something today". If a class/interface declares a public method, it gets its own test proving that method's behavior in isolation, independent of whether a current caller happens to exercise it. Do not skip a public method's test just because nothing in the codebase calls it yet.
+
+## Use it(), not test()
+Write tests with Pest's `it('does X', ...)`, not `test('does X', ...)`. Reads more naturally ("it does X"). Applies to every test in the suite.
+
+## toUseType()/toUseFormRequest() for wiring-only proofs
+tests/Pest.php defines custom expectations `expect($class)->toUseType($type)` and `expect($class)->toUseFormRequest($type)`: Reflection-based checks that a class's __invoke() declares a parameter of the given type, no instantiation or mocking. `toUseFormRequest()` additionally asserts the type is actually a subclass of FormRequest. Use these when a test only needs to prove a dependency is wired, not that it's used correctly. Pair with a behavior-level test (real call or mock assertion) when the actual usage needs proving too; the reflection check alone only proves the type is declared.

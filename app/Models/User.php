@@ -26,7 +26,7 @@ use Illuminate\Support\Carbon;
  */
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
-final class User extends Authenticatable
+class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory;

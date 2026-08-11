@@ -5,9 +5,6 @@
         "backtick_to_shell_exec": true,
         "date_time_immutable": true,
         "declare_strict_types": true,
-        "final_class": true,
-        "final_internal_class": true,
-        "final_public_method_for_abstract_class": true,
         "fully_qualified_strict_types": true,
         "global_namespace_import": {
             "import_classes": true,
