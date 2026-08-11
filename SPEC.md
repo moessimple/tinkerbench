@@ -33,26 +33,29 @@ No change to the package manager (npm stays) and no `vite-plus`/`bun` adoption.
 
 ## Commands
 
-Extending the existing composer.json / package.json script names rather than introducing new naming conventions:
+Matching nunomaduro/laravel-starter-kit-inertia-vue's `test:*` naming and composition (each PHP script calls its
+JS counterpart as its last step), superseding this spec's earlier decision to keep tinkerbench's pre-existing
+`*:check` naming:
 
 ```
 # PHP
-composer lint            # rector; pint --parallel
-composer lint:check      # pint --parallel --test; rector --dry-run
-composer types:check     # phpstan analyse (level: max, bleedingEdge)
-composer test             # config:clear; lint:check; types:check; pest --coverage --exactly=100.0
-                           # (exact script wiring for type-coverage to be finalized during step 5)
+composer lint                # rector; pint --parallel; npm run lint
+composer test:lint           # pint --parallel --test; rector --dry-run; npm run test:lint
+composer test:types          # phpstan analyse (level: max, bleedingEdge); npm run test:types
+composer test:type-coverage  # pest --type-coverage --min=100
+composer test:unit           # pest --coverage --exactly=100.0 (Herd or Xdebug); npm run test:unit
+composer test                # config:clear; test:type-coverage; test:unit; test:lint; test:types
 
 # JS
-npm run lint              # eslint . --fix (unchanged)
-npm run lint:check        # eslint . (unchanged)
-npm run format:check       # prettier --check resources/ (unchanged)
-npm run types:check        # vue-tsc --noEmit (unchanged)
-npm run test               # vitest run (new)
-
-# Aggregate CI check
-composer ci:check          # npm run lint:check; npm run format:check; npm run types:check; npm run test; composer test
+npm run lint                 # prettier --write resources/; eslint . --fix
+npm run test:lint            # prettier --check resources/; eslint .
+npm run test:types           # vue-tsc --noEmit
+npm run test:unit            # vitest run
+npm run test                 # test:lint; test:types; test:unit
 ```
+
+`composer ci:check` was removed: `composer test` now transitively runs every JS check too, so keeping both
+names for the same thing would have been redundant. CI calls `composer test` directly, matching upstream.
 
 ## Project Structure
 
@@ -106,10 +109,11 @@ Key additions over the current bare `laravel` preset: `declare_strict_types`, `f
 
 ## Boundaries
 
-- **Always:** run `composer lint:check`, `composer types:check`, and the full test suite before any commit that
+- **Always:** run `composer test:lint`, `composer test:types`, and the full test suite before any commit that
   touches PHP; run the equivalent npm scripts before any commit that touches JS; keep the stdout/CI behavior of
-  existing tests unchanged unless a step specifically targets them; extend existing composer.json/package.json
-  script names rather than introducing a parallel naming scheme.
+  existing tests unchanged unless a step specifically targets them; use nunomaduro/laravel-starter-kit-inertia-vue's
+  `test:*` script naming and composition (see Commands) for anything quality-check related, rather than inventing
+  a parallel scheme.
 - **Ask first:** installing any new Composer or npm dependency, even the ones named in this spec (per this
   project's Laravel Boost / `CLAUDE.md` rule: "Do not change the application's dependencies without approval");
   any change to `.github/workflows/tests.yml` beyond what's listed here; raising `phpstan.neon`'s level past
@@ -122,20 +126,17 @@ Key additions over the current bare `laravel` preset: `declare_strict_types`, `f
 
 ## Success Criteria
 
-- `composer lint:check` (Pint + Rector dry-run) passes with zero violations on the full current codebase.
-- `composer types:check` (PHPStan `level: max` + bleedingEdge) passes with zero errors.
-- `vendor/bin/pest --coverage --exactly=100.0` and `vendor/bin/pest --type-coverage --min=100` both pass.
-- `npm run lint:check`, `npm run format:check`, `npm run types:check` (unchanged) all still pass.
-- `npx vitest run` passes with at least one real smoke test executed, not just an empty run.
-- `.github/workflows/tests.yml`'s single CI job passes end-to-end via `composer ci:check` (or its equivalent),
-  with composer/rector/phpstan caching in place and `coverage: xdebug`.
+- `composer test:lint` (Pint + Rector dry-run + npm test:lint) passes with zero violations on the full codebase.
+- `composer test:types` (PHPStan `level: max` + bleedingEdge + npm test:types) passes with zero errors.
+- `composer test:type-coverage` and `composer test:unit` (line coverage + Vitest) both pass at 100%.
+- `composer test` passes end-to-end and is the single entry point CI calls.
+- `.github/workflows/tests.yml`'s single CI job passes end-to-end via `composer test`, with composer/rector/phpstan
+  caching in place and `coverage: xdebug`.
 - `composer.json` name, description, and license reflect tinkerbench, not the generic starter-kit skeleton.
 
 ## Open Questions
 
 1. Should Vitest carry a coverage threshold too, or stay coverage-free like both reference projects do for their
    JS unit tests?
-2. Exact composer/npm script wiring for the new PHP type-coverage check, final names to be settled during step 5
-   implementation, following the existing `lint` / `lint:check` / `types:check` / `test` naming pattern.
-3. At what concrete trigger do the deferred items (browser tests, the arch-test, supply-chain hygiene) get picked
+2. At what concrete trigger do the deferred items (browser tests, the arch-test, supply-chain hygiene) get picked
    back up?

@@ -61,32 +61,31 @@
         ],
         "lint": [
             "rector",
-            "pint --parallel"
+            "pint --parallel",
+            "npm run lint"
         ],
-        "lint:check": [
-            "pint --parallel --test",
-            "rector --dry-run"
-        ],
-        "ci:check": [
-            "Composer\\Config::disableProcessTimeout",
-            "npm run lint:check",
-            "npm run format:check",
-            "npm run types:check",
-            "npm run test",
-            "@test"
-        ],
-        "types:check": [
-            "phpstan analyse --memory-limit=512M"
-        ],
-        "type-coverage": [
+        "test:type-coverage": [
             "php -d memory_limit=512M vendor/bin/pest --type-coverage --min=100"
+        ],
+        "test:lint": [
+            "pint --parallel --test",
+            "rector --dry-run",
+            "npm run test:lint"
+        ],
+        "test:unit": [
+            "sh -c 'pest=\"vendor/bin/pest --coverage --exactly=100.0\"; command -v herd >/dev/null 2>&1 && herd coverage $pest || XDEBUG_MODE=coverage $pest'",
+            "npm run test:unit"
+        ],
+        "test:types": [
+            "phpstan analyse --memory-limit=512M",
+            "npm run test:types"
         ],
         "test": [
             "@php artisan config:clear --ansi",
-            "@lint:check",
-            "@types:check",
-            "@type-coverage",
-            "sh -c 'pest=\"vendor/bin/pest --coverage --exactly=100.0\"; command -v herd >/dev/null 2>&1 && herd coverage $pest || XDEBUG_MODE=coverage $pest'"
+            "@test:type-coverage",
+            "@test:unit",
+            "@test:lint",
+            "@test:types"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
