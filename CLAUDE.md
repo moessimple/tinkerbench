@@ -51,8 +51,11 @@ final readonly class CreateInvoiceAction
 - Once a class has its own complete test, fake or mock it in its callers' tests instead of re-proving its
   behavior there. A caller's test only proves the caller's own responsibility (delegation, wiring, its own
   transformation).
+- Keep one behavior per test. A test that mocks a collaborator to prove delegation happened and a test that
+  proves the actual HTTP response are two different claims, do not blend them into one test with one assertion
+  that only covers half of what the test name promises.
 
-<!-- Action test proves the real behavior, controller test mocks the already-tested action -->
+<!-- Action test proves the real behavior, controller tests split delegation from response -->
 ```php
 // tests/Domain/Billing/Actions/CreateInvoiceActionTest.php
 it('creates an invoice for the order', function () {
@@ -64,12 +67,23 @@ it('creates an invoice for the order', function () {
 });
 
 // tests/Application/Billing/Controllers/CreateInvoiceControllerTest.php
-it('delegates to CreateInvoiceAction and returns the created invoice', function () {
+// proves only that the controller delegates to the already-tested action, nothing about the response
+it('delegates to CreateInvoiceAction', function () {
     $order = Order::factory()->create();
+
     $this->mock(CreateInvoiceAction::class)
         ->shouldReceive('execute')->once()->with($order)->andReturn(new Invoice(['order_id' => $order->id]));
 
-    $this->postJson("/orders/{$order->id}/invoices")->assertCreated();
+    $this->postJson("/orders/{$order->id}/invoices");
+});
+
+// proves the actual observable HTTP response, no mock, the real action runs
+it('returns the created invoice', function () {
+    $order = Order::factory()->create();
+
+    $this->postJson("/orders/{$order->id}/invoices")
+        ->assertCreated()
+        ->assertJsonPath('order_id', $order->id);
 });
 ```
 
