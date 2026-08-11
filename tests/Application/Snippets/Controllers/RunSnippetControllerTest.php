@@ -8,16 +8,32 @@ use Domain\Snippets\Actions\RunSnippetAction;
 use Support\HerdContract;
 use Support\SnippetRunResult;
 
-test('uses RunSnippetAction and RunSnippetRequest', function (): void {
+test('uses RunSnippetAction', function (): void {
     $herd = Mockery::mock(HerdContract::class);
-    $herd->shouldReceive('runSnippet')->once()->with("echo 'hi';")->andReturn(new SnippetRunResult('hi'));
+    $herd->shouldReceive('runSnippet')->once()->andReturn(new SnippetRunResult('from the action'));
 
     $request = new RunSnippetRequest();
-    $request->merge(['code' => "echo 'hi';"]);
+    $request->merge(['code' => 'anything']);
 
-    $response = new RunSnippetController()($request, new RunSnippetAction($herd));
+    $response = app()->call(new RunSnippetController(), [
+        'request' => $request,
+        'runSnippet' => new RunSnippetAction($herd),
+    ]);
 
-    expect($response->getData(true))->toBe(['output' => 'hi']);
+    expect($response->getData(true))->toBe(['output' => 'from the action']);
+});
+
+test('uses RunSnippetRequest', function (): void {
+    $herd = Mockery::mock(HerdContract::class);
+    $herd->shouldReceive('runSnippet')->once()->with('the submitted code')->andReturn(new SnippetRunResult('irrelevant'));
+
+    $request = new RunSnippetRequest();
+    $request->merge(['code' => 'the submitted code']);
+
+    app()->call(new RunSnippetController(), [
+        'request' => $request,
+        'runSnippet' => new RunSnippetAction($herd),
+    ]);
 });
 
 test('runs the posted code isolated and returns its output as json', function (): void {
