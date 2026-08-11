@@ -56,7 +56,8 @@
             "@php artisan key:generate",
             "@php artisan migrate --force",
             "npm install",
-            "npm run build"
+            "npm run build",
+            "herd link tinkerbench --secure"
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
