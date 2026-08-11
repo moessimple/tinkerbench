@@ -22,7 +22,7 @@ final class Herd implements HerdContract
         set_time_limit(0);
 
         $snippetPath = sys_get_temp_dir().'/tinkerbench-snippet-'.bin2hex(random_bytes(16)).'.php';
-        file_put_contents($snippetPath, $code);
+        file_put_contents($snippetPath, "<?php\n\n{$code}");
 
         try {
             $result = Process::forever()->run([
