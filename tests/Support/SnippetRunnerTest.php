@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 use Support\SnippetRunner;
 
+// SnippetRunner::run() requires bootstrap/app.php, which replaces the process-wide Application/facade
+// singleton with a second instance distinct from this test suite's own $this->app. Safe today because
+// no test here, or later in the same PHPUnit process, resolves a facade after calling run(); adding one
+// would silently resolve against the wrong container.
 it('echoes the snippet string return value', function (): void {
     $snippetPath = tempnam(sys_get_temp_dir(), 'snippet').'.php';
     file_put_contents($snippetPath, "<?php\n\nreturn 'hello from the snippet';");

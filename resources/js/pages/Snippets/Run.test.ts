@@ -5,6 +5,8 @@ import { reactive } from 'vue';
 let capturedPost: {
     url: string;
     onSuccess: (data: { output: string }) => void;
+    onError: (errors: Record<string, string>) => void;
+    onHttpException: (response: { status: number }) => void;
 } | null = null;
 let capturedTitle: string | undefined;
 
@@ -15,9 +17,18 @@ const httpState = reactive({
     processing: false,
     post: (
         url: string,
-        options: { onSuccess: (data: { output: string }) => void },
+        options: {
+            onSuccess: (data: { output: string }) => void;
+            onError: (errors: Record<string, string>) => void;
+            onHttpException: (response: { status: number }) => void;
+        },
     ) => {
-        capturedPost = { url, onSuccess: options.onSuccess };
+        capturedPost = {
+            url,
+            onSuccess: options.onSuccess,
+            onError: options.onError,
+            onHttpException: options.onHttpException,
+        };
     },
 });
 
@@ -62,6 +73,24 @@ it('shows the returned output', async () => {
     capturedPost?.onSuccess({ output: 'hi' });
 
     await screen.findByText('hi');
+});
+
+it('shows a validation error message when the request fails', async () => {
+    render(Run);
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    capturedPost?.onError({ code: 'The code field is required.' });
+
+    await screen.findByText('The code field is required.');
+});
+
+it('shows a generic error message when the server request fails', async () => {
+    render(Run);
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    capturedPost?.onHttpException({ status: 500 });
+
+    await screen.findByText('Request failed (500).');
 });
 
 it('disables the run button and shows a running label while processing', () => {

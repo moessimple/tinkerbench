@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use Application\Snippets\Requests\RunSnippetRequest;
 
-it('requires code as a string', function (): void {
+it('requires code as a bounded string', function (): void {
     expect(new RunSnippetRequest()->rules())->toBe([
-        'code' => ['required', 'string'],
+        'code' => ['required', 'string', 'max:100000'],
     ]);
 });
 

@@ -52,6 +52,13 @@ it('surfaces a thrown exception via the process error output', function (): void
     expect($result->output)->toContain('boom');
 });
 
+it('keeps output printed before an uncaught exception instead of discarding it', function (): void {
+    $result = new Herd()->runSnippet("echo 'partial output'; throw new RuntimeException('boom');");
+
+    expect($result->output)->toContain('partial output')
+        ->and($result->output)->toContain('boom');
+});
+
 it('cleans up the temp snippet file after running', function (): void {
     $before = glob(sys_get_temp_dir().'/tinkerbench-snippet-*.php');
 

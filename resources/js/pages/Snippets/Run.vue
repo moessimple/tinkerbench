@@ -4,15 +4,24 @@ import { ref } from 'vue';
 import RunSnippetController from '@/actions/Application/Snippets/Controllers/RunSnippetController';
 
 const output = ref('');
+const errorMessage = ref('');
 
 const http = useHttp<{ code: string }, { output: string }>({
     code: '',
 });
 
 function run(): void {
+    errorMessage.value = '';
+
     http.post(RunSnippetController.url(), {
         onSuccess: (data) => {
             output.value = data.output;
+        },
+        onError: (errors) => {
+            errorMessage.value = Object.values(errors).join(' ');
+        },
+        onHttpException: (response) => {
+            errorMessage.value = `Request failed (${response.status}).`;
         },
     });
 }
@@ -37,6 +46,10 @@ function run(): void {
         >
             {{ http.processing ? 'Running…' : 'Run' }}
         </button>
+
+        <p v-if="errorMessage" class="text-sm text-red-600 dark:text-red-400">
+            {{ errorMessage }}
+        </p>
 
         <pre
             class="min-h-16 rounded border border-gray-300 bg-gray-50 p-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"

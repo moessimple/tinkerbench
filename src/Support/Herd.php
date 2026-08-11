@@ -34,7 +34,11 @@ class Herd
             unlink($snippetPath);
         }
 
-        return new SnippetRunResult($result->output() !== '' ? $result->output() : $result->errorOutput());
+        if ($result->successful()) {
+            return new SnippetRunResult($result->output());
+        }
+
+        return new SnippetRunResult($result->output().$result->errorOutput());
     }
 
     private function bin(): string

@@ -4,6 +4,10 @@
 
 tinkerbench is a local PHP snippet runner built on Laravel, Inertia, and Vue. Type a snippet, run it, and see the output right away, without wiring it into an existing project first. Each run executes in its own isolated subprocess, so a snippet that redeclares a class or function never crashes a later run.
 
+## Scope
+
+tinkerbench is built for a single developer running it on their own machine. It has no authentication and executes arbitrary PHP with no resource limits beyond the process itself. It is not meant to run as a shared or externally reachable service.
+
 ## Requirements
 
 * [Laravel Herd](https://herd.laravel.com), which provides PHP and Node.js
