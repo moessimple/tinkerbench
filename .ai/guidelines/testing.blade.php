@@ -12,6 +12,8 @@
 - Keep one behavior per test. A test that mocks a collaborator to prove delegation happened and a test that
   proves the actual HTTP response are two different claims, do not blend them into one test with one assertion
   that only covers half of what the test name promises.
+- Name tests with plain words, not pattern jargon. Prefer "uses" over "delegates", and generally the plainest
+  verb that stays accurate over pattern-language terms (delegation, orchestration, composition, ...).
 
 @boostsnippet('Action test proves the real behavior, controller tests split delegation from response', 'php')
 // tests/Domain/Billing/Actions/CreateInvoiceActionTest.php
