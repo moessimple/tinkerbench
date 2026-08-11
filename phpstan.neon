@@ -12,18 +12,7 @@ parameters:
         - config/
         - database/
         - routes/
+        - src/
 
     level: max
     tmpDir: /tmp/phpstan
-
-    ignoreErrors:
-        -
-            # Inertia registers `inertia()` as a runtime macro on Router (see
-            # inertiajs/inertia-laravel's ServiceProvider::registerRouterMacro). Larastan
-            # infers macro return types via closure body analysis, but that inference
-            # doesn't resolve `$this` inside a macro closure bound through the Route
-            # facade, so the call resolves to `mixed`. Not fixable from application code.
-            message: '#^Cannot call method name\(\) on mixed\.$#'
-            identifier: method.nonObject
-            path: routes/web.php
-            count: 1
