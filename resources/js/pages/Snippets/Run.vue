@@ -69,26 +69,37 @@ function run(): void {
                 class="flex flex-col overflow-hidden rounded-md border border-line bg-surface min-[900px]:flex-row"
             >
                 <div
-                    class="flex min-w-0 flex-3 flex-col border-b border-line min-[900px]:border-r min-[900px]:border-b-0"
+                    class="flex min-w-0 flex-3 border-b border-line min-[900px]:border-r min-[900px]:border-b-0"
                 >
                     <div
-                        class="flex items-center justify-between border-b border-line px-3 py-2"
+                        class="flex w-12 shrink-0 flex-col items-center gap-1 border-r border-line py-3"
                     >
-                        <span
-                            class="font-mono text-xs font-semibold tracking-widest text-muted uppercase"
-                        >
-                            Snippet
-                        </span>
                         <button
                             type="button"
+                            :title="
+                                http.processing ? 'Running…' : 'Run snippet'
+                            "
+                            :aria-label="
+                                http.processing ? 'Running…' : 'Run snippet'
+                            "
                             :disabled="http.processing"
-                            class="rounded bg-accent px-3 py-1 text-sm font-medium text-canvas disabled:opacity-50"
+                            class="flex h-8 w-8 items-center justify-center rounded text-muted hover:bg-line/30 hover:text-fg disabled:opacity-50"
                             @click="run"
                         >
-                            {{ http.processing ? 'Running…' : 'Run' }}
+                            <svg
+                                viewBox="0 0 16 16"
+                                width="16"
+                                height="16"
+                                fill="currentColor"
+                                aria-hidden="true"
+                            >
+                                <path
+                                    d="M3 2.5a.5.5 0 0 1 .77-.42l9 5.5a.5.5 0 0 1 0 .84l-9 5.5A.5.5 0 0 1 3 13.5v-11Z"
+                                />
+                            </svg>
                         </button>
                     </div>
-                    <div class="h-96">
+                    <div class="h-96 min-w-0 flex-1">
                         <MonacoEditor
                             :initial-value="http.code"
                             @change="(content) => (http.code = content)"
@@ -97,11 +108,6 @@ function run(): void {
                 </div>
 
                 <div class="flex min-h-0 min-w-0 flex-2 flex-col">
-                    <div
-                        class="border-b border-line px-3 py-2 font-mono text-xs font-semibold tracking-widest text-muted uppercase"
-                    >
-                        Output
-                    </div>
                     <pre
                         class="h-96 flex-1 overflow-auto p-4 font-mono text-sm whitespace-pre-wrap"
                         >{{ output }}</pre>

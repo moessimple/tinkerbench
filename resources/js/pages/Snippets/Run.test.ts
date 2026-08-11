@@ -76,7 +76,7 @@ it('sends the entered code to the run endpoint', async () => {
     render(Run, { props });
 
     await fireEvent.update(screen.getByLabelText('Snippet code'), "echo 'hi';");
-    await fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
 
     expect(capturedPost?.url).toBe('/snippets/executions');
     expect(httpState.code).toBe("echo 'hi';");
@@ -85,7 +85,7 @@ it('sends the entered code to the run endpoint', async () => {
 it('shows the returned output', async () => {
     render(Run, { props });
 
-    await fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
     capturedPost?.onSuccess({ output: 'hi' });
 
     await screen.findByText('hi');
@@ -94,7 +94,7 @@ it('shows the returned output', async () => {
 it('shows a validation error message when the request fails', async () => {
     render(Run, { props });
 
-    await fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
     capturedPost?.onError({ code: 'The code field is required.' });
 
     await screen.findByText('The code field is required.');
@@ -103,7 +103,7 @@ it('shows a validation error message when the request fails', async () => {
 it('shows a generic error message when the server request fails', async () => {
     render(Run, { props });
 
-    await fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
     capturedPost?.onHttpException({ status: 500 });
 
     await screen.findByText('Request failed (500).');
