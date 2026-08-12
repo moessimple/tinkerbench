@@ -163,12 +163,6 @@ it('shows the run shortcut in the button tooltip', () => {
     expect(button.title).toBe('Run snippet (⌘Enter)');
 });
 
-it('renders the keyboard shortcuts help', () => {
-    render(Run, { props });
-
-    screen.getByRole('button', { name: 'Keyboard shortcuts' });
-});
-
 it('disables the run button and shows a running label while processing', () => {
     httpState.processing = true;
 

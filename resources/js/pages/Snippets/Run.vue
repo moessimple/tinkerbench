@@ -4,7 +4,6 @@ import { onBeforeUnmount, ref } from 'vue';
 import RunSnippetController from '@/actions/Application/Snippets/Controllers/RunSnippetController';
 import UpdateSnippetContentController from '@/actions/Application/Snippets/Controllers/UpdateSnippetContentController';
 import MonacoEditor from '@/components/MonacoEditor.vue';
-import ShortcutsHelp from '@/components/ShortcutsHelp.vue';
 import SnippetList from '@/components/SnippetList.vue';
 import { xsrfHeader } from '@/lib/csrf';
 import { shortcuts } from '@/lib/shortcuts';
@@ -140,7 +139,6 @@ function run(): void {
                             </svg>
                         </button>
                         <SnippetList :current-snippet="snippetName" />
-                        <ShortcutsHelp />
                     </div>
                     <div class="h-96 min-w-0 flex-1">
                         <MonacoEditor
