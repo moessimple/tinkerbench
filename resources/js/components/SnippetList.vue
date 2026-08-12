@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { router, useHttp } from '@inertiajs/vue3';
 import type { ComponentPublicInstance } from 'vue';
-import { nextTick, ref } from 'vue';
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import CreateSnippetController from '@/actions/Application/Snippets/Controllers/CreateSnippetController';
 import DeleteSnippetController from '@/actions/Application/Snippets/Controllers/DeleteSnippetController';
 import ListSnippetsController from '@/actions/Application/Snippets/Controllers/ListSnippetsController';
@@ -61,7 +61,19 @@ function close(): void {
     isOpen.value = false;
 }
 
-defineExpose({ toggle });
+function onGlobalKeydown(event: KeyboardEvent): void {
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'p') {
+        event.preventDefault();
+        void toggle();
+    }
+}
+
+onMounted(() =>
+    window.addEventListener('keydown', onGlobalKeydown, { capture: true }),
+);
+onBeforeUnmount(() =>
+    window.removeEventListener('keydown', onGlobalKeydown, { capture: true }),
+);
 
 async function loadNames(): Promise<void> {
     errorMessage.value = '';

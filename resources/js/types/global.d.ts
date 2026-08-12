@@ -55,7 +55,7 @@ declare global {
             ): MonacoEditorInstance;
             defineTheme(name: string, theme: Record<string, unknown>): void;
         };
-        KeyCode: { Enter: number; KeyP: number };
+        KeyCode: { Enter: number };
         KeyMod: { CtrlCmd: number };
     }
 

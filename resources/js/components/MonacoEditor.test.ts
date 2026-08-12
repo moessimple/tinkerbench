@@ -32,7 +32,7 @@ beforeEach(() => {
             create: vi.fn(() => editor),
             defineTheme: vi.fn(),
         },
-        KeyCode: { Enter: 3, KeyP: 46 },
+        KeyCode: { Enter: 3 },
         KeyMod: { CtrlCmd: 2048 },
     };
 });
@@ -98,23 +98,6 @@ it('emits run when the Ctrl/Cmd+Enter action runs', () => {
         expect.objectContaining({
             keybindings: [
                 window.monaco.KeyMod.CtrlCmd | window.monaco.KeyCode.Enter,
-            ],
-        }),
-    );
-});
-
-it('emits browseSnippets when the Ctrl/Cmd+P action runs', () => {
-    const rendered = render(MonacoEditor, {
-        props: { initialValue: '<?php echo "initial";' },
-    });
-
-    actionRun('tinkerbench.browseSnippets')();
-
-    expect(rendered.emitted().browseSnippets).toHaveLength(1);
-    expect(addAction).toHaveBeenCalledWith(
-        expect.objectContaining({
-            keybindings: [
-                window.monaco.KeyMod.CtrlCmd | window.monaco.KeyCode.KeyP,
             ],
         }),
     );

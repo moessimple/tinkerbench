@@ -52,6 +52,48 @@ function jsonResponse(body: unknown, ok = true): Response {
     return { ok, json: () => Promise.resolve(body) } as Response;
 }
 
+it('opens the panel via the global Ctrl/Cmd+P shortcut regardless of focus', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+
+    await screen.findByRole('dialog', { name: 'Snippets' });
+});
+
+it('closes the panel via the global Ctrl/Cmd+P shortcut when already open', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+    await screen.findByRole('dialog', { name: 'Snippets' });
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+
+    expect(screen.queryByRole('dialog', { name: 'Snippets' })).toBeNull();
+});
+
+it('removes the global keydown listener when unmounted', () => {
+    const addSpy = vi.spyOn(window, 'addEventListener');
+    const removeSpy = vi.spyOn(window, 'removeEventListener');
+    const rendered = render(SnippetList, {
+        props: { currentSnippet: 'scratch' },
+    });
+
+    rendered.unmount();
+
+    const [, handler] =
+        addSpy.mock.calls.find(([type]) => type === 'keydown') ?? [];
+    expect(removeSpy).toHaveBeenCalledWith('keydown', handler, {
+        capture: true,
+    });
+});
+
 it('shows the shortcut in the browse button tooltip', () => {
     render(SnippetList, { props: { currentSnippet: 'scratch' } });
 

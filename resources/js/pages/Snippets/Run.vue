@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, useHttp } from '@inertiajs/vue3';
-import { onBeforeUnmount, ref, useTemplateRef } from 'vue';
+import { onBeforeUnmount, ref } from 'vue';
 import RunSnippetController from '@/actions/Application/Snippets/Controllers/RunSnippetController';
 import UpdateSnippetContentController from '@/actions/Application/Snippets/Controllers/UpdateSnippetContentController';
 import MonacoEditor from '@/components/MonacoEditor.vue';
@@ -16,8 +16,6 @@ const props = defineProps<{
 
 const output = ref('');
 const errorMessage = ref('');
-const snippetList =
-    useTemplateRef<InstanceType<typeof SnippetList>>('snippetList');
 
 const http = useHttp<{ code: string }, { output: string }>({
     code: props.content,
@@ -62,10 +60,6 @@ function run(): void {
             errorMessage.value = `Request failed (${response.status}).`;
         },
     });
-}
-
-function browseSnippets(): void {
-    void snippetList.value?.toggle();
 }
 </script>
 
@@ -137,17 +131,13 @@ function browseSnippets(): void {
                                 />
                             </svg>
                         </button>
-                        <SnippetList
-                            ref="snippetList"
-                            :current-snippet="snippetName"
-                        />
+                        <SnippetList :current-snippet="snippetName" />
                     </div>
                     <div class="h-96 min-w-0 flex-1">
                         <MonacoEditor
                             :initial-value="http.code"
                             @change="onEditorChange"
                             @run="run"
-                            @browse-snippets="browseSnippets"
                         />
                     </div>
                 </div>
