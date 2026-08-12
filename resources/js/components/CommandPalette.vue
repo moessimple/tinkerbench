@@ -184,7 +184,12 @@ watch(
     },
 );
 
-async function toggle(): Promise<void> {
+// The open dialog is a fixed, full-viewport backdrop that renders after both scope
+// icons in the DOM, so it visually covers them the moment it's open; a click on
+// either icon can never reach the button underneath, only the backdrop (which closes
+// it). Toggle-closed is therefore the only reachable behavior for a second click,
+// same as before there were two icons.
+async function open(prefix: '' | '#' | '/'): Promise<void> {
     if (isOpen.value) {
         close();
 
@@ -193,9 +198,18 @@ async function toggle(): Promise<void> {
 
     isOpen.value = true;
     createForm.reset();
+    createForm.name = prefix;
     await Promise.all([loadNames(), loadProjects()]);
     await nextTick();
     createInputEl.value?.focus();
+}
+
+function toggle(): Promise<void> {
+    return open('');
+}
+
+function openScoped(prefix: '#' | '/'): Promise<void> {
+    return open(prefix);
 }
 
 function close(): void {
@@ -436,13 +450,13 @@ async function confirmDelete(name: string): Promise<void> {
 </script>
 
 <template>
-    <div class="relative">
+    <div class="relative flex flex-col items-center gap-1">
         <button
             type="button"
             :title="`Browse snippets (${browseShortcut})`"
             aria-label="Browse snippets"
             class="flex h-8 w-8 items-center justify-center rounded text-muted hover:bg-line/30 hover:text-fg"
-            @click="toggle"
+            @click="openScoped('#')"
         >
             <svg
                 viewBox="0 0 16 16"
@@ -454,6 +468,25 @@ async function confirmDelete(name: string): Promise<void> {
                 <path
                     fill-rule="evenodd"
                     d="M2 3.75A.75.75 0 0 1 2.75 3h10.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 3.75Zm0 4A.75.75 0 0 1 2.75 7h10.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 7.75Zm0 4A.75.75 0 0 1 2.75 11h10.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75Z"
+                />
+            </svg>
+        </button>
+        <button
+            type="button"
+            title="Browse projects"
+            aria-label="Browse projects"
+            class="flex h-8 w-8 items-center justify-center rounded text-muted hover:bg-line/30 hover:text-fg"
+            @click="openScoped('/')"
+        >
+            <svg
+                viewBox="0 0 16 16"
+                width="16"
+                height="16"
+                fill="currentColor"
+                aria-hidden="true"
+            >
+                <path
+                    d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"
                 />
             </svg>
         </button>

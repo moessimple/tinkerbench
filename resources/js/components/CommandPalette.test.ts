@@ -167,7 +167,7 @@ it('moves the highlight down and up through the list, wrapping at the ends', asy
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
-    const input = await screen.findByLabelText('Search or jump to');
+    const input = await screen.findByLabelText('Search snippets');
 
     await fireEvent.keyDown(input, { key: 'ArrowDown' });
     expect(
@@ -212,7 +212,7 @@ it('opens the highlighted snippet when Enter is pressed with an empty name field
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
-    const input = await screen.findByLabelText('Search or jump to');
+    const input = await screen.findByLabelText('Search snippets');
     await fireEvent.keyDown(input, { key: 'ArrowDown' });
     await fireEvent.submit(input.closest('form') as HTMLFormElement);
 
@@ -228,7 +228,7 @@ it('closes the panel when Escape is pressed on the name field', async () => {
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
-    const input = await screen.findByLabelText('Search or jump to');
+    const input = await screen.findByLabelText('Search snippets');
     await fireEvent.keyDown(input, { key: 'Escape' });
 
     expect(screen.queryByRole('dialog', { name: 'Snippets' })).toBeNull();
@@ -243,7 +243,7 @@ it('filters the list as the name field is typed into', async () => {
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
-    const input = await screen.findByLabelText('Search or jump to');
+    const input = await screen.findByLabelText('Search snippets');
     await fireEvent.update(input, 'ap');
 
     screen.getByText('apple');
@@ -260,7 +260,7 @@ it('resets the highlight to the first match when the filter changes', async () =
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
-    const input = await screen.findByLabelText('Search or jump to');
+    const input = await screen.findByLabelText('Search snippets');
     await fireEvent.update(input, 'a');
 
     const options = screen.getAllByRole('option');
@@ -276,7 +276,7 @@ it('opens the highlighted match when Enter is pressed with a filtered query', as
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
-    const input = await screen.findByLabelText('Search or jump to');
+    const input = await screen.findByLabelText('Search snippets');
     await fireEvent.update(input, 'zeb');
     await fireEvent.submit(input.closest('form') as HTMLFormElement);
 
@@ -292,7 +292,7 @@ it('creates a snippet when Enter is pressed and the typed name matches nothing',
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
-    const input = await screen.findByLabelText('Search or jump to');
+    const input = await screen.findByLabelText('Search snippets');
     await fireEvent.update(input, 'new-one');
     await fireEvent.submit(input.closest('form') as HTMLFormElement);
 
@@ -308,7 +308,7 @@ it('shows a hint to create the typed name when nothing matches', async () => {
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
-    const input = await screen.findByLabelText('Search or jump to');
+    const input = await screen.findByLabelText('Search snippets');
     await fireEvent.update(input, 'new-one');
 
     await screen.findByText(
@@ -325,7 +325,7 @@ it('clears a typed filter when reopened after being closed without acting on it'
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
-    const input = await screen.findByLabelText('Search or jump to');
+    const input = await screen.findByLabelText('Search snippets');
     await fireEvent.update(input, 'no-match-at-all');
     await fireEvent.keyDown(input, { key: 'Escape' });
 
@@ -334,9 +334,9 @@ it('clears a typed filter when reopened after being closed without acting on it'
     );
 
     expect(
-        (await screen.findByLabelText<HTMLInputElement>('Search or jump to'))
+        (await screen.findByLabelText<HTMLInputElement>('Search snippets'))
             .value,
-    ).toBe('');
+    ).toBe('#');
     screen.getByText('apple');
     screen.getByText('scratch');
     screen.getByText('zebra');
@@ -401,7 +401,7 @@ it('keeps the highlight in bounds after deleting a filtered, non-current snippet
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
-    const input = await screen.findByLabelText('Search or jump to');
+    const input = await screen.findByLabelText('Search snippets');
     await fireEvent.update(input, 'ban');
     await screen.findByText('banana');
 
@@ -426,6 +426,54 @@ it('shows the shortcut in the browse button tooltip', () => {
     expect(button.title).toBe('Browse snippets (⌘P)');
 });
 
+it('opens directly scoped to snippets when the browse snippets icon is clicked', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], ['other-project']));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+
+    await screen.findByRole('dialog', { name: 'Snippets' });
+    screen.getByText('scratch');
+    expect(screen.queryByText('other-project')).toBeNull();
+});
+
+it('opens directly scoped to projects when the browse projects icon is clicked', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], ['other-project']));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse projects' }),
+    );
+
+    await screen.findByRole('dialog', { name: 'Projects' });
+    screen.getByText('other-project');
+    expect(screen.queryByText('scratch')).toBeNull();
+});
+
+it('closes an already-open palette when a scope icon is clicked again', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], ['other-project']));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    await screen.findByRole('dialog', { name: 'Snippets' });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+});
+
 it('closes when clicking the backdrop', async () => {
     vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], []));
     render(CommandPalette, {
@@ -436,7 +484,7 @@ it('closes when clicking the backdrop', async () => {
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
     const dialog = await screen.findByRole('dialog', {
-        name: 'Snippets and projects',
+        name: 'Snippets',
     });
 
     await fireEvent.click(dialog.parentElement as HTMLElement);
@@ -454,12 +502,12 @@ it('does not close when clicking inside the panel', async () => {
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
     const dialog = await screen.findByRole('dialog', {
-        name: 'Snippets and projects',
+        name: 'Snippets',
     });
 
     await fireEvent.click(dialog);
 
-    screen.getByRole('dialog', { name: 'Snippets and projects' });
+    screen.getByRole('dialog', { name: 'Snippets' });
 });
 
 it('loads and shows snippet names when opened', async () => {
@@ -512,7 +560,7 @@ it('validates the new snippet name when it changes', async () => {
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
-    const input = await screen.findByLabelText('Search or jump to');
+    const input = await screen.findByLabelText('Search snippets');
     await fireEvent.update(input, 'my-new-snippet');
     await fireEvent.change(input);
 
@@ -543,7 +591,7 @@ it('creates a new snippet and navigates to it on success', async () => {
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
-    const input = await screen.findByLabelText('Search or jump to');
+    const input = await screen.findByLabelText('Search snippets');
     await fireEvent.update(input, 'my-new-snippet');
     await fireEvent.submit(input.closest('form') as HTMLFormElement);
 
@@ -563,7 +611,7 @@ it('strips the # prefix before creating and navigating to a #-scoped new snippet
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
-    const input = await screen.findByLabelText('Search or jump to');
+    const input = await screen.findByLabelText('Search snippets');
     await fireEvent.update(input, '#my-new-snippet');
     await fireEvent.submit(input.closest('form') as HTMLFormElement);
 
@@ -898,9 +946,7 @@ it('filters snippets the same way with an explicit # prefix', async () => {
         props: { currentProject: 'my-project', currentSnippet: 'apple' },
     });
 
-    await fireEvent.click(
-        screen.getByRole('button', { name: 'Browse snippets' }),
-    );
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
     const input = await screen.findByLabelText('Search or jump to');
     await fireEvent.update(input, '#ze');
 
@@ -914,9 +960,7 @@ it('shows projects and filters them by substring when the field starts with /', 
         props: { currentProject: 'my-project', currentSnippet: 'scratch' },
     });
 
-    await fireEvent.click(
-        screen.getByRole('button', { name: 'Browse snippets' }),
-    );
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
     const input = await screen.findByLabelText('Search or jump to');
     await fireEvent.update(input, '/ze');
 
@@ -931,9 +975,7 @@ it('navigates to the selected project when Enter is pressed with a match', async
         props: { currentProject: 'my-project', currentSnippet: 'scratch' },
     });
 
-    await fireEvent.click(
-        screen.getByRole('button', { name: 'Browse snippets' }),
-    );
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
     const input = await screen.findByLabelText('Search or jump to');
     await fireEvent.update(input, '/zeb');
     await screen.findByText('zebra');
@@ -948,9 +990,7 @@ it('shows "No projects found." with no create action when nothing matches', asyn
         props: { currentProject: 'my-project', currentSnippet: 'scratch' },
     });
 
-    await fireEvent.click(
-        screen.getByRole('button', { name: 'Browse snippets' }),
-    );
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
     const input = await screen.findByLabelText('Search or jump to');
     await fireEvent.update(input, '/nope');
     await screen.findByText('No projects found.');
@@ -966,9 +1006,7 @@ it('shows the project switcher placeholder while in the project category', async
         props: { currentProject: 'my-project', currentSnippet: 'scratch' },
     });
 
-    await fireEvent.click(
-        screen.getByRole('button', { name: 'Browse snippets' }),
-    );
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
     const input = await screen.findByLabelText('Search or jump to');
     await fireEvent.update(input, '/');
 
@@ -981,9 +1019,7 @@ it('shows snippets and projects grouped into labeled sections by default', async
         props: { currentProject: 'my-project', currentSnippet: 'scratch' },
     });
 
-    await fireEvent.click(
-        screen.getByRole('button', { name: 'Browse snippets' }),
-    );
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
     await screen.findByText('scratch');
 
     screen.getByText('Snippets');
@@ -1001,9 +1037,7 @@ it('filters both sections at once when typing without a prefix', async () => {
         props: { currentProject: 'my-project', currentSnippet: 'scratch' },
     });
 
-    await fireEvent.click(
-        screen.getByRole('button', { name: 'Browse snippets' }),
-    );
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
     const input = await screen.findByLabelText('Search or jump to');
     await fireEvent.update(input, 'app');
 
@@ -1019,9 +1053,7 @@ it('moves the highlight from the snippets section into the projects section', as
         props: { currentProject: 'my-project', currentSnippet: 'scratch' },
     });
 
-    await fireEvent.click(
-        screen.getByRole('button', { name: 'Browse snippets' }),
-    );
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
     const input = await screen.findByLabelText('Search or jump to');
     await screen.findByText('other');
 
@@ -1040,9 +1072,7 @@ it('switches to the highlighted project when Enter is pressed after navigating p
         props: { currentProject: 'my-project', currentSnippet: 'scratch' },
     });
 
-    await fireEvent.click(
-        screen.getByRole('button', { name: 'Browse snippets' }),
-    );
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
     const input = await screen.findByLabelText('Search or jump to');
     await screen.findByText('other');
     await fireEvent.keyDown(input, { key: 'ArrowDown' });
