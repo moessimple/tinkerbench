@@ -3,10 +3,11 @@
 declare(strict_types=1);
 
 use Application\Snippets\Requests\RunSnippetRequest;
+use Illuminate\Validation\Rule;
 
 it('requires code as a bounded string', function (): void {
-    expect(new RunSnippetRequest()->rules())->toBe([
-        'code' => ['required', 'string', 'max:100000'],
+    expect(new RunSnippetRequest()->rules())->toEqual([
+        'code' => ['required', Rule::string()->max(100000)],
     ]);
 });
 
