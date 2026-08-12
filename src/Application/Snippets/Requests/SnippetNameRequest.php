@@ -5,14 +5,16 @@ declare(strict_types=1);
 namespace Application\Snippets\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\StringRule;
 
-class UpdateSnippetNameRequest extends FormRequest
+class SnippetNameRequest extends FormRequest
 {
-    /** @return array<string, list<string>> */
+    /** @return array<string, list<string|StringRule>> */
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:200', 'regex:/^[A-Za-z0-9_-]+$/'],
+            'name' => ['required', Rule::string()->alphaDash(true)->max(200)],
         ];
     }
 

@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Routing\MiddlewareNameResolver;
+use Illuminate\Routing\Router;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Assert;
@@ -63,6 +66,29 @@ expect()->extend('toUseFormRequest', function (string $type): self {
     Assert::assertTrue(is_subclass_of($type, FormRequest::class), "{$type} is not a FormRequest.");
 
     return $this->toUseType($type);
+});
+
+/**
+ * Proves an invokable controller's route is wired with the given middleware class, by
+ * resolving the route registered for that controller and resolving every middleware name
+ * it gathers (including names from middleware groups) down to concrete class names.
+ */
+expect()->extend('toUseMiddleware', function (string $middleware): self {
+    $router = resolve(Router::class);
+    $route = $router->getRoutes()->getByAction($this->value);
+
+    Assert::assertNotNull($route, "No route is registered for {$this->value}.");
+
+    $resolved = collect($route->gatherMiddleware())
+        ->map(fn (string $name): array => Arr::wrap(
+            MiddlewareNameResolver::resolve($name, $router->getMiddleware(), $router->getMiddlewareGroups())
+        ))
+        ->flatten()
+        ->all();
+
+    Assert::assertContains($middleware, $resolved, "{$this->value}'s route does not use {$middleware}.");
+
+    return $this;
 });
 
 /*

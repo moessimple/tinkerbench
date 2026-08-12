@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Application\Snippets\Controllers;
 
-use Application\Snippets\Requests\UpdateSnippetNameRequest;
+use Application\Snippets\Requests\SnippetNameRequest;
 use Illuminate\Http\JsonResponse;
 use Support\Enums\RenameSnippetResult;
 use Support\SnippetRepository;
@@ -13,7 +13,7 @@ class UpdateSnippetNameController
 {
     public function __construct(private SnippetRepository $snippets) {}
 
-    public function __invoke(UpdateSnippetNameRequest $request, string $snippet): JsonResponse
+    public function __invoke(SnippetNameRequest $request, string $snippet): JsonResponse
     {
         $newName = $request->name();
 

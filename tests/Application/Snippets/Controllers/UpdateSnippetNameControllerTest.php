@@ -3,7 +3,8 @@
 declare(strict_types=1);
 
 use Application\Snippets\Controllers\UpdateSnippetNameController;
-use Application\Snippets\Requests\UpdateSnippetNameRequest;
+use Application\Snippets\Requests\SnippetNameRequest;
+use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function (): void {
@@ -11,7 +12,11 @@ beforeEach(function (): void {
 });
 
 it('uses the right request', function (): void {
-    expect(UpdateSnippetNameController::class)->toUseFormRequest(UpdateSnippetNameRequest::class);
+    expect(UpdateSnippetNameController::class)->toUseFormRequest(SnippetNameRequest::class);
+});
+
+it('uses the right middleware', function (): void {
+    expect(UpdateSnippetNameController::class)->toUseMiddleware(HandlePrecognitiveRequests::class);
 });
 
 it('renames an existing snippet to an unused name', function (): void {
