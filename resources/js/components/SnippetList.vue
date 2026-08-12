@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { router, useHttp } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import type { ComponentPublicInstance } from 'vue';
+import { nextTick, ref } from 'vue';
 import CreateSnippetController from '@/actions/Application/Snippets/Controllers/CreateSnippetController';
 import DeleteSnippetController from '@/actions/Application/Snippets/Controllers/DeleteSnippetController';
 import ListSnippetsController from '@/actions/Application/Snippets/Controllers/ListSnippetsController';
@@ -13,6 +14,18 @@ const props = defineProps<{ currentSnippet: string }>();
 const isOpen = ref(false);
 const names = ref<string[]>([]);
 const errorMessage = ref('');
+
+const renaming = ref<string | null>(null);
+const renameValue = ref('');
+const renameError = ref('');
+const renameInputEl = ref<HTMLInputElement | null>(null);
+
+// A plain `ref="renameInput"` inside v-for would resolve to an array of
+// elements instead of a single one, even though only one row is ever
+// rendered with the input at a time; a function ref sidesteps that.
+function setRenameInputEl(el: Element | ComponentPublicInstance | null): void {
+    renameInputEl.value = el as HTMLInputElement | null;
+}
 
 // Precognition validates against SnippetNameRequest's real rules on the server,
 // so the character-set/length rule lives in exactly one place instead of being
@@ -28,6 +41,8 @@ async function toggle(): Promise<void> {
         await loadNames();
     }
 }
+
+defineExpose({ toggle });
 
 async function loadNames(): Promise<void> {
     errorMessage.value = '';
@@ -75,10 +90,26 @@ async function errorMessageFrom(response: Response): Promise<string> {
         : (body.error ?? 'Request failed');
 }
 
-async function renameSnippet(name: string): Promise<void> {
-    const newSnippetName = window.prompt(`Rename '${name}' to:`, name)?.trim();
+async function startRename(name: string): Promise<void> {
+    renaming.value = name;
+    renameValue.value = name;
+    renameError.value = '';
+    await nextTick();
+    renameInputEl.value?.focus();
+    renameInputEl.value?.select();
+}
+
+function cancelRename(): void {
+    renaming.value = null;
+    renameError.value = '';
+}
+
+async function confirmRename(name: string): Promise<void> {
+    const newSnippetName = renameValue.value.trim();
 
     if (!newSnippetName || newSnippetName === name) {
+        cancelRename();
+
         return;
     }
 
@@ -89,10 +120,12 @@ async function renameSnippet(name: string): Promise<void> {
     });
 
     if (!response.ok) {
-        window.alert(await errorMessageFrom(response));
+        renameError.value = await errorMessageFrom(response);
 
         return;
     }
+
+    renaming.value = null;
 
     if (props.currentSnippet === name) {
         openSnippet(newSnippetName);
@@ -199,59 +232,78 @@ async function deleteSnippet(name: string): Promise<void> {
                 <li
                     v-for="name in names"
                     :key="name"
-                    class="group flex items-center justify-between gap-2 px-3 py-1.5 font-mono text-sm text-fg hover:bg-line/30"
+                    class="group flex flex-col gap-1 px-3 py-1.5 font-mono text-sm text-fg hover:bg-line/30"
                     :class="{ 'bg-accent/15': name === currentSnippet }"
                 >
-                    <button
-                        type="button"
-                        class="flex-1 truncate text-left"
-                        @click="openSnippet(name)"
-                    >
-                        {{ name }}
-                    </button>
-                    <span
-                        class="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100"
-                    >
+                    <input
+                        v-if="renaming === name"
+                        :ref="setRenameInputEl"
+                        v-model="renameValue"
+                        type="text"
+                        :aria-label="`Rename ${name}`"
+                        class="w-full rounded border border-line bg-transparent px-2 py-0.5 font-mono text-sm text-fg focus:outline-none"
+                        @keydown.enter.prevent="confirmRename(name)"
+                        @keydown.escape="cancelRename"
+                        @blur="cancelRename"
+                    />
+                    <div v-else class="flex items-center justify-between gap-2">
                         <button
                             type="button"
-                            title="Rename snippet"
-                            :aria-label="`Rename ${name}`"
-                            class="flex h-5 w-5 items-center justify-center rounded text-muted hover:bg-line/50 hover:text-fg"
-                            @click="renameSnippet(name)"
+                            class="flex-1 truncate text-left"
+                            @click="openSnippet(name)"
                         >
-                            <svg
-                                viewBox="0 0 16 16"
-                                width="12"
-                                height="12"
-                                fill="currentColor"
-                                aria-hidden="true"
-                            >
-                                <path
-                                    d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25a1.75 1.75 0 0 1 .445-.758l8.61-8.61Zm.176 4.823L9.75 4.81l-6.286 6.287a.25.25 0 0 0-.064.108l-.558 1.953 1.953-.558a.25.25 0 0 0 .108-.064Zm1.238-3.763a.25.25 0 0 0-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 0 0 0-.354Z"
-                                />
-                            </svg>
+                            {{ name }}
                         </button>
-                        <button
-                            type="button"
-                            title="Delete snippet"
-                            :aria-label="`Delete ${name}`"
-                            class="flex h-5 w-5 items-center justify-center rounded text-muted hover:bg-line/50 hover:text-fg"
-                            @click="deleteSnippet(name)"
+                        <span
+                            class="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100"
                         >
-                            <svg
-                                viewBox="0 0 16 16"
-                                width="12"
-                                height="12"
-                                fill="currentColor"
-                                aria-hidden="true"
+                            <button
+                                type="button"
+                                title="Rename snippet"
+                                :aria-label="`Rename ${name}`"
+                                class="flex h-5 w-5 items-center justify-center rounded text-muted hover:bg-line/50 hover:text-fg"
+                                @click="startRename(name)"
                             >
-                                <path
-                                    fill-rule="evenodd"
-                                    d="M4 1.75V3H1.75a.75.75 0 0 0 0 1.5h.6l.63 9.44A2 2 0 0 0 4.98 16h6.04a2 2 0 0 0 1.99-1.86l.63-9.44h.6a.75.75 0 0 0 0-1.5H12V1.75A1.75 1.75 0 0 0 10.25 0h-4.5A1.75 1.75 0 0 0 4 1.75Zm1.5 0a.25.25 0 0 1 .25-.25h4.5a.25.25 0 0 1 .25.25V3h-5V1.75ZM4.5 4.5h7l-.62 9.32a.5.5 0 0 1-.5.43H5.62a.5.5 0 0 1-.5-.43L4.5 4.5Z"
-                                />
-                            </svg>
-                        </button>
-                    </span>
+                                <svg
+                                    viewBox="0 0 16 16"
+                                    width="12"
+                                    height="12"
+                                    fill="currentColor"
+                                    aria-hidden="true"
+                                >
+                                    <path
+                                        d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25a1.75 1.75 0 0 1 .445-.758l8.61-8.61Zm.176 4.823L9.75 4.81l-6.286 6.287a.25.25 0 0 0-.064.108l-.558 1.953 1.953-.558a.25.25 0 0 0 .108-.064Zm1.238-3.763a.25.25 0 0 0-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 0 0 0-.354Z"
+                                    />
+                                </svg>
+                            </button>
+                            <button
+                                type="button"
+                                title="Delete snippet"
+                                :aria-label="`Delete ${name}`"
+                                class="flex h-5 w-5 items-center justify-center rounded text-muted hover:bg-line/50 hover:text-fg"
+                                @click="deleteSnippet(name)"
+                            >
+                                <svg
+                                    viewBox="0 0 16 16"
+                                    width="12"
+                                    height="12"
+                                    fill="currentColor"
+                                    aria-hidden="true"
+                                >
+                                    <path
+                                        fill-rule="evenodd"
+                                        d="M4 1.75V3H1.75a.75.75 0 0 0 0 1.5h.6l.63 9.44A2 2 0 0 0 4.98 16h6.04a2 2 0 0 0 1.99-1.86l.63-9.44h.6a.75.75 0 0 0 0-1.5H12V1.75A1.75 1.75 0 0 0 10.25 0h-4.5A1.75 1.75 0 0 0 4 1.75Zm1.5 0a.25.25 0 0 1 .25-.25h4.5a.25.25 0 0 1 .25.25V3h-5V1.75ZM4.5 4.5h7l-.62 9.32a.5.5 0 0 1-.5.43H5.62a.5.5 0 0 1-.5-.43L4.5 4.5Z"
+                                    />
+                                </svg>
+                            </button>
+                        </span>
+                    </div>
+                    <p
+                        v-if="renaming === name && renameError"
+                        class="font-mono text-xs text-red-400"
+                    >
+                        {{ renameError }}
+                    </p>
                 </li>
             </ul>
         </div>
