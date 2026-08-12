@@ -18,11 +18,11 @@ it('exposes the name input as a string', function (): void {
 });
 
 it('rejects a name with characters outside the allowed pattern', function (): void {
-    dispatchFormRequest(UpdateSnippetNameRequest::class, ['name' => 'bad name!'])
+    createFormRequest(UpdateSnippetNameRequest::class, ['name' => 'bad name!'])
         ->assertInvalid('name');
 });
 
 it('accepts a name made of letters, digits, underscores and dashes', function (): void {
-    dispatchFormRequest(UpdateSnippetNameRequest::class, ['name' => 'my-snippet_2'])
+    createFormRequest(UpdateSnippetNameRequest::class, ['name' => 'my-snippet_2'])
         ->assertValid('name');
 });

@@ -18,11 +18,11 @@ it('exposes the content input as a string', function (): void {
 });
 
 it('rejects a missing content field', function (): void {
-    dispatchFormRequest(UpdateSnippetContentRequest::class, [])
+    createFormRequest(UpdateSnippetContentRequest::class, [])
         ->assertInvalid('content');
 });
 
 it('accepts a well-formed content field', function (): void {
-    dispatchFormRequest(UpdateSnippetContentRequest::class, ['content' => "echo 'hi';"])
+    createFormRequest(UpdateSnippetContentRequest::class, ['content' => "echo 'hi';"])
         ->assertValid('content');
 });
