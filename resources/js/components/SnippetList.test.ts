@@ -1,16 +1,51 @@
 import { fireEvent, render, screen } from '@testing-library/vue';
 import { beforeEach, expect, it, vi } from 'vitest';
+import { reactive } from 'vue';
 
 const routerGet = vi.fn();
+const validateSpy = vi.fn();
+let capturedCreatePost: { url: string; onSuccess?: () => void } | null = null;
+
+// Mirrors the shape useHttp(...).withPrecognition(...) returns: a reactive form object
+// exposing the field(s) as top-level properties plus validate()/invalid()/errors/post().
+const createFormState = reactive({
+    name: '',
+    errors: {} as Record<string, string>,
+    invalidFields: [] as string[],
+    validate(field: string) {
+        validateSpy(field);
+
+        return createFormState;
+    },
+    invalid(field: string) {
+        return createFormState.invalidFields.includes(field);
+    },
+    post(url: string, options?: { onSuccess?: () => void }) {
+        capturedCreatePost = { url, onSuccess: options?.onSuccess };
+    },
+    reset() {
+        createFormState.name = '';
+    },
+});
 
 vi.mock('@inertiajs/vue3', () => ({
     router: { get: routerGet },
+    useHttp: (initial: { name: string }) => {
+        createFormState.name = initial.name;
+
+        return { withPrecognition: () => createFormState };
+    },
 }));
 
 const { default: SnippetList } = await import('./SnippetList.vue');
 
 beforeEach(() => {
     routerGet.mockClear();
+    validateSpy.mockClear();
+    capturedCreatePost = null;
+    createFormState.name = '';
+    createFormState.errors = {};
+    createFormState.invalidFields = [];
 });
 
 function jsonResponse(body: unknown, ok = true): Response {
@@ -55,7 +90,34 @@ it('navigates to the selected snippet', async () => {
     expect(routerGet).toHaveBeenCalledWith('/other');
 });
 
-it('navigates to a new snippet with a valid name', async () => {
+it('validates the new snippet name when it changes', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse([])));
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('New snippet name');
+    await fireEvent.update(input, 'my-new-snippet');
+    await fireEvent.change(input);
+
+    expect(validateSpy).toHaveBeenCalledWith('name');
+});
+
+it('shows the server validation message for an invalid new snippet name', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse([])));
+    createFormState.invalidFields = ['name'];
+    createFormState.errors = { name: 'The name field format is invalid.' };
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+
+    await screen.findByText('The name field format is invalid.');
+});
+
+it('creates a new snippet and navigates to it on success', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse([])));
     render(SnippetList, { props: { currentSnippet: 'scratch' } });
 
@@ -66,21 +128,11 @@ it('navigates to a new snippet with a valid name', async () => {
     await fireEvent.update(input, 'my-new-snippet');
     await fireEvent.submit(input.closest('form') as HTMLFormElement);
 
+    expect(capturedCreatePost?.url).toBe('/api/snippets');
+
+    capturedCreatePost?.onSuccess?.();
+
     expect(routerGet).toHaveBeenCalledWith('/my-new-snippet');
-});
-
-it('does not navigate when the new snippet name is invalid', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse([])));
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
-
-    await fireEvent.click(
-        screen.getByRole('button', { name: 'Browse snippets' }),
-    );
-    const input = await screen.findByLabelText('New snippet name');
-    await fireEvent.update(input, 'invalid name!');
-    await fireEvent.submit(input.closest('form') as HTMLFormElement);
-
-    expect(routerGet).not.toHaveBeenCalled();
 });
 
 it('does nothing when the rename prompt is cancelled', async () => {
@@ -141,12 +193,12 @@ it('reloads the list after renaming a snippet that is not the current one', asyn
     expect(routerGet).not.toHaveBeenCalled();
 });
 
-it('shows an alert when renaming fails', async () => {
+it('shows the domain error message when renaming fails', async () => {
     const fetchMock = vi
         .fn()
         .mockResolvedValueOnce(jsonResponse(['scratch']))
         .mockResolvedValueOnce(
-            jsonResponse({ ok: false, error: 'name taken' }),
+            jsonResponse({ ok: false, error: 'name taken' }, false),
         );
     vi.stubGlobal('fetch', fetchMock);
     vi.spyOn(window, 'prompt').mockReturnValue('taken');
@@ -162,6 +214,35 @@ it('shows an alert when renaming fails', async () => {
     );
 
     await vi.waitFor(() => expect(alertSpy).toHaveBeenCalledWith('name taken'));
+});
+
+it('shows the server validation message when renaming fails validation', async () => {
+    const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(jsonResponse(['scratch']))
+        .mockResolvedValueOnce(
+            jsonResponse(
+                {
+                    message: 'The given data was invalid.',
+                    errors: { name: ['Too long.'] },
+                },
+                false,
+            ),
+        );
+    vi.stubGlobal('fetch', fetchMock);
+    vi.spyOn(window, 'prompt').mockReturnValue('a'.repeat(201));
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    await screen.findByText('scratch');
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Rename scratch' }),
+    );
+
+    await vi.waitFor(() => expect(alertSpy).toHaveBeenCalledWith('Too long.'));
 });
 
 it('does nothing when delete is not confirmed', async () => {
@@ -228,7 +309,7 @@ it('shows an alert when deleting fails', async () => {
         .fn()
         .mockResolvedValueOnce(jsonResponse(['scratch']))
         .mockResolvedValueOnce(
-            jsonResponse({ ok: false, error: 'delete failed' }),
+            jsonResponse({ ok: false, error: 'delete failed' }, false),
         );
     vi.stubGlobal('fetch', fetchMock);
     vi.spyOn(window, 'confirm').mockReturnValue(true);

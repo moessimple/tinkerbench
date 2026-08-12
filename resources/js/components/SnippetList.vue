@@ -1,19 +1,25 @@
 <script setup lang="ts">
-import { router } from '@inertiajs/vue3';
+import { router, useHttp } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import CreateSnippetController from '@/actions/Application/Snippets/Controllers/CreateSnippetController';
 import DeleteSnippetController from '@/actions/Application/Snippets/Controllers/DeleteSnippetController';
 import ListSnippetsController from '@/actions/Application/Snippets/Controllers/ListSnippetsController';
 import OpenSnippetController from '@/actions/Application/Snippets/Controllers/OpenSnippetController';
 import UpdateSnippetNameController from '@/actions/Application/Snippets/Controllers/UpdateSnippetNameController';
 import { xsrfHeader } from '@/lib/csrf';
-import { isValidSnippetName } from '@/snippets';
 
 const props = defineProps<{ currentSnippet: string }>();
 
 const isOpen = ref(false);
 const names = ref<string[]>([]);
-const newName = ref('');
 const errorMessage = ref('');
+
+// Precognition validates against SnippetNameRequest's real rules on the server,
+// so the character-set/length rule lives in exactly one place instead of being
+// duplicated here.
+const createForm = useHttp<{ name: string }, { ok: boolean }>({
+    name: '',
+}).withPrecognition('post', CreateSnippetController.url());
 
 async function toggle(): Promise<void> {
     isOpen.value = !isOpen.value;
@@ -46,14 +52,27 @@ function openSnippet(name: string): void {
 }
 
 function createSnippet(): void {
-    const name = newName.value.trim();
+    createForm.post(CreateSnippetController.url(), {
+        onSuccess: () => {
+            const name = createForm.name;
+            createForm.reset();
+            openSnippet(name);
+        },
+    });
+}
 
-    if (!isValidSnippetName(name)) {
-        return;
-    }
+// Laravel shapes a validation failure as { message, errors }, but the domain-level
+// failures this project's own controllers return (rename conflicts, missing snippets)
+// are shaped as { ok, error }; this reads whichever one the response actually has.
+async function errorMessageFrom(response: Response): Promise<string> {
+    const body = (await response.json()) as {
+        error?: string;
+        errors?: Record<string, string[]>;
+    };
 
-    newName.value = '';
-    openSnippet(name);
+    return body.errors
+        ? Object.values(body.errors).flat().join(' ')
+        : (body.error ?? 'Request failed');
 }
 
 async function renameSnippet(name: string): Promise<void> {
@@ -68,10 +87,9 @@ async function renameSnippet(name: string): Promise<void> {
         headers: { 'Content-Type': 'application/json', ...xsrfHeader() },
         body: JSON.stringify({ name: newSnippetName }),
     });
-    const result = (await response.json()) as { error?: string; ok: boolean };
 
-    if (!result.ok) {
-        window.alert(result.error ?? 'Rename failed');
+    if (!response.ok) {
+        window.alert(await errorMessageFrom(response));
 
         return;
     }
@@ -94,10 +112,9 @@ async function deleteSnippet(name: string): Promise<void> {
         method: 'DELETE',
         headers: xsrfHeader(),
     });
-    const result = (await response.json()) as { error?: string; ok: boolean };
 
-    if (!result.ok) {
-        window.alert(result.error ?? 'Delete failed');
+    if (!response.ok) {
+        window.alert(await errorMessageFrom(response));
 
         return;
     }
@@ -150,12 +167,19 @@ async function deleteSnippet(name: string): Promise<void> {
                 @submit.prevent="createSnippet"
             >
                 <input
-                    v-model="newName"
+                    v-model="createForm.name"
                     type="text"
                     aria-label="New snippet name"
                     placeholder="New snippet name…"
                     class="w-full rounded border border-line bg-transparent px-2 py-1 font-mono text-sm text-fg placeholder:text-muted focus:outline-none"
+                    @change="createForm.validate('name')"
                 />
+                <p
+                    v-if="createForm.invalid('name')"
+                    class="mt-1 font-mono text-xs text-red-400"
+                >
+                    {{ createForm.errors.name }}
+                </p>
             </form>
 
             <p
