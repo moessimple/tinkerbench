@@ -78,6 +78,24 @@ it('closes the panel via the global Ctrl/Cmd+P shortcut when already open', asyn
     expect(screen.queryByRole('dialog', { name: 'Snippets' })).toBeNull();
 });
 
+it('ignores auto-repeated Ctrl/Cmd+P keydown events while a key is held', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+    await screen.findByRole('dialog', { name: 'Snippets' });
+    await fireEvent.keyDown(document, {
+        key: 'p',
+        metaKey: true,
+        repeat: true,
+    });
+
+    screen.getByRole('dialog', { name: 'Snippets' });
+});
+
 it('removes the global keydown listener when unmounted', () => {
     const addSpy = vi.spyOn(window, 'addEventListener');
     const removeSpy = vi.spyOn(window, 'removeEventListener');
@@ -292,6 +310,106 @@ it('shows a hint to create the typed name when nothing matches', async () => {
     await screen.findByText(
         'No matches for "new-one". Press Enter to create it.',
     );
+});
+
+it('clears a typed filter when reopened after being closed without acting on it', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['apple', 'scratch', 'zebra'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('New snippet name');
+    await fireEvent.update(input, 'no-match-at-all');
+    await fireEvent.keyDown(input, { key: 'Escape' });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+
+    expect(
+        (await screen.findByLabelText<HTMLInputElement>('New snippet name'))
+            .value,
+    ).toBe('');
+    screen.getByText('apple');
+    screen.getByText('scratch');
+    screen.getByText('zebra');
+});
+
+it('clears an in-progress rename when the panel is closed via the global shortcut', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    await screen.findByText('scratch');
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Rename scratch' }),
+    );
+
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+
+    await screen.findByText('scratch');
+    expect(
+        screen.queryByRole('textbox', { name: 'Rename scratch' }),
+    ).toBeNull();
+});
+
+it('clears an in-progress delete confirmation when the panel is closed via the global shortcut', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    await screen.findByText('scratch');
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Delete scratch' }),
+    );
+
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+
+    await screen.findByText('scratch');
+    expect(screen.queryByText("Delete 'scratch'?")).toBeNull();
+});
+
+it('keeps the highlight in bounds after deleting a filtered, non-current snippet', async () => {
+    const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(jsonResponse(['banana', 'bandana', 'zebra']))
+        .mockResolvedValueOnce(jsonResponse({ ok: true }))
+        .mockResolvedValueOnce(jsonResponse(['bandana', 'zebra']));
+    vi.stubGlobal('fetch', fetchMock);
+    render(SnippetList, { props: { currentSnippet: 'zebra' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('New snippet name');
+    await fireEvent.update(input, 'ban');
+    await screen.findByText('banana');
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Delete banana' }),
+    );
+    await fireEvent.click(screen.getByRole('button', { name: 'Yes' }));
+
+    await vi.waitFor(() => expect(screen.queryByText('banana')).toBeNull());
+    const options = screen.getAllByRole('option');
+    expect(options).toHaveLength(1);
+    expect(options[0]?.getAttribute('aria-selected')).toBe('true');
 });
 
 it('shows the shortcut in the browse button tooltip', () => {

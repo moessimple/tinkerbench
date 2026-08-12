@@ -21,7 +21,7 @@ import { shortcuts } from '@/lib/shortcuts';
 const props = defineProps<{ currentSnippet: string }>();
 
 const browseShortcut = shortcuts.find(
-    (shortcut) => shortcut.description === 'Browse snippets',
+    (shortcut) => shortcut.id === 'browse',
 )?.keys;
 
 const isOpen = ref(false);
@@ -65,6 +65,12 @@ const filteredNames = computed(() => {
     return names.value.filter((name) => name.toLowerCase().includes(query));
 });
 
+const activeOptionId = computed(() => {
+    const name = filteredNames.value[highlightedIndex.value];
+
+    return name ? `snippet-option-${name}` : undefined;
+});
+
 // Resets the highlight to the top of each new set of matches, same as VS Code
 // Quick Open and GitHub's own command palette do as you narrow a search.
 watch(
@@ -75,17 +81,23 @@ watch(
 );
 
 async function toggle(): Promise<void> {
-    isOpen.value = !isOpen.value;
-
     if (isOpen.value) {
-        await loadNames();
-        await nextTick();
-        createInputEl.value?.focus();
+        close();
+
+        return;
     }
+
+    isOpen.value = true;
+    createForm.reset();
+    await loadNames();
+    await nextTick();
+    createInputEl.value?.focus();
 }
 
 function close(): void {
     isOpen.value = false;
+    cancelRename();
+    cancelDelete();
 }
 
 function moveHighlight(delta: number): void {
@@ -121,6 +133,10 @@ function onSubmit(): void {
 }
 
 function onGlobalKeydown(event: KeyboardEvent): void {
+    if (event.repeat) {
+        return;
+    }
+
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'p') {
         event.preventDefault();
         void toggle();
@@ -150,7 +166,7 @@ async function loadNames(): Promise<void> {
 
         names.value = (await response.json()) as string[];
 
-        const currentIndex = names.value.indexOf(props.currentSnippet);
+        const currentIndex = filteredNames.value.indexOf(props.currentSnippet);
         highlightedIndex.value = currentIndex === -1 ? 0 : currentIndex;
     } catch {
         names.value = [];
@@ -303,6 +319,7 @@ async function confirmDelete(name: string): Promise<void> {
         >
             <div
                 role="dialog"
+                aria-modal="true"
                 aria-label="Snippets"
                 class="h-fit w-full max-w-xs rounded-md border border-line bg-surface shadow-2xl"
             >
@@ -314,6 +331,10 @@ async function confirmDelete(name: string): Promise<void> {
                         ref="createInput"
                         v-model="createForm.name"
                         type="text"
+                        role="combobox"
+                        aria-expanded="true"
+                        aria-controls="snippet-listbox"
+                        :aria-activedescendant="activeOptionId"
                         aria-label="New snippet name"
                         placeholder="New snippet name…"
                         class="w-full rounded border border-line bg-transparent px-2 py-1 font-mono text-sm text-fg placeholder:text-muted focus:outline-none"
@@ -353,9 +374,15 @@ async function confirmDelete(name: string): Promise<void> {
                     to create it.
                 </p>
 
-                <ul v-else role="listbox" class="max-h-64 overflow-auto py-1">
+                <ul
+                    v-else
+                    id="snippet-listbox"
+                    role="listbox"
+                    class="max-h-64 overflow-auto py-1"
+                >
                     <li
                         v-for="(name, index) in filteredNames"
+                        :id="`snippet-option-${name}`"
                         :key="name"
                         role="option"
                         :aria-selected="index === highlightedIndex"

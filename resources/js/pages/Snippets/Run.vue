@@ -15,9 +15,7 @@ const props = defineProps<{
     snippetName: string;
 }>();
 
-const runShortcut = shortcuts.find(
-    (shortcut) => shortcut.description === 'Run snippet',
-)?.keys;
+const runShortcut = shortcuts.find((shortcut) => shortcut.id === 'run')?.keys;
 
 const output = ref('');
 const errorMessage = ref('');
