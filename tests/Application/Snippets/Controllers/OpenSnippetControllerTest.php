@@ -2,14 +2,16 @@
 
 declare(strict_types=1);
 
-use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia;
+use Mockery\MockInterface;
+use Support\SnippetRepository;
 
-beforeEach(function (): void {
-    Storage::fake('snippets');
-});
+it('opens the default scratch snippet', function (): void {
+    $this->mock(SnippetRepository::class, function (MockInterface $mock): void {
+        $mock->shouldReceive('ensureExists')->once()->with('scratch');
+        $mock->shouldReceive('contents')->once()->with('scratch')->andReturn("echo 'Hello, world!';");
+    });
 
-it('renders the scratch snippet by default', function (): void {
     $this->get('/')
         ->assertOk()
         ->assertInertia(
@@ -20,8 +22,11 @@ it('renders the scratch snippet by default', function (): void {
         );
 });
 
-it('loads the content of an existing named snippet', function (): void {
-    Storage::disk('snippets')->put('my-snippet.php', 'echo "existing";');
+it('opens the named snippet from the URL', function (): void {
+    $this->mock(SnippetRepository::class, function (MockInterface $mock): void {
+        $mock->shouldReceive('ensureExists')->once()->with('my-snippet');
+        $mock->shouldReceive('contents')->once()->with('my-snippet')->andReturn('echo "existing";');
+    });
 
     $this->get('/my-snippet')
         ->assertInertia(
@@ -31,19 +36,12 @@ it('loads the content of an existing named snippet', function (): void {
         );
 });
 
-it('creates a missing named snippet with default content when opened', function (): void {
-    $this->get('/new-snippet')
-        ->assertOk()
-        ->assertInertia(
-            fn (AssertableInertia $page): AssertableInertia => $page
-                ->where('snippetName', 'new-snippet')
-                ->where('content', "echo 'Hello, world!';"),
-        );
-
-    Storage::disk('snippets')->assertExists('new-snippet.php');
-});
-
 it('shows the running PHP and Laravel version', function (): void {
+    $this->mock(SnippetRepository::class, function (MockInterface $mock): void {
+        $mock->shouldReceive('ensureExists');
+        $mock->shouldReceive('contents')->andReturn('');
+    });
+
     $this->get('/')
         ->assertInertia(
             fn (AssertableInertia $page): AssertableInertia => $page

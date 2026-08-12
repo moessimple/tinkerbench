@@ -5,11 +5,7 @@ declare(strict_types=1);
 use Application\Snippets\Controllers\CreateSnippetController;
 use Application\Snippets\Requests\SnippetNameRequest;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
-use Illuminate\Support\Facades\Storage;
-
-beforeEach(function (): void {
-    Storage::fake('snippets');
-});
+use Support\SnippetRepository;
 
 it('uses the right request', function (): void {
     expect(CreateSnippetController::class)->toUseFormRequest(SnippetNameRequest::class);
@@ -19,20 +15,11 @@ it('uses the right middleware', function (): void {
     expect(CreateSnippetController::class)->toUseMiddleware(HandlePrecognitiveRequests::class);
 });
 
-it('creates a new snippet with default content', function (): void {
+it('creates the snippet via the repository', function (): void {
+    $this->mock(SnippetRepository::class)
+        ->shouldReceive('ensureExists')->once()->with('my-new-snippet');
+
     $this->postJson('/api/snippets', ['name' => 'my-new-snippet'])
         ->assertOk()
         ->assertExactJson(['ok' => true]);
-
-    Storage::disk('snippets')->assertExists('my-new-snippet.php', "echo 'Hello, world!';");
-});
-
-it('leaves an already existing snippet untouched', function (): void {
-    Storage::disk('snippets')->put('scratch.php', 'echo "kept";');
-
-    $this->postJson('/api/snippets', ['name' => 'scratch'])
-        ->assertOk()
-        ->assertExactJson(['ok' => true]);
-
-    Storage::disk('snippets')->assertExists('scratch.php', 'echo "kept";');
 });

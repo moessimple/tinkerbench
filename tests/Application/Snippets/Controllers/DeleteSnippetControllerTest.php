@@ -2,23 +2,21 @@
 
 declare(strict_types=1);
 
-use Illuminate\Support\Facades\Storage;
+use Support\SnippetRepository;
 
-beforeEach(function (): void {
-    Storage::fake('snippets');
-});
-
-it('deletes an existing snippet', function (): void {
-    Storage::disk('snippets')->put('scratch.php', 'echo 1;');
+it('deletes the snippet via the repository', function (): void {
+    $this->mock(SnippetRepository::class)
+        ->shouldReceive('delete')->once()->with('scratch')->andReturn(true);
 
     $this->deleteJson('/api/snippets/scratch')
         ->assertOk()
         ->assertExactJson(['ok' => true]);
-
-    Storage::disk('snippets')->assertMissing('scratch.php');
 });
 
-it('returns 404 when the snippet to delete does not exist', function (): void {
+it('returns 404 when the repository reports the snippet is missing', function (): void {
+    $this->mock(SnippetRepository::class)
+        ->shouldReceive('delete')->once()->with('missing')->andReturn(false);
+
     $this->deleteJson('/api/snippets/missing')
         ->assertNotFound()
         ->assertExactJson(['ok' => false, 'error' => 'Snippet not found']);
