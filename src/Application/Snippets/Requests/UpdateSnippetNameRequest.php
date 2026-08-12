@@ -12,7 +12,7 @@ class UpdateSnippetNameRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'regex:/^[A-Za-z0-9_-]+$/'],
+            'name' => ['required', 'string', 'max:200', 'regex:/\A[A-Za-z0-9_-]+\z/'],
         ];
     }
 
