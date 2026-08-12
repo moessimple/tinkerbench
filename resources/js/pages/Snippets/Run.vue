@@ -59,7 +59,7 @@ onBeforeUnmount(() => window.clearTimeout(saveTimer));
 function run(): void {
     errorMessage.value = '';
 
-    http.post(RunSnippetController.url(), {
+    http.post(RunSnippetController.url(props.currentProject), {
         onSuccess: (data) => {
             output.value = data.output;
         },

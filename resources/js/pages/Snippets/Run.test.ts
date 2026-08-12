@@ -117,7 +117,7 @@ it('sends the entered code to the run endpoint', async () => {
     await fireEvent.update(screen.getByLabelText('Snippet code'), "echo 'hi';");
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
 
-    expect(capturedPost?.url).toBe('/snippets/executions');
+    expect(capturedPost?.url).toBe('/projects/my-project/snippets/executions');
     expect(httpState.code).toBe("echo 'hi';");
 });
 
@@ -153,7 +153,7 @@ it('runs the snippet when the editor emits run', async () => {
 
     await fireEvent.click(screen.getByRole('button', { name: 'Emit run' }));
 
-    expect(capturedPost?.url).toBe('/snippets/executions');
+    expect(capturedPost?.url).toBe('/projects/my-project/snippets/executions');
 });
 
 it('shows the run shortcut in the button tooltip', () => {
