@@ -92,11 +92,11 @@ class Herd
             unlink($snippetPath);
         }
 
-        if ($result->successful()) {
-            return new SnippetRunResult($result->output());
+        if (! $result->successful()) {
+            return new SnippetRunResult($result->output().$result->errorOutput());
         }
 
-        return new SnippetRunResult($result->output().$result->errorOutput());
+        return new SnippetRunResult($result->output());
     }
 
     private function php(): string

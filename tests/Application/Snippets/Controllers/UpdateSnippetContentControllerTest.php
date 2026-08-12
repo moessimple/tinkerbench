@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Application\Snippets\Controllers\UpdateSnippetContentController;
 use Application\Snippets\Requests\UpdateSnippetContentRequest;
-use Support\Herd;
 use Support\SnippetRepository;
 
 it('uses the right request', function (): void {
@@ -12,8 +11,7 @@ it('uses the right request', function (): void {
 });
 
 it('saves the content via the repository', function (): void {
-    $this->mock(Herd::class)
-        ->shouldReceive('projectPath')->with('my-project')->andReturn('/path/to/my-project');
+    mockKnownProject();
 
     $this->mock(SnippetRepository::class)
         ->shouldReceive('write')->once()->with('my-project', 'scratch', 'echo "saved";');

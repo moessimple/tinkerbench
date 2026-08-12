@@ -6,12 +6,10 @@ use Application\Snippets\Controllers\UpdateSnippetNameController;
 use Application\Snippets\Requests\SnippetNameRequest;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Support\Enums\RenameSnippetResult;
-use Support\Herd;
 use Support\SnippetRepository;
 
 beforeEach(function (): void {
-    $this->mock(Herd::class)
-        ->shouldReceive('projectPath')->with('my-project')->andReturn('/path/to/my-project');
+    mockKnownProject();
 });
 
 it('uses the right request', function (): void {

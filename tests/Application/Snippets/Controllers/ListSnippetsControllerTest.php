@@ -7,8 +7,7 @@ use Support\Herd;
 use Support\SnippetRepository;
 
 it('returns the snippet names from the repository', function (): void {
-    $this->mock(Herd::class)
-        ->shouldReceive('projectPath')->with('my-project')->andReturn('/path/to/my-project');
+    mockKnownProject();
 
     $this->mock(SnippetRepository::class)
         ->shouldReceive('names')->once()->with('my-project')->andReturn(['apple', 'zebra']);

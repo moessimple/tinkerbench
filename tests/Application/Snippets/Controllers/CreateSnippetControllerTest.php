@@ -5,7 +5,6 @@ declare(strict_types=1);
 use Application\Snippets\Controllers\CreateSnippetController;
 use Application\Snippets\Requests\SnippetNameRequest;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
-use Support\Herd;
 use Support\SnippetRepository;
 
 it('uses the right request', function (): void {
@@ -17,8 +16,7 @@ it('uses the right middleware', function (): void {
 });
 
 it('creates the snippet via the repository', function (): void {
-    $this->mock(Herd::class)
-        ->shouldReceive('projectPath')->with('my-project')->andReturn('/path/to/my-project');
+    mockKnownProject();
 
     $this->mock(SnippetRepository::class)
         ->shouldReceive('ensureExists')->once()->with('my-project', 'my-new-snippet');

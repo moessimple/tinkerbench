@@ -2,12 +2,10 @@
 
 declare(strict_types=1);
 
-use Support\Herd;
 use Support\SnippetRepository;
 
 beforeEach(function (): void {
-    $this->mock(Herd::class)
-        ->shouldReceive('projectPath')->with('my-project')->andReturn('/path/to/my-project');
+    mockKnownProject();
 });
 
 it('deletes the snippet via the repository', function (): void {

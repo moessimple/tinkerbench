@@ -118,6 +118,12 @@ const visibleProjectNames = computed(() => {
     );
 });
 
+// Projects render after every snippet row, so a project row's position in the shared,
+// continuous activeEntries list is offset by however many snippet rows come before it.
+function projectEntryIndex(index: number): number {
+    return visibleSnippetNames.value.length + index;
+}
+
 type PaletteEntry = { type: 'snippet' | 'project'; name: string };
 
 // One continuous, keyboard-navigable list spanning both sections, snippets
@@ -675,19 +681,16 @@ async function confirmDelete(name: string): Promise<void> {
                             :key="`project-${name}`"
                             role="option"
                             :aria-selected="
-                                visibleSnippetNames.length + index ===
-                                highlightedIndex
+                                projectEntryIndex(index) === highlightedIndex
                             "
                             class="flex flex-col gap-1 px-3 py-1.5 font-mono text-sm text-fg hover:bg-line/30"
                             :class="{
                                 'bg-accent/15': name === currentProject,
                                 'bg-line/40':
-                                    visibleSnippetNames.length + index ===
+                                    projectEntryIndex(index) ===
                                     highlightedIndex,
                             }"
-                            @mouseenter="
-                                highlight(visibleSnippetNames.length + index)
-                            "
+                            @mouseenter="highlight(projectEntryIndex(index))"
                         >
                             <button
                                 type="button"
