@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/vue';
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { reactive } from 'vue';
 
 let capturedPost: {
@@ -50,22 +50,32 @@ vi.mock('@inertiajs/vue3', () => ({
 }));
 
 // MonacoEditor has its own test (MonacoEditor.test.ts) proving it renders the editor and
-// emits `change`; here it's replaced with a plain textarea so this test can drive the same
-// contract without loading real Monaco.
+// emits `change`/`run`/`browseSnippets`; here it's replaced with a plain textarea plus two
+// buttons so this test can drive the same contract without loading real Monaco.
 vi.mock('@/components/MonacoEditor.vue', () => ({
     default: {
         props: ['initialValue'],
-        emits: ['change'],
-        template:
-            '<textarea aria-label="Snippet code" :value="initialValue" @input="$emit(\'change\', $event.target.value)" />',
+        emits: ['browseSnippets', 'change', 'run'],
+        template: `
+            <div>
+                <textarea aria-label="Snippet code" :value="initialValue" @input="$emit('change', $event.target.value)" />
+                <button type="button" @click="$emit('run')">Emit run</button>
+                <button type="button" @click="$emit('browseSnippets')">Emit browse snippets</button>
+            </div>
+        `,
     },
 }));
 
+const toggleSnippetListSpy = vi.fn();
+
 // SnippetList has its own test (SnippetList.test.ts) proving switching/creating/renaming/
-// deleting; replaced here so this test stays focused on Run.vue's own responsibilities.
+// deleting; replaced here so this test stays focused on Run.vue's own responsibilities. Its
+// toggle() is a plain method (not behind defineExpose) so the template ref Run.vue holds on
+// it can call it, matching how Options API components expose their public instance by default.
 vi.mock('@/components/SnippetList.vue', () => ({
     default: {
         props: ['currentSnippet'],
+        methods: { toggle: toggleSnippetListSpy },
         template: '<div />',
     },
 }));
@@ -77,6 +87,11 @@ const props = {
     phpVersion: '8.5.0',
     snippetName: 'scratch',
 };
+
+beforeEach(() => {
+    capturedPost = null;
+    toggleSnippetListSpy.mockClear();
+});
 
 afterEach(() => {
     vi.useRealTimers();
@@ -136,6 +151,24 @@ it('shows a generic error message when the server request fails', async () => {
     capturedPost?.onHttpException({ status: 500 });
 
     await screen.findByText('Request failed (500).');
+});
+
+it('runs the snippet when the editor emits run', async () => {
+    render(Run, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Emit run' }));
+
+    expect(capturedPost?.url).toBe('/snippets/executions');
+});
+
+it('opens the snippet panel when the editor emits browseSnippets', async () => {
+    render(Run, { props });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Emit browse snippets' }),
+    );
+
+    expect(toggleSnippetListSpy).toHaveBeenCalledOnce();
 });
 
 it('disables the run button and shows a running label while processing', () => {
