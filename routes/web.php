@@ -30,9 +30,8 @@ Route::prefix('api/projects/{project}/snippets')->middleware(EnsureKnownProjectM
     Route::delete('{snippet}', DeleteSnippetController::class);
 });
 
-// An explicit two-segment URL is unambiguous, so the shared guard applies directly. A bare
-// or single-segment URL is ambiguous (a pre-existing bookmark like /scratch used to mean "open
-// this snippet"), so it's handled by the controller itself instead, see OpenSnippetController.
-Route::get('{project}/{snippet}', OpenSnippetController::class)
-    ->middleware(EnsureKnownProjectMiddleware::class);
-Route::get('{project?}', OpenSnippetController::class);
+// Not behind EnsureKnownProjectMiddleware: a bare or single-segment URL is ambiguous (a
+// pre-existing bookmark like /scratch used to mean "open this snippet"), so the controller
+// itself decides whether an unrecognized segment is an unknown project or a snippet name.
+// Wayfinder also can't generate a plain callable for a controller split across two routes.
+Route::get('{project?}/{snippet?}', OpenSnippetController::class);
