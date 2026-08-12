@@ -80,35 +80,60 @@ it('shows the php and laravel version of the current project', function (): void
         );
 });
 
-it('lists every herd project so the palette can switch between them', function (): void {
+it('rejects a two-segment url naming a project unknown to herd with a 404', function (): void {
     $this->mock(Herd::class, function (MockInterface $mock): void {
+        $mock->shouldReceive('projectPath')->with('unknown-project')->once()->andReturn(null);
+        $mock->shouldReceive('currentProject')->never();
+    });
+
+    $this->mock(SnippetRepository::class)
+        ->shouldReceive('ensureExists')->never();
+
+    $this->get('/unknown-project/scratch')->assertNotFound();
+});
+
+it('opens a single url segment as a snippet in the current project when it is not a known project', function (): void {
+    $this->mock(Herd::class, function (MockInterface $mock): void {
+        $mock->shouldReceive('projectPath')->with('scratch')->once()->andReturn(null);
         $mock->shouldReceive('currentProject')->once()->andReturn('my-project');
-        $mock->shouldReceive('projectPath')->with('my-project')->andReturn('/path/to/project');
-        $mock->shouldReceive('phpBinary')->andReturn('/path/to/php');
+        $mock->shouldReceive('projectPath')->with('my-project')->andReturn('/path/to/my-project');
+        $mock->shouldReceive('phpBinary')->with('my-project')->andReturn('/path/to/php');
         $mock->shouldReceive('phpVersion')->andReturn('8.5.0');
         $mock->shouldReceive('laravelVersion')->andReturn('13.0.0');
-        $mock->shouldReceive('projects')->andReturn(['my-project' => '/path/to/project', 'other' => '/path/to/other']);
     });
 
     $this->mock(SnippetRepository::class, function (MockInterface $mock): void {
-        $mock->shouldReceive('ensureExists');
-        $mock->shouldReceive('contents')->andReturn('');
+        $mock->shouldReceive('ensureExists')->once()->with('my-project', 'scratch');
+        $mock->shouldReceive('contents')->once()->with('my-project', 'scratch')->andReturn("echo 'old bookmark';");
     });
 
-    $this->get('/')
+    $this->get('/scratch')
         ->assertInertia(
             fn (AssertableInertia $page): AssertableInertia => $page
-                ->where('projects', ['my-project', 'other']),
+                ->where('snippetName', 'scratch')
+                ->where('content', "echo 'old bookmark';")
+                ->where('currentProject', 'my-project'),
         );
 });
 
-it('throws when the project in the url is unknown to herd', function (): void {
-    $this->withoutExceptionHandling();
-
+it('opens a single url segment as a project switch when it is a known project', function (): void {
     $this->mock(Herd::class, function (MockInterface $mock): void {
+        $mock->shouldReceive('projectPath')->with('other-project')->twice()->andReturn('/path/to/other-project');
         $mock->shouldReceive('currentProject')->never();
-        $mock->shouldReceive('projectPath')->with('unknown-project')->once()->andReturn(null);
+        $mock->shouldReceive('phpBinary')->with('other-project')->andReturn('/path/to/php');
+        $mock->shouldReceive('phpVersion')->andReturn('8.5.0');
+        $mock->shouldReceive('laravelVersion')->andReturn('13.0.0');
     });
 
-    $this->get('/unknown-project/scratch');
-})->throws(RuntimeException::class, 'Unknown Herd project: unknown-project');
+    $this->mock(SnippetRepository::class, function (MockInterface $mock): void {
+        $mock->shouldReceive('ensureExists')->once()->with('other-project', 'scratch');
+        $mock->shouldReceive('contents')->once()->with('other-project', 'scratch')->andReturn('');
+    });
+
+    $this->get('/other-project')
+        ->assertInertia(
+            fn (AssertableInertia $page): AssertableInertia => $page
+                ->where('snippetName', 'scratch')
+                ->where('currentProject', 'other-project'),
+        );
+});

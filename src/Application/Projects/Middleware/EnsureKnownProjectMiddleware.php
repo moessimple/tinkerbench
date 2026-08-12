@@ -19,9 +19,7 @@ class EnsureKnownProjectMiddleware
     {
         $project = $request->route('project');
 
-        if (! is_string($project) || $this->herd->projectPath($project) === null) {
-            throw new NotFoundHttpException('Unknown Herd project: '.(is_string($project) ? $project : ''));
-        }
+        throw_if(! is_string($project) || $this->herd->projectPath($project) === null, NotFoundHttpException::class, "Unknown Herd project: {$project}");
 
         return $next($request);
     }

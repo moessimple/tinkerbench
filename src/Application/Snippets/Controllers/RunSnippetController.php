@@ -10,7 +10,7 @@ use Illuminate\Http\JsonResponse;
 
 class RunSnippetController
 {
-    public function __invoke(RunSnippetRequest $request, RunSnippetAction $action, ?string $project = null): JsonResponse
+    public function __invoke(RunSnippetRequest $request, RunSnippetAction $action, string $project): JsonResponse
     {
         $result = $action->execute($request->code(), $project);
 

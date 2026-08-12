@@ -15,12 +15,12 @@ it('uses the right request', function (): void {
 
 it('uses the right action', function (): void {
     $this->mock(RunSnippetAction::class)
-        ->shouldReceive('execute')->once()->with(Mockery::type('string'), null)->andReturn(new SnippetRunResult('output'));
+        ->shouldReceive('execute')->once()->with(Mockery::type('string'), 'my-project')->andReturn(new SnippetRunResult('output'));
 
     $request = new RunSnippetRequest();
     $request->merge(['code' => 'echo 1;']);
 
-    app()->call(new RunSnippetController(), ['request' => $request]);
+    app()->call(new RunSnippetController(), ['request' => $request, 'project' => 'my-project']);
 });
 
 it('returns the right output', function (): void {
