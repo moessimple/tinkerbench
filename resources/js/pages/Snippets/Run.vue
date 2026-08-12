@@ -3,8 +3,8 @@ import { Head, useHttp } from '@inertiajs/vue3';
 import { onBeforeUnmount, ref } from 'vue';
 import RunSnippetController from '@/actions/Application/Snippets/Controllers/RunSnippetController';
 import UpdateSnippetContentController from '@/actions/Application/Snippets/Controllers/UpdateSnippetContentController';
+import CommandPalette from '@/components/CommandPalette.vue';
 import MonacoEditor from '@/components/MonacoEditor.vue';
-import SnippetList from '@/components/SnippetList.vue';
 import { xsrfHeader } from '@/lib/csrf';
 import { shortcuts } from '@/lib/shortcuts';
 
@@ -143,7 +143,7 @@ function run(): void {
                                 />
                             </svg>
                         </button>
-                        <SnippetList
+                        <CommandPalette
                             :current-project="currentProject"
                             :current-snippet="snippetName"
                         />

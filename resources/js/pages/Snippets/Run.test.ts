@@ -65,10 +65,10 @@ vi.mock('@/components/MonacoEditor.vue', () => ({
     },
 }));
 
-// SnippetList has its own test (SnippetList.test.ts) proving switching/creating/renaming/
-// deleting/its own global Ctrl+P shortcut; replaced here so this test stays focused on
-// Run.vue's own responsibilities.
-vi.mock('@/components/SnippetList.vue', () => ({
+// CommandPalette has its own test (CommandPalette.test.ts) proving switching/creating/
+// renaming/deleting/its own global Ctrl+P shortcut; replaced here so this test stays
+// focused on Run.vue's own responsibilities.
+vi.mock('@/components/CommandPalette.vue', () => ({
     default: {
         props: ['currentProject', 'currentSnippet'],
         template: '<div />',
