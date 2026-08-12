@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Application\Projects\Controllers\ListProjectsController;
 use Application\Snippets\Controllers\CreateSnippetController;
 use Application\Snippets\Controllers\DeleteSnippetController;
 use Application\Snippets\Controllers\ListSnippetsController;
@@ -15,6 +16,8 @@ use Illuminate\Support\Facades\Route;
 Route::pattern('snippet', '[A-Za-z0-9_-]+');
 
 Route::post('snippets/executions', RunSnippetController::class);
+
+Route::get('api/projects', ListProjectsController::class);
 
 Route::prefix('api/snippets')->group(function (): void {
     Route::get('/', ListSnippetsController::class);

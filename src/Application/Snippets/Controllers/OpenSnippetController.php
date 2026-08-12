@@ -10,17 +10,15 @@ use Support\SnippetRepository;
 
 class OpenSnippetController
 {
-    public function __construct(private SnippetRepository $snippets) {}
-
-    public function __invoke(?string $snippet = null): Response
+    public function __invoke(SnippetRepository $snippets, ?string $snippet = null): Response
     {
         $snippetName = $snippet ?? 'scratch';
 
-        $this->snippets->ensureExists($snippetName);
+        $snippets->ensureExists($snippetName);
 
         return Inertia::render('Snippets/Run', [
             'snippetName' => $snippetName,
-            'content' => $this->snippets->contents($snippetName),
+            'content' => $snippets->contents($snippetName),
             'phpVersion' => PHP_VERSION,
             'laravelVersion' => app()->version(),
         ]);
