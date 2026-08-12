@@ -56,6 +56,23 @@ it('treats invalid json output as no projects', function (): void {
     expect(new Herd()->projects())->toBe([]);
 });
 
+it('shells out to herd only once when called repeatedly on the same instance', function (): void {
+    config(['services.herd.bin' => '/tmp/herd-bin']);
+    Process::fake([
+        "*'sites' '--json'" => json_encode([
+            ['site' => 'tinkerbench', 'path' => '/path/to/tinkerbench'],
+        ]),
+        "*'parked' '--json'" => json_encode([]),
+    ]);
+
+    $herd = new Herd();
+    $herd->projects();
+    $herd->projects();
+
+    Process::assertRanTimes(fn ($process): bool => in_array('sites', $process->command, true), 1);
+    Process::assertRanTimes(fn ($process): bool => in_array('parked', $process->command, true), 1);
+});
+
 it('throws when the herd bin path is not configured', function (): void {
     config(['services.herd.bin' => '']);
 

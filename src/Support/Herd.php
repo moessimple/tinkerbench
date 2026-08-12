@@ -10,10 +10,16 @@ use RuntimeException;
 
 class Herd
 {
+    /** @var array<string, string>|null */
+    private ?array $projectsCache = null;
+
+    // The project list can't change mid-request, and a single request routinely asks for it
+    // several times over (once per Herd call that needs to resolve a project), each of which
+    // would otherwise shell out to the Herd CLI twice.
     /** @return array<string, string> */
     public function projects(): array
     {
-        return [
+        return $this->projectsCache ??= [
             ...$this->projectPaths($this->run([$this->php(), $this->phar(), 'sites', '--json'])),
             ...$this->projectPaths($this->run([$this->php(), $this->phar(), 'parked', '--json'])),
         ];
