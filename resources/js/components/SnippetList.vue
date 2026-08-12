@@ -18,7 +18,7 @@ import UpdateSnippetNameController from '@/actions/Application/Snippets/Controll
 import { xsrfHeader } from '@/lib/csrf';
 import { shortcuts } from '@/lib/shortcuts';
 
-const props = defineProps<{ currentSnippet: string }>();
+const props = defineProps<{ currentProject: string; currentSnippet: string }>();
 
 const browseShortcut = shortcuts.find(
     (shortcut) => shortcut.id === 'browse',
@@ -57,7 +57,7 @@ function setCancelDeleteButtonEl(
 // duplicated here.
 const createForm = useHttp<{ name: string }, { ok: boolean }>({
     name: '',
-}).withPrecognition('post', CreateSnippetController.url());
+}).withPrecognition('post', CreateSnippetController.url(props.currentProject));
 
 const filteredNames = computed(() => {
     const query = createForm.name.trim().toLowerCase();
@@ -158,7 +158,9 @@ async function loadNames(): Promise<void> {
     errorMessage.value = '';
 
     try {
-        const response = await fetch(ListSnippetsController.url());
+        const response = await fetch(
+            ListSnippetsController.url(props.currentProject),
+        );
 
         if (!response.ok) {
             throw new Error('Unable to load snippets.');
@@ -176,11 +178,11 @@ async function loadNames(): Promise<void> {
 
 function openSnippet(name: string): void {
     isOpen.value = false;
-    router.get(OpenSnippetController.url(name));
+    router.get(OpenSnippetController.url([props.currentProject, name]));
 }
 
 function createSnippet(): void {
-    createForm.post(CreateSnippetController.url(), {
+    createForm.post(CreateSnippetController.url(props.currentProject), {
         onSuccess: () => {
             const name = createForm.name;
             createForm.reset();
@@ -226,11 +228,14 @@ async function confirmRename(name: string): Promise<void> {
         return;
     }
 
-    const response = await fetch(UpdateSnippetNameController.url(name), {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', ...xsrfHeader() },
-        body: JSON.stringify({ name: newSnippetName }),
-    });
+    const response = await fetch(
+        UpdateSnippetNameController.url([props.currentProject, name]),
+        {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', ...xsrfHeader() },
+            body: JSON.stringify({ name: newSnippetName }),
+        },
+    );
 
     if (!response.ok) {
         renameError.value = await errorMessageFrom(response);
@@ -262,10 +267,13 @@ function cancelDelete(): void {
 }
 
 async function confirmDelete(name: string): Promise<void> {
-    const response = await fetch(DeleteSnippetController.url(name), {
-        method: 'DELETE',
-        headers: xsrfHeader(),
-    });
+    const response = await fetch(
+        DeleteSnippetController.url([props.currentProject, name]),
+        {
+            method: 'DELETE',
+            headers: xsrfHeader(),
+        },
+    );
 
     if (!response.ok) {
         deleteError.value = await errorMessageFrom(response);
@@ -276,11 +284,9 @@ async function confirmDelete(name: string): Promise<void> {
     deleting.value = null;
 
     if (props.currentSnippet === name) {
-        // OpenSnippetController.url() with no snippet argument returns '' (a
-        // wayfinder quirk stripping the route's trailing optional segment),
-        // and router.get('') reloads the current URL instead of navigating
-        // to the root, so the fallback route is spelled out explicitly.
-        router.get('/');
+        router.get(
+            OpenSnippetController.url({ project: props.currentProject }),
+        );
 
         return;
     }

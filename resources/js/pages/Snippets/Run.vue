@@ -10,6 +10,7 @@ import { shortcuts } from '@/lib/shortcuts';
 
 const props = defineProps<{
     content: string;
+    currentProject: string;
     laravelVersion: string;
     phpVersion: string;
     snippetName: string;
@@ -28,11 +29,17 @@ let saveTimer: ReturnType<typeof window.setTimeout> | undefined;
 let pendingSave = Promise.resolve();
 
 function persistSnippet(content: string): Promise<void> {
-    return fetch(UpdateSnippetContentController.url(props.snippetName), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...xsrfHeader() },
-        body: JSON.stringify({ content }),
-    }).then(() => undefined);
+    return fetch(
+        UpdateSnippetContentController.url([
+            props.currentProject,
+            props.snippetName,
+        ]),
+        {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', ...xsrfHeader() },
+            body: JSON.stringify({ content }),
+        },
+    ).then(() => undefined);
 }
 
 function queueSnippetSave(content: string): Promise<void> {
@@ -136,7 +143,10 @@ function run(): void {
                                 />
                             </svg>
                         </button>
-                        <SnippetList :current-snippet="snippetName" />
+                        <SnippetList
+                            :current-project="currentProject"
+                            :current-snippet="snippetName"
+                        />
                     </div>
                     <div class="h-96 min-w-0 flex-1">
                         <MonacoEditor

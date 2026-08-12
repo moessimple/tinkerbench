@@ -57,7 +57,9 @@ it('opens the panel via the global Ctrl/Cmd+P shortcut regardless of focus', asy
         'fetch',
         vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
     );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.keyDown(document, { key: 'p', metaKey: true });
 
@@ -69,7 +71,9 @@ it('closes the panel via the global Ctrl/Cmd+P shortcut when already open', asyn
         'fetch',
         vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
     );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.keyDown(document, { key: 'p', metaKey: true });
     await screen.findByRole('dialog', { name: 'Snippets' });
@@ -83,7 +87,9 @@ it('ignores auto-repeated Ctrl/Cmd+P keydown events while a key is held', async 
         'fetch',
         vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
     );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.keyDown(document, { key: 'p', metaKey: true });
     await screen.findByRole('dialog', { name: 'Snippets' });
@@ -100,7 +106,7 @@ it('removes the global keydown listener when unmounted', () => {
     const addSpy = vi.spyOn(window, 'addEventListener');
     const removeSpy = vi.spyOn(window, 'removeEventListener');
     const rendered = render(SnippetList, {
-        props: { currentSnippet: 'scratch' },
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
     });
 
     rendered.unmount();
@@ -117,7 +123,9 @@ it('starts with the current snippet highlighted when the panel opens', async () 
         'fetch',
         vi.fn().mockResolvedValue(jsonResponse(['apple', 'scratch', 'zebra'])),
     );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -133,7 +141,9 @@ it('highlights the first snippet when the current one is not in the list', async
         'fetch',
         vi.fn().mockResolvedValue(jsonResponse(['apple', 'zebra'])),
     );
-    render(SnippetList, { props: { currentSnippet: 'not-in-list' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'not-in-list' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -149,7 +159,9 @@ it('moves the highlight down and up through the list, wrapping at the ends', asy
         'fetch',
         vi.fn().mockResolvedValue(jsonResponse(['apple', 'scratch', 'zebra'])),
     );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -177,7 +189,9 @@ it('sets the highlight on mouse hover', async () => {
         'fetch',
         vi.fn().mockResolvedValue(jsonResponse(['apple', 'zebra'])),
     );
-    render(SnippetList, { props: { currentSnippet: 'apple' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'apple' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -196,7 +210,9 @@ it('opens the highlighted snippet when Enter is pressed with an empty name field
         'fetch',
         vi.fn().mockResolvedValue(jsonResponse(['apple', 'zebra'])),
     );
-    render(SnippetList, { props: { currentSnippet: 'apple' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'apple' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -205,7 +221,7 @@ it('opens the highlighted snippet when Enter is pressed with an empty name field
     await fireEvent.keyDown(input, { key: 'ArrowDown' });
     await fireEvent.submit(input.closest('form') as HTMLFormElement);
 
-    expect(routerGet).toHaveBeenCalledWith('/zebra');
+    expect(routerGet).toHaveBeenCalledWith('/my-project/zebra');
 });
 
 it('closes the panel when Escape is pressed on the name field', async () => {
@@ -213,7 +229,9 @@ it('closes the panel when Escape is pressed on the name field', async () => {
         'fetch',
         vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
     );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -229,7 +247,9 @@ it('filters the list as the name field is typed into', async () => {
         'fetch',
         vi.fn().mockResolvedValue(jsonResponse(['apple', 'scratch', 'zebra'])),
     );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -247,7 +267,9 @@ it('resets the highlight to the first match when the filter changes', async () =
         'fetch',
         vi.fn().mockResolvedValue(jsonResponse(['apple', 'scratch', 'zebra'])),
     );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -264,7 +286,9 @@ it('opens the highlighted match when Enter is pressed with a filtered query', as
         'fetch',
         vi.fn().mockResolvedValue(jsonResponse(['apple', 'scratch', 'zebra'])),
     );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -273,7 +297,7 @@ it('opens the highlighted match when Enter is pressed with a filtered query', as
     await fireEvent.update(input, 'zeb');
     await fireEvent.submit(input.closest('form') as HTMLFormElement);
 
-    expect(routerGet).toHaveBeenCalledWith('/zebra');
+    expect(routerGet).toHaveBeenCalledWith('/my-project/zebra');
 });
 
 it('creates a snippet when Enter is pressed and the typed name matches nothing', async () => {
@@ -282,7 +306,9 @@ it('creates a snippet when Enter is pressed and the typed name matches nothing',
         .mockResolvedValueOnce(jsonResponse(['scratch']))
         .mockResolvedValueOnce(jsonResponse({ ok: true }));
     vi.stubGlobal('fetch', fetchMock);
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -291,7 +317,7 @@ it('creates a snippet when Enter is pressed and the typed name matches nothing',
     await fireEvent.update(input, 'new-one');
     await fireEvent.submit(input.closest('form') as HTMLFormElement);
 
-    expect(capturedCreatePost?.url).toBe('/api/snippets');
+    expect(capturedCreatePost?.url).toBe('/api/projects/my-project/snippets');
 });
 
 it('shows a hint to create the typed name when nothing matches', async () => {
@@ -299,7 +325,9 @@ it('shows a hint to create the typed name when nothing matches', async () => {
         'fetch',
         vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
     );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -317,7 +345,9 @@ it('clears a typed filter when reopened after being closed without acting on it'
         'fetch',
         vi.fn().mockResolvedValue(jsonResponse(['apple', 'scratch', 'zebra'])),
     );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -344,7 +374,9 @@ it('clears an in-progress rename when the panel is closed via the global shortcu
         'fetch',
         vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
     );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -368,7 +400,9 @@ it('clears an in-progress delete confirmation when the panel is closed via the g
         'fetch',
         vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
     );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -392,7 +426,9 @@ it('keeps the highlight in bounds after deleting a filtered, non-current snippet
         .mockResolvedValueOnce(jsonResponse({ ok: true }))
         .mockResolvedValueOnce(jsonResponse(['bandana', 'zebra']));
     vi.stubGlobal('fetch', fetchMock);
-    render(SnippetList, { props: { currentSnippet: 'zebra' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'zebra' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -413,7 +449,9 @@ it('keeps the highlight in bounds after deleting a filtered, non-current snippet
 });
 
 it('shows the shortcut in the browse button tooltip', () => {
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     const button = screen.getByRole('button', { name: 'Browse snippets' });
 
@@ -425,7 +463,9 @@ it('closes when clicking the backdrop', async () => {
         'fetch',
         vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
     );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -442,7 +482,9 @@ it('does not close when clicking inside the panel', async () => {
         'fetch',
         vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
     );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -459,7 +501,9 @@ it('loads and shows snippet names when opened', async () => {
         'fetch',
         vi.fn().mockResolvedValue(jsonResponse(['apple', 'zebra'])),
     );
-    render(SnippetList, { props: { currentSnippet: 'apple' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'apple' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -471,7 +515,9 @@ it('loads and shows snippet names when opened', async () => {
 
 it('shows a message when no snippets exist', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse([])));
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -482,19 +528,23 @@ it('shows a message when no snippets exist', async () => {
 
 it('navigates to the selected snippet', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(['other'])));
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
     await fireEvent.click(await screen.findByText('other'));
 
-    expect(routerGet).toHaveBeenCalledWith('/other');
+    expect(routerGet).toHaveBeenCalledWith('/my-project/other');
 });
 
 it('validates the new snippet name when it changes', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse([])));
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -510,7 +560,9 @@ it('shows the server validation message for an invalid new snippet name', async 
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse([])));
     createFormState.invalidFields = ['name'];
     createFormState.errors = { name: 'The name field format is invalid.' };
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -521,7 +573,9 @@ it('shows the server validation message for an invalid new snippet name', async 
 
 it('creates a new snippet and navigates to it on success', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse([])));
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -530,11 +584,11 @@ it('creates a new snippet and navigates to it on success', async () => {
     await fireEvent.update(input, 'my-new-snippet');
     await fireEvent.submit(input.closest('form') as HTMLFormElement);
 
-    expect(capturedCreatePost?.url).toBe('/api/snippets');
+    expect(capturedCreatePost?.url).toBe('/api/projects/my-project/snippets');
 
     capturedCreatePost?.onSuccess?.();
 
-    expect(routerGet).toHaveBeenCalledWith('/my-new-snippet');
+    expect(routerGet).toHaveBeenCalledWith('/my-project/my-new-snippet');
 });
 
 it('shows a rename input prefilled with the current name when the rename icon is clicked', async () => {
@@ -542,7 +596,9 @@ it('shows a rename input prefilled with the current name when the rename icon is
         'fetch',
         vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
     );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -562,7 +618,9 @@ it('does nothing when renaming is cancelled with Escape', async () => {
         'fetch',
         vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
     );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -586,7 +644,9 @@ it('does nothing when renaming is cancelled by losing focus', async () => {
         'fetch',
         vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
     );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -609,7 +669,9 @@ it('renames the current snippet and navigates to its new name', async () => {
         .mockResolvedValueOnce(jsonResponse(['scratch']))
         .mockResolvedValueOnce(jsonResponse({ ok: true }));
     vi.stubGlobal('fetch', fetchMock);
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -622,7 +684,9 @@ it('renames the current snippet and navigates to its new name', async () => {
     await fireEvent.update(input, 'renamed');
     await fireEvent.keyDown(input, { key: 'Enter' });
 
-    await vi.waitFor(() => expect(routerGet).toHaveBeenCalledWith('/renamed'));
+    await vi.waitFor(() =>
+        expect(routerGet).toHaveBeenCalledWith('/my-project/renamed'),
+    );
 });
 
 it('reloads the list after renaming a snippet that is not the current one', async () => {
@@ -632,7 +696,9 @@ it('reloads the list after renaming a snippet that is not the current one', asyn
         .mockResolvedValueOnce(jsonResponse({ ok: true }))
         .mockResolvedValueOnce(jsonResponse(['renamed']));
     vi.stubGlobal('fetch', fetchMock);
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -655,7 +721,9 @@ it('shows the domain error message inline when renaming fails', async () => {
             jsonResponse({ ok: false, error: 'name taken' }, false),
         );
     vi.stubGlobal('fetch', fetchMock);
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -685,7 +753,9 @@ it('shows the server validation message inline when renaming fails validation', 
             ),
         );
     vi.stubGlobal('fetch', fetchMock);
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -706,7 +776,9 @@ it('shows a delete confirmation when the delete icon is clicked', async () => {
         'fetch',
         vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
     );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -724,7 +796,9 @@ it('does nothing when delete is cancelled with No', async () => {
         'fetch',
         vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
     );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -744,7 +818,9 @@ it('does nothing when delete is cancelled with Escape', async () => {
         'fetch',
         vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
     );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -761,13 +837,15 @@ it('does nothing when delete is cancelled with Escape', async () => {
     expect(fetch).toHaveBeenCalledTimes(1);
 });
 
-it('deletes the current snippet and navigates home', async () => {
+it('deletes the current snippet and navigates to the project root', async () => {
     const fetchMock = vi
         .fn()
         .mockResolvedValueOnce(jsonResponse(['scratch']))
         .mockResolvedValueOnce(jsonResponse({ ok: true }));
     vi.stubGlobal('fetch', fetchMock);
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -778,7 +856,9 @@ it('deletes the current snippet and navigates home', async () => {
     );
     await fireEvent.click(screen.getByRole('button', { name: 'Yes' }));
 
-    await vi.waitFor(() => expect(routerGet).toHaveBeenCalledWith('/'));
+    await vi.waitFor(() =>
+        expect(routerGet).toHaveBeenCalledWith('/my-project'),
+    );
 });
 
 it('reloads the list after deleting a snippet that is not the current one', async () => {
@@ -788,7 +868,9 @@ it('reloads the list after deleting a snippet that is not the current one', asyn
         .mockResolvedValueOnce(jsonResponse({ ok: true }))
         .mockResolvedValueOnce(jsonResponse([]));
     vi.stubGlobal('fetch', fetchMock);
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -809,7 +891,9 @@ it('shows the error message inline when deleting fails', async () => {
             jsonResponse({ ok: false, error: 'delete failed' }, false),
         );
     vi.stubGlobal('fetch', fetchMock);
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(SnippetList, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),

@@ -70,7 +70,7 @@ vi.mock('@/components/MonacoEditor.vue', () => ({
 // Run.vue's own responsibilities.
 vi.mock('@/components/SnippetList.vue', () => ({
     default: {
-        props: ['currentSnippet'],
+        props: ['currentProject', 'currentSnippet'],
         template: '<div />',
     },
 }));
@@ -78,6 +78,7 @@ vi.mock('@/components/SnippetList.vue', () => ({
 const { default: Run } = await import('./Run.vue');
 const props = {
     content: "echo 'hello world';",
+    currentProject: 'my-project',
     laravelVersion: '13.0.0',
     phpVersion: '8.5.0',
     snippetName: 'scratch',
@@ -194,7 +195,7 @@ it('saves edited content 500ms after the last change', async () => {
     await vi.advanceTimersByTimeAsync(500);
 
     expect(fetchMock).toHaveBeenCalledWith(
-        '/api/snippets/scratch',
+        '/api/projects/my-project/snippets/scratch',
         expect.objectContaining({
             method: 'PUT',
             body: JSON.stringify({ content: "echo 'edited';" }),
@@ -219,7 +220,7 @@ it('collapses rapid edits into a single save of the latest content', async () =>
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith(
-        '/api/snippets/scratch',
+        '/api/projects/my-project/snippets/scratch',
         expect.objectContaining({
             body: JSON.stringify({ content: "echo 'second';" }),
         }),
