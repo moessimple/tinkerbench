@@ -34,6 +34,12 @@ declare module 'vue' {
 
 declare global {
     interface MonacoEditorInstance {
+        addAction(action: {
+            id: string;
+            keybindings: number[];
+            label: string;
+            run: () => void;
+        }): void;
         dispose(): void;
         focus(): void;
         getValue(): string;
@@ -49,6 +55,8 @@ declare global {
             ): MonacoEditorInstance;
             defineTheme(name: string, theme: Record<string, unknown>): void;
         };
+        KeyCode: { Enter: number; KeyP: number };
+        KeyMod: { CtrlCmd: number };
     }
 
     interface AmdRequire {
