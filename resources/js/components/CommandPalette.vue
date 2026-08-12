@@ -121,9 +121,21 @@ const activeEntries = computed<PaletteEntry[]>(() => [
     })),
 ]);
 
-const inputLabel = computed(() =>
-    scope.value === 'projects' ? 'Switch to project' : 'New snippet name',
-);
+// Generic by default, same reasoning as GitHub's own "Search or jump to…":
+// the field searches and jumps to either a snippet or a project, so wording
+// it as if it only ever creates a new snippet would be misleading now that
+// both sections show at once.
+const inputLabel = computed(() => {
+    if (scope.value === 'projects') {
+        return 'Switch to project';
+    }
+
+    if (scope.value === 'snippets') {
+        return 'Search snippets';
+    }
+
+    return 'Search or jump to';
+});
 
 const placeholder = computed(() => `${inputLabel.value}…`);
 
