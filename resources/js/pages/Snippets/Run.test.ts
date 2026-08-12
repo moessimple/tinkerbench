@@ -155,6 +155,20 @@ it('runs the snippet when the editor emits run', async () => {
     expect(capturedPost?.url).toBe('/snippets/executions');
 });
 
+it('shows the run shortcut in the button tooltip', () => {
+    render(Run, { props });
+
+    const button = screen.getByRole('button', { name: 'Run snippet' });
+
+    expect(button.title).toBe('Run snippet (⌘Enter)');
+});
+
+it('renders the keyboard shortcuts help', () => {
+    render(Run, { props });
+
+    screen.getByRole('button', { name: 'Keyboard shortcuts' });
+});
+
 it('disables the run button and shows a running label while processing', () => {
     httpState.processing = true;
 

@@ -4,8 +4,10 @@ import { onBeforeUnmount, ref } from 'vue';
 import RunSnippetController from '@/actions/Application/Snippets/Controllers/RunSnippetController';
 import UpdateSnippetContentController from '@/actions/Application/Snippets/Controllers/UpdateSnippetContentController';
 import MonacoEditor from '@/components/MonacoEditor.vue';
+import ShortcutsHelp from '@/components/ShortcutsHelp.vue';
 import SnippetList from '@/components/SnippetList.vue';
 import { xsrfHeader } from '@/lib/csrf';
+import { shortcuts } from '@/lib/shortcuts';
 
 const props = defineProps<{
     content: string;
@@ -13,6 +15,10 @@ const props = defineProps<{
     phpVersion: string;
     snippetName: string;
 }>();
+
+const runShortcut = shortcuts.find(
+    (shortcut) => shortcut.description === 'Run snippet',
+)?.keys;
 
 const output = ref('');
 const errorMessage = ref('');
@@ -110,7 +116,9 @@ function run(): void {
                         <button
                             type="button"
                             :title="
-                                http.processing ? 'Running…' : 'Run snippet'
+                                http.processing
+                                    ? 'Running…'
+                                    : `Run snippet (${runShortcut})`
                             "
                             :aria-label="
                                 http.processing ? 'Running…' : 'Run snippet'
@@ -132,6 +140,7 @@ function run(): void {
                             </svg>
                         </button>
                         <SnippetList :current-snippet="snippetName" />
+                        <ShortcutsHelp />
                     </div>
                     <div class="h-96 min-w-0 flex-1">
                         <MonacoEditor
