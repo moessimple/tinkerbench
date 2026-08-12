@@ -8,18 +8,18 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\StringRule;
 
-class RunSnippetRequest extends FormRequest
+class UpdateSnippetContentRequest extends FormRequest
 {
     /** @return array<string, list<string|StringRule>> */
     public function rules(): array
     {
         return [
-            'code' => ['required', Rule::string()->max(100000)],
+            'content' => ['required', Rule::string()->max(100000)],
         ];
     }
 
-    public function code(): string
+    public function content(): string
     {
-        return $this->string('code')->toString();
+        return $this->string('content')->toString();
     }
 }

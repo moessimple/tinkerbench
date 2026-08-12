@@ -22,7 +22,7 @@ class Herd
         set_time_limit(0);
 
         $snippetPath = sys_get_temp_dir().'/tinkerbench-snippet-'.bin2hex(random_bytes(16)).'.php';
-        file_put_contents($snippetPath, "<?php\n\n{$code}");
+        file_put_contents($snippetPath, $this->withOpeningTag($code));
 
         try {
             $result = Process::forever()->run([
@@ -48,5 +48,13 @@ class Herd
         throw_if(! is_string($path) || $path === '', InvalidArgumentException::class, 'The services.herd.bin configuration must be a non-empty path.');
 
         return $path;
+    }
+
+    // Snippets are normally a bare body with no opening tag, but pasting a complete, already-tagged
+    // PHP file is a natural thing to try in a PHP tinkering tool; prepending a tag unconditionally
+    // would double it up into a parse error instead of just running the file as given.
+    private function withOpeningTag(string $code): string
+    {
+        return str_starts_with(mb_ltrim($code), '<?php') ? $code : "<?php\n\n{$code}";
     }
 }

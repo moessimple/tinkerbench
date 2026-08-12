@@ -59,6 +59,12 @@ it('keeps output printed before an uncaught exception instead of discarding it',
         ->and($result->output)->toContain('boom');
 });
 
+it('does not duplicate an opening tag the snippet already provides', function (): void {
+    $result = new Herd()->runSnippet("<?php\n\nreturn 'already tagged';");
+
+    expect($result->output)->toBe('already tagged');
+});
+
 it('cleans up the temp snippet file after running', function (): void {
     $before = glob(sys_get_temp_dir().'/tinkerbench-snippet-*.php');
 
