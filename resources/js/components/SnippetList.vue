@@ -8,8 +8,13 @@ import ListSnippetsController from '@/actions/Application/Snippets/Controllers/L
 import OpenSnippetController from '@/actions/Application/Snippets/Controllers/OpenSnippetController';
 import UpdateSnippetNameController from '@/actions/Application/Snippets/Controllers/UpdateSnippetNameController';
 import { xsrfHeader } from '@/lib/csrf';
+import { shortcuts } from '@/lib/shortcuts';
 
 const props = defineProps<{ currentSnippet: string }>();
+
+const browseShortcut = shortcuts.find(
+    (shortcut) => shortcut.description === 'Browse snippets',
+)?.keys;
 
 const isOpen = ref(false);
 const names = ref<string[]>([]);
@@ -50,6 +55,10 @@ async function toggle(): Promise<void> {
     if (isOpen.value) {
         await loadNames();
     }
+}
+
+function close(): void {
+    isOpen.value = false;
 }
 
 defineExpose({ toggle });
@@ -190,7 +199,7 @@ async function confirmDelete(name: string): Promise<void> {
     <div class="relative">
         <button
             type="button"
-            title="Browse snippets"
+            :title="`Browse snippets (${browseShortcut})`"
             aria-label="Browse snippets"
             class="flex h-8 w-8 items-center justify-center rounded text-muted hover:bg-line/30 hover:text-fg"
             @click="toggle"
@@ -211,152 +220,160 @@ async function confirmDelete(name: string): Promise<void> {
 
         <div
             v-if="isOpen"
-            role="dialog"
-            aria-label="Snippets"
-            class="absolute top-10 left-0 z-10 w-64 rounded-md border border-line bg-surface shadow-2xl"
+            class="fixed inset-0 z-20 flex justify-center bg-black/50 pt-[15vh]"
+            @click.self="close"
         >
-            <form
-                class="border-b border-line p-2"
-                @submit.prevent="createSnippet"
+            <div
+                role="dialog"
+                aria-label="Snippets"
+                class="h-fit w-full max-w-xs rounded-md border border-line bg-surface shadow-2xl"
             >
-                <input
-                    v-model="createForm.name"
-                    type="text"
-                    aria-label="New snippet name"
-                    placeholder="New snippet name…"
-                    class="w-full rounded border border-line bg-transparent px-2 py-1 font-mono text-sm text-fg placeholder:text-muted focus:outline-none"
-                    @change="createForm.validate('name')"
-                />
-                <p
-                    v-if="createForm.invalid('name')"
-                    class="mt-1 font-mono text-xs text-red-400"
-                >
-                    {{ createForm.errors.name }}
-                </p>
-            </form>
-
-            <p
-                v-if="errorMessage"
-                class="px-3 py-2 font-mono text-xs text-red-400"
-            >
-                {{ errorMessage }}
-            </p>
-            <p
-                v-else-if="names.length === 0"
-                class="px-3 py-2 font-mono text-xs text-muted"
-            >
-                No snippets found.
-            </p>
-
-            <ul v-else class="max-h-64 overflow-auto py-1">
-                <li
-                    v-for="name in names"
-                    :key="name"
-                    class="group flex flex-col gap-1 px-3 py-1.5 font-mono text-sm text-fg hover:bg-line/30"
-                    :class="{ 'bg-accent/15': name === currentSnippet }"
+                <form
+                    class="border-b border-line p-2"
+                    @submit.prevent="createSnippet"
                 >
                     <input
-                        v-if="renaming === name"
-                        :ref="setRenameInputEl"
-                        v-model="renameValue"
+                        v-model="createForm.name"
                         type="text"
-                        :aria-label="`Rename ${name}`"
-                        class="w-full rounded border border-line bg-transparent px-2 py-0.5 font-mono text-sm text-fg focus:outline-none"
-                        @keydown.enter.prevent="confirmRename(name)"
-                        @keydown.escape="cancelRename"
-                        @blur="cancelRename"
+                        aria-label="New snippet name"
+                        placeholder="New snippet name…"
+                        class="w-full rounded border border-line bg-transparent px-2 py-1 font-mono text-sm text-fg placeholder:text-muted focus:outline-none"
+                        @change="createForm.validate('name')"
                     />
-                    <div
-                        v-else-if="deleting === name"
-                        class="flex items-center justify-between gap-2"
-                    >
-                        <span class="text-muted">Delete '{{ name }}'?</span>
-                        <span class="flex shrink-0 items-center gap-2">
-                            <button
-                                type="button"
-                                class="rounded px-1.5 py-0.5 text-xs text-red-400 hover:bg-line/50"
-                                @click="confirmDelete(name)"
-                                @keydown.escape="cancelDelete"
-                            >
-                                Yes
-                            </button>
-                            <button
-                                type="button"
-                                :ref="setCancelDeleteButtonEl"
-                                class="rounded px-1.5 py-0.5 text-xs text-muted hover:bg-line/50"
-                                @click="cancelDelete"
-                                @keydown.escape="cancelDelete"
-                            >
-                                No
-                            </button>
-                        </span>
-                    </div>
-                    <div v-else class="flex items-center justify-between gap-2">
-                        <button
-                            type="button"
-                            class="flex-1 truncate text-left"
-                            @click="openSnippet(name)"
-                        >
-                            {{ name }}
-                        </button>
-                        <span
-                            class="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100"
-                        >
-                            <button
-                                type="button"
-                                title="Rename snippet"
-                                :aria-label="`Rename ${name}`"
-                                class="flex h-5 w-5 items-center justify-center rounded text-muted hover:bg-line/50 hover:text-fg"
-                                @click="startRename(name)"
-                            >
-                                <svg
-                                    viewBox="0 0 16 16"
-                                    width="12"
-                                    height="12"
-                                    fill="currentColor"
-                                    aria-hidden="true"
-                                >
-                                    <path
-                                        d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25a1.75 1.75 0 0 1 .445-.758l8.61-8.61Zm.176 4.823L9.75 4.81l-6.286 6.287a.25.25 0 0 0-.064.108l-.558 1.953 1.953-.558a.25.25 0 0 0 .108-.064Zm1.238-3.763a.25.25 0 0 0-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 0 0 0-.354Z"
-                                    />
-                                </svg>
-                            </button>
-                            <button
-                                type="button"
-                                title="Delete snippet"
-                                :aria-label="`Delete ${name}`"
-                                class="flex h-5 w-5 items-center justify-center rounded text-muted hover:bg-line/50 hover:text-fg"
-                                @click="startDelete(name)"
-                            >
-                                <svg
-                                    viewBox="0 0 16 16"
-                                    width="12"
-                                    height="12"
-                                    fill="currentColor"
-                                    aria-hidden="true"
-                                >
-                                    <path
-                                        fill-rule="evenodd"
-                                        d="M4 1.75V3H1.75a.75.75 0 0 0 0 1.5h.6l.63 9.44A2 2 0 0 0 4.98 16h6.04a2 2 0 0 0 1.99-1.86l.63-9.44h.6a.75.75 0 0 0 0-1.5H12V1.75A1.75 1.75 0 0 0 10.25 0h-4.5A1.75 1.75 0 0 0 4 1.75Zm1.5 0a.25.25 0 0 1 .25-.25h4.5a.25.25 0 0 1 .25.25V3h-5V1.75ZM4.5 4.5h7l-.62 9.32a.5.5 0 0 1-.5.43H5.62a.5.5 0 0 1-.5-.43L4.5 4.5Z"
-                                    />
-                                </svg>
-                            </button>
-                        </span>
-                    </div>
                     <p
-                        v-if="renaming === name && renameError"
-                        class="font-mono text-xs text-red-400"
+                        v-if="createForm.invalid('name')"
+                        class="mt-1 font-mono text-xs text-red-400"
                     >
-                        {{ renameError }}
+                        {{ createForm.errors.name }}
                     </p>
-                    <p
-                        v-if="deleting === name && deleteError"
-                        class="font-mono text-xs text-red-400"
+                </form>
+
+                <p
+                    v-if="errorMessage"
+                    class="px-3 py-2 font-mono text-xs text-red-400"
+                >
+                    {{ errorMessage }}
+                </p>
+                <p
+                    v-else-if="names.length === 0"
+                    class="px-3 py-2 font-mono text-xs text-muted"
+                >
+                    No snippets found.
+                </p>
+
+                <ul v-else class="max-h-64 overflow-auto py-1">
+                    <li
+                        v-for="name in names"
+                        :key="name"
+                        class="group flex flex-col gap-1 px-3 py-1.5 font-mono text-sm text-fg hover:bg-line/30"
+                        :class="{ 'bg-accent/15': name === currentSnippet }"
                     >
-                        {{ deleteError }}
-                    </p>
-                </li>
-            </ul>
+                        <input
+                            v-if="renaming === name"
+                            :ref="setRenameInputEl"
+                            v-model="renameValue"
+                            type="text"
+                            :aria-label="`Rename ${name}`"
+                            class="w-full rounded border border-line bg-transparent px-2 py-0.5 font-mono text-sm text-fg focus:outline-none"
+                            @keydown.enter.prevent="confirmRename(name)"
+                            @keydown.escape="cancelRename"
+                            @blur="cancelRename"
+                        />
+                        <div
+                            v-else-if="deleting === name"
+                            class="flex items-center justify-between gap-2"
+                        >
+                            <span class="text-muted">Delete '{{ name }}'?</span>
+                            <span class="flex shrink-0 items-center gap-2">
+                                <button
+                                    type="button"
+                                    class="rounded px-1.5 py-0.5 text-xs text-red-400 hover:bg-line/50"
+                                    @click="confirmDelete(name)"
+                                    @keydown.escape="cancelDelete"
+                                >
+                                    Yes
+                                </button>
+                                <button
+                                    type="button"
+                                    :ref="setCancelDeleteButtonEl"
+                                    class="rounded px-1.5 py-0.5 text-xs text-muted hover:bg-line/50"
+                                    @click="cancelDelete"
+                                    @keydown.escape="cancelDelete"
+                                >
+                                    No
+                                </button>
+                            </span>
+                        </div>
+                        <div
+                            v-else
+                            class="flex items-center justify-between gap-2"
+                        >
+                            <button
+                                type="button"
+                                class="flex-1 truncate text-left"
+                                @click="openSnippet(name)"
+                            >
+                                {{ name }}
+                            </button>
+                            <span
+                                class="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100"
+                            >
+                                <button
+                                    type="button"
+                                    title="Rename snippet"
+                                    :aria-label="`Rename ${name}`"
+                                    class="flex h-5 w-5 items-center justify-center rounded text-muted hover:bg-line/50 hover:text-fg"
+                                    @click="startRename(name)"
+                                >
+                                    <svg
+                                        viewBox="0 0 16 16"
+                                        width="12"
+                                        height="12"
+                                        fill="currentColor"
+                                        aria-hidden="true"
+                                    >
+                                        <path
+                                            d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25a1.75 1.75 0 0 1 .445-.758l8.61-8.61Zm.176 4.823L9.75 4.81l-6.286 6.287a.25.25 0 0 0-.064.108l-.558 1.953 1.953-.558a.25.25 0 0 0 .108-.064Zm1.238-3.763a.25.25 0 0 0-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 0 0 0-.354Z"
+                                        />
+                                    </svg>
+                                </button>
+                                <button
+                                    type="button"
+                                    title="Delete snippet"
+                                    :aria-label="`Delete ${name}`"
+                                    class="flex h-5 w-5 items-center justify-center rounded text-muted hover:bg-line/50 hover:text-fg"
+                                    @click="startDelete(name)"
+                                >
+                                    <svg
+                                        viewBox="0 0 16 16"
+                                        width="12"
+                                        height="12"
+                                        fill="currentColor"
+                                        aria-hidden="true"
+                                    >
+                                        <path
+                                            fill-rule="evenodd"
+                                            d="M4 1.75V3H1.75a.75.75 0 0 0 0 1.5h.6l.63 9.44A2 2 0 0 0 4.98 16h6.04a2 2 0 0 0 1.99-1.86l.63-9.44h.6a.75.75 0 0 0 0-1.5H12V1.75A1.75 1.75 0 0 0 10.25 0h-4.5A1.75 1.75 0 0 0 4 1.75Zm1.5 0a.25.25 0 0 1 .25-.25h4.5a.25.25 0 0 1 .25.25V3h-5V1.75ZM4.5 4.5h7l-.62 9.32a.5.5 0 0 1-.5.43H5.62a.5.5 0 0 1-.5-.43L4.5 4.5Z"
+                                        />
+                                    </svg>
+                                </button>
+                            </span>
+                        </div>
+                        <p
+                            v-if="renaming === name && renameError"
+                            class="font-mono text-xs text-red-400"
+                        >
+                            {{ renameError }}
+                        </p>
+                        <p
+                            v-if="deleting === name && deleteError"
+                            class="font-mono text-xs text-red-400"
+                        >
+                            {{ deleteError }}
+                        </p>
+                    </li>
+                </ul>
+            </div>
         </div>
     </div>
 </template>

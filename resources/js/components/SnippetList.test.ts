@@ -52,6 +52,48 @@ function jsonResponse(body: unknown, ok = true): Response {
     return { ok, json: () => Promise.resolve(body) } as Response;
 }
 
+it('shows the shortcut in the browse button tooltip', () => {
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    const button = screen.getByRole('button', { name: 'Browse snippets' });
+
+    expect(button.title).toBe('Browse snippets (⌘P)');
+});
+
+it('closes when clicking the backdrop', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const dialog = await screen.findByRole('dialog', { name: 'Snippets' });
+
+    await fireEvent.click(dialog.parentElement as HTMLElement);
+
+    expect(screen.queryByRole('dialog', { name: 'Snippets' })).toBeNull();
+});
+
+it('does not close when clicking inside the panel', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const dialog = await screen.findByRole('dialog', { name: 'Snippets' });
+
+    await fireEvent.click(dialog);
+
+    screen.getByRole('dialog', { name: 'Snippets' });
+});
+
 it('loads and shows snippet names when opened', async () => {
     vi.stubGlobal(
         'fetch',
