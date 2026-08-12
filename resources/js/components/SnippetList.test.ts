@@ -206,6 +206,94 @@ it('closes the panel when Escape is pressed on the name field', async () => {
     expect(screen.queryByRole('dialog', { name: 'Snippets' })).toBeNull();
 });
 
+it('filters the list as the name field is typed into', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['apple', 'scratch', 'zebra'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('New snippet name');
+    await fireEvent.update(input, 'ap');
+
+    screen.getByText('apple');
+    expect(screen.queryByText('scratch')).toBeNull();
+    expect(screen.queryByText('zebra')).toBeNull();
+});
+
+it('resets the highlight to the first match when the filter changes', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['apple', 'scratch', 'zebra'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('New snippet name');
+    await fireEvent.update(input, 'a');
+
+    const options = screen.getAllByRole('option');
+    expect(options[0]?.getAttribute('aria-selected')).toBe('true');
+});
+
+it('opens the highlighted match when Enter is pressed with a filtered query', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['apple', 'scratch', 'zebra'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('New snippet name');
+    await fireEvent.update(input, 'zeb');
+    await fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+    expect(routerGet).toHaveBeenCalledWith('/zebra');
+});
+
+it('creates a snippet when Enter is pressed and the typed name matches nothing', async () => {
+    const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(jsonResponse(['scratch']))
+        .mockResolvedValueOnce(jsonResponse({ ok: true }));
+    vi.stubGlobal('fetch', fetchMock);
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('New snippet name');
+    await fireEvent.update(input, 'new-one');
+    await fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+    expect(capturedCreatePost?.url).toBe('/api/snippets');
+});
+
+it('shows a hint to create the typed name when nothing matches', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('New snippet name');
+    await fireEvent.update(input, 'new-one');
+
+    await screen.findByText(
+        'No matches for "new-one". Press Enter to create it.',
+    );
+});
+
 it('shows the shortcut in the browse button tooltip', () => {
     render(SnippetList, { props: { currentSnippet: 'scratch' } });
 

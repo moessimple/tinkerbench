@@ -1,7 +1,15 @@
 <script setup lang="ts">
 import { router, useHttp } from '@inertiajs/vue3';
 import type { ComponentPublicInstance } from 'vue';
-import { nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
+import {
+    computed,
+    nextTick,
+    onBeforeUnmount,
+    onMounted,
+    ref,
+    useTemplateRef,
+    watch,
+} from 'vue';
 import CreateSnippetController from '@/actions/Application/Snippets/Controllers/CreateSnippetController';
 import DeleteSnippetController from '@/actions/Application/Snippets/Controllers/DeleteSnippetController';
 import ListSnippetsController from '@/actions/Application/Snippets/Controllers/ListSnippetsController';
@@ -51,6 +59,21 @@ const createForm = useHttp<{ name: string }, { ok: boolean }>({
     name: '',
 }).withPrecognition('post', CreateSnippetController.url());
 
+const filteredNames = computed(() => {
+    const query = createForm.name.trim().toLowerCase();
+
+    return names.value.filter((name) => name.toLowerCase().includes(query));
+});
+
+// Resets the highlight to the top of each new set of matches, same as VS Code
+// Quick Open and GitHub's own command palette do as you narrow a search.
+watch(
+    () => createForm.name,
+    () => {
+        highlightedIndex.value = 0;
+    },
+);
+
 async function toggle(): Promise<void> {
     isOpen.value = !isOpen.value;
 
@@ -66,13 +89,13 @@ function close(): void {
 }
 
 function moveHighlight(delta: number): void {
-    if (names.value.length === 0) {
+    if (filteredNames.value.length === 0) {
         return;
     }
 
     highlightedIndex.value =
-        (highlightedIndex.value + delta + names.value.length) %
-        names.value.length;
+        (highlightedIndex.value + delta + filteredNames.value.length) %
+        filteredNames.value.length;
 }
 
 function highlight(index: number): void {
@@ -80,7 +103,7 @@ function highlight(index: number): void {
 }
 
 function selectHighlighted(): void {
-    const name = names.value[highlightedIndex.value];
+    const name = filteredNames.value[highlightedIndex.value];
 
     if (name) {
         openSnippet(name);
@@ -88,13 +111,13 @@ function selectHighlighted(): void {
 }
 
 function onSubmit(): void {
-    if (createForm.name.trim()) {
-        createSnippet();
+    if (filteredNames.value.length > 0) {
+        selectHighlighted();
 
         return;
     }
 
-    selectHighlighted();
+    createSnippet();
 }
 
 function onGlobalKeydown(event: KeyboardEvent): void {
@@ -300,7 +323,10 @@ async function confirmDelete(name: string): Promise<void> {
                         @keydown.escape="close"
                     />
                     <p
-                        v-if="createForm.invalid('name')"
+                        v-if="
+                            filteredNames.length === 0 &&
+                            createForm.invalid('name')
+                        "
                         class="mt-1 font-mono text-xs text-red-400"
                     >
                         {{ createForm.errors.name }}
@@ -314,15 +340,22 @@ async function confirmDelete(name: string): Promise<void> {
                     {{ errorMessage }}
                 </p>
                 <p
-                    v-else-if="names.length === 0"
+                    v-else-if="filteredNames.length === 0 && names.length === 0"
                     class="px-3 py-2 font-mono text-xs text-muted"
                 >
                     No snippets found.
                 </p>
+                <p
+                    v-else-if="filteredNames.length === 0"
+                    class="px-3 py-2 font-mono text-xs text-muted"
+                >
+                    No matches for "{{ createForm.name.trim() }}". Press Enter
+                    to create it.
+                </p>
 
                 <ul v-else role="listbox" class="max-h-64 overflow-auto py-1">
                     <li
-                        v-for="(name, index) in names"
+                        v-for="(name, index) in filteredNames"
                         :key="name"
                         role="option"
                         :aria-selected="index === highlightedIndex"
