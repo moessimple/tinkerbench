@@ -90,7 +90,7 @@ function something(): void
  * @param  array<string, mixed>  $payload
  * @return TestResponse<Response>
  */
-function createFormRequest(string $requestClass, array $payload = []): TestResponse
+function dispatchFormRequest(string $requestClass, array $payload = []): TestResponse
 {
     Route::post('form-request-under-test', fn () => resolve($requestClass));
 
