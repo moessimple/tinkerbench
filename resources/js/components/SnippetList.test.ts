@@ -52,6 +52,408 @@ function jsonResponse(body: unknown, ok = true): Response {
     return { ok, json: () => Promise.resolve(body) } as Response;
 }
 
+it('opens the panel via the global Ctrl/Cmd+P shortcut regardless of focus', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+
+    await screen.findByRole('dialog', { name: 'Snippets' });
+});
+
+it('closes the panel via the global Ctrl/Cmd+P shortcut when already open', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+    await screen.findByRole('dialog', { name: 'Snippets' });
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+
+    expect(screen.queryByRole('dialog', { name: 'Snippets' })).toBeNull();
+});
+
+it('ignores auto-repeated Ctrl/Cmd+P keydown events while a key is held', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+    await screen.findByRole('dialog', { name: 'Snippets' });
+    await fireEvent.keyDown(document, {
+        key: 'p',
+        metaKey: true,
+        repeat: true,
+    });
+
+    screen.getByRole('dialog', { name: 'Snippets' });
+});
+
+it('removes the global keydown listener when unmounted', () => {
+    const addSpy = vi.spyOn(window, 'addEventListener');
+    const removeSpy = vi.spyOn(window, 'removeEventListener');
+    const rendered = render(SnippetList, {
+        props: { currentSnippet: 'scratch' },
+    });
+
+    rendered.unmount();
+
+    const [, handler] =
+        addSpy.mock.calls.find(([type]) => type === 'keydown') ?? [];
+    expect(removeSpy).toHaveBeenCalledWith('keydown', handler, {
+        capture: true,
+    });
+});
+
+it('starts with the current snippet highlighted when the panel opens', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['apple', 'scratch', 'zebra'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    await screen.findByText('scratch');
+
+    const options = screen.getAllByRole('option');
+    expect(options[1]?.getAttribute('aria-selected')).toBe('true');
+});
+
+it('highlights the first snippet when the current one is not in the list', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['apple', 'zebra'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'not-in-list' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    await screen.findByText('apple');
+
+    const options = screen.getAllByRole('option');
+    expect(options[0]?.getAttribute('aria-selected')).toBe('true');
+});
+
+it('moves the highlight down and up through the list, wrapping at the ends', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['apple', 'scratch', 'zebra'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('New snippet name');
+
+    await fireEvent.keyDown(input, { key: 'ArrowDown' });
+    expect(
+        screen.getAllByRole('option')[2]?.getAttribute('aria-selected'),
+    ).toBe('true');
+
+    await fireEvent.keyDown(input, { key: 'ArrowDown' });
+    expect(
+        screen.getAllByRole('option')[0]?.getAttribute('aria-selected'),
+    ).toBe('true');
+
+    await fireEvent.keyDown(input, { key: 'ArrowUp' });
+    expect(
+        screen.getAllByRole('option')[2]?.getAttribute('aria-selected'),
+    ).toBe('true');
+});
+
+it('sets the highlight on mouse hover', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['apple', 'zebra'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'apple' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    await screen.findByText('zebra');
+
+    await fireEvent.mouseEnter(screen.getAllByRole('option')[1] as HTMLElement);
+
+    expect(
+        screen.getAllByRole('option')[1]?.getAttribute('aria-selected'),
+    ).toBe('true');
+});
+
+it('opens the highlighted snippet when Enter is pressed with an empty name field', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['apple', 'zebra'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'apple' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('New snippet name');
+    await fireEvent.keyDown(input, { key: 'ArrowDown' });
+    await fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+    expect(routerGet).toHaveBeenCalledWith('/zebra');
+});
+
+it('closes the panel when Escape is pressed on the name field', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('New snippet name');
+    await fireEvent.keyDown(input, { key: 'Escape' });
+
+    expect(screen.queryByRole('dialog', { name: 'Snippets' })).toBeNull();
+});
+
+it('filters the list as the name field is typed into', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['apple', 'scratch', 'zebra'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('New snippet name');
+    await fireEvent.update(input, 'ap');
+
+    screen.getByText('apple');
+    expect(screen.queryByText('scratch')).toBeNull();
+    expect(screen.queryByText('zebra')).toBeNull();
+});
+
+it('resets the highlight to the first match when the filter changes', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['apple', 'scratch', 'zebra'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('New snippet name');
+    await fireEvent.update(input, 'a');
+
+    const options = screen.getAllByRole('option');
+    expect(options[0]?.getAttribute('aria-selected')).toBe('true');
+});
+
+it('opens the highlighted match when Enter is pressed with a filtered query', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['apple', 'scratch', 'zebra'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('New snippet name');
+    await fireEvent.update(input, 'zeb');
+    await fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+    expect(routerGet).toHaveBeenCalledWith('/zebra');
+});
+
+it('creates a snippet when Enter is pressed and the typed name matches nothing', async () => {
+    const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(jsonResponse(['scratch']))
+        .mockResolvedValueOnce(jsonResponse({ ok: true }));
+    vi.stubGlobal('fetch', fetchMock);
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('New snippet name');
+    await fireEvent.update(input, 'new-one');
+    await fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+    expect(capturedCreatePost?.url).toBe('/api/snippets');
+});
+
+it('shows a hint to create the typed name when nothing matches', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('New snippet name');
+    await fireEvent.update(input, 'new-one');
+
+    await screen.findByText(
+        'No matches for "new-one". Press Enter to create it.',
+    );
+});
+
+it('clears a typed filter when reopened after being closed without acting on it', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['apple', 'scratch', 'zebra'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('New snippet name');
+    await fireEvent.update(input, 'no-match-at-all');
+    await fireEvent.keyDown(input, { key: 'Escape' });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+
+    expect(
+        (await screen.findByLabelText<HTMLInputElement>('New snippet name'))
+            .value,
+    ).toBe('');
+    screen.getByText('apple');
+    screen.getByText('scratch');
+    screen.getByText('zebra');
+});
+
+it('clears an in-progress rename when the panel is closed via the global shortcut', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    await screen.findByText('scratch');
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Rename scratch' }),
+    );
+
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+
+    await screen.findByText('scratch');
+    expect(
+        screen.queryByRole('textbox', { name: 'Rename scratch' }),
+    ).toBeNull();
+});
+
+it('clears an in-progress delete confirmation when the panel is closed via the global shortcut', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    await screen.findByText('scratch');
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Delete scratch' }),
+    );
+
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+
+    await screen.findByText('scratch');
+    expect(screen.queryByText("Delete 'scratch'?")).toBeNull();
+});
+
+it('keeps the highlight in bounds after deleting a filtered, non-current snippet', async () => {
+    const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(jsonResponse(['banana', 'bandana', 'zebra']))
+        .mockResolvedValueOnce(jsonResponse({ ok: true }))
+        .mockResolvedValueOnce(jsonResponse(['bandana', 'zebra']));
+    vi.stubGlobal('fetch', fetchMock);
+    render(SnippetList, { props: { currentSnippet: 'zebra' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('New snippet name');
+    await fireEvent.update(input, 'ban');
+    await screen.findByText('banana');
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Delete banana' }),
+    );
+    await fireEvent.click(screen.getByRole('button', { name: 'Yes' }));
+
+    await vi.waitFor(() => expect(screen.queryByText('banana')).toBeNull());
+    const options = screen.getAllByRole('option');
+    expect(options).toHaveLength(1);
+    expect(options[0]?.getAttribute('aria-selected')).toBe('true');
+});
+
+it('shows the shortcut in the browse button tooltip', () => {
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    const button = screen.getByRole('button', { name: 'Browse snippets' });
+
+    expect(button.title).toBe('Browse snippets (⌘P)');
+});
+
+it('closes when clicking the backdrop', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const dialog = await screen.findByRole('dialog', { name: 'Snippets' });
+
+    await fireEvent.click(dialog.parentElement as HTMLElement);
+
+    expect(screen.queryByRole('dialog', { name: 'Snippets' })).toBeNull();
+});
+
+it('does not close when clicking inside the panel', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const dialog = await screen.findByRole('dialog', { name: 'Snippets' });
+
+    await fireEvent.click(dialog);
+
+    screen.getByRole('dialog', { name: 'Snippets' });
+});
+
 it('loads and shows snippet names when opened', async () => {
     vi.stubGlobal(
         'fetch',

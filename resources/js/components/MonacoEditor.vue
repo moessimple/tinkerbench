@@ -3,7 +3,6 @@ import { onBeforeUnmount, onMounted, useTemplateRef } from 'vue';
 
 const props = defineProps<{ initialValue: string }>();
 const emit = defineEmits<{
-    browseSnippets: [];
     change: [content: string];
     run: [];
 }>();
@@ -72,14 +71,6 @@ onMounted(() => {
                 window.monaco.KeyMod.CtrlCmd | window.monaco.KeyCode.Enter,
             ],
             run: () => emit('run'),
-        });
-        editor.addAction({
-            id: 'tinkerbench.browseSnippets',
-            label: 'Tinkerbench: Browse Snippets',
-            keybindings: [
-                window.monaco.KeyMod.CtrlCmd | window.monaco.KeyCode.KeyP,
-            ],
-            run: () => emit('browseSnippets'),
         });
         editor.focus();
     });

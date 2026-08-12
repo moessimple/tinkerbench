@@ -50,32 +50,27 @@ vi.mock('@inertiajs/vue3', () => ({
 }));
 
 // MonacoEditor has its own test (MonacoEditor.test.ts) proving it renders the editor and
-// emits `change`/`run`/`browseSnippets`; here it's replaced with a plain textarea plus two
-// buttons so this test can drive the same contract without loading real Monaco.
+// emits `change`/`run`; here it's replaced with a plain textarea plus a button so this test
+// can drive the same contract without loading real Monaco.
 vi.mock('@/components/MonacoEditor.vue', () => ({
     default: {
         props: ['initialValue'],
-        emits: ['browseSnippets', 'change', 'run'],
+        emits: ['change', 'run'],
         template: `
             <div>
                 <textarea aria-label="Snippet code" :value="initialValue" @input="$emit('change', $event.target.value)" />
                 <button type="button" @click="$emit('run')">Emit run</button>
-                <button type="button" @click="$emit('browseSnippets')">Emit browse snippets</button>
             </div>
         `,
     },
 }));
 
-const toggleSnippetListSpy = vi.fn();
-
 // SnippetList has its own test (SnippetList.test.ts) proving switching/creating/renaming/
-// deleting; replaced here so this test stays focused on Run.vue's own responsibilities. Its
-// toggle() is a plain method (not behind defineExpose) so the template ref Run.vue holds on
-// it can call it, matching how Options API components expose their public instance by default.
+// deleting/its own global Ctrl+P shortcut; replaced here so this test stays focused on
+// Run.vue's own responsibilities.
 vi.mock('@/components/SnippetList.vue', () => ({
     default: {
         props: ['currentSnippet'],
-        methods: { toggle: toggleSnippetListSpy },
         template: '<div />',
     },
 }));
@@ -90,7 +85,6 @@ const props = {
 
 beforeEach(() => {
     capturedPost = null;
-    toggleSnippetListSpy.mockClear();
 });
 
 afterEach(() => {
@@ -161,14 +155,12 @@ it('runs the snippet when the editor emits run', async () => {
     expect(capturedPost?.url).toBe('/snippets/executions');
 });
 
-it('opens the snippet panel when the editor emits browseSnippets', async () => {
+it('shows the run shortcut in the button tooltip', () => {
     render(Run, { props });
 
-    await fireEvent.click(
-        screen.getByRole('button', { name: 'Emit browse snippets' }),
-    );
+    const button = screen.getByRole('button', { name: 'Run snippet' });
 
-    expect(toggleSnippetListSpy).toHaveBeenCalledOnce();
+    expect(button.title).toBe('Run snippet (⌘Enter)');
 });
 
 it('disables the run button and shows a running label while processing', () => {
