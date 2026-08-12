@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Application\Projects\Controllers\ListProjectsController;
+use Application\Projects\Middleware\EnsureKnownProjectMiddleware;
 use Application\Snippets\Controllers\CreateSnippetController;
 use Application\Snippets\Controllers\DeleteSnippetController;
 use Application\Snippets\Controllers\ListSnippetsController;
@@ -20,7 +21,7 @@ Route::post('snippets/executions', RunSnippetController::class);
 
 Route::get('api/projects', ListProjectsController::class);
 
-Route::prefix('api/projects/{project}/snippets')->group(function (): void {
+Route::prefix('api/projects/{project}/snippets')->middleware(EnsureKnownProjectMiddleware::class)->group(function (): void {
     Route::get('/', ListSnippetsController::class);
     Route::post('/', CreateSnippetController::class)->middleware(HandlePrecognitiveRequests::class);
     Route::put('{snippet}', UpdateSnippetContentController::class);
