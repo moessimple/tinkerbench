@@ -86,6 +86,18 @@ const filterText = computed(() => {
     return raw.trim().toLowerCase();
 });
 
+// The `#` that narrows to the snippets section is part of createForm.name (it's
+// bound straight to the input), so it has to be stripped before the name reaches
+// the server, both for live Precognition validation and for the actual create.
+function snippetNameFromInput(name: string): string {
+    return scope.value === 'snippets' ? name.slice(1) : name;
+}
+
+createForm.transform((data) => ({
+    ...data,
+    name: snippetNameFromInput(data.name),
+}));
+
 const visibleSnippetNames = computed(() => {
     if (scope.value === 'projects') {
         return [];
@@ -306,7 +318,7 @@ function switchProject(name: string): void {
 function createSnippet(): void {
     createForm.post(CreateSnippetController.url(props.currentProject), {
         onSuccess: () => {
-            const name = createForm.name;
+            const name = snippetNameFromInput(createForm.name);
             createForm.reset();
             openSnippet(name);
         },

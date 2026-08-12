@@ -4,7 +4,16 @@ import { reactive } from 'vue';
 
 const routerGet = vi.fn();
 const validateSpy = vi.fn();
-let capturedCreatePost: { url: string; onSuccess?: () => void } | null = null;
+let capturedCreatePost: {
+    url: string;
+    onSuccess?: () => void;
+    data: { name: string };
+} | null = null;
+
+// The real form's transform() runs at both validate() and post() time, so the mock
+// has to apply it too, otherwise a test could observe the untransformed name and miss
+// a transform bug entirely.
+let transformName = (name: string): string => name;
 
 // Mirrors the shape useHttp(...).withPrecognition(...) returns: a reactive form object
 // exposing the field(s) as top-level properties plus validate()/invalid()/errors/post().
@@ -20,8 +29,17 @@ const createFormState = reactive({
     invalid(field: string) {
         return createFormState.invalidFields.includes(field);
     },
+    transform(callback: (data: { name: string }) => { name: string }) {
+        transformName = (name) => callback({ name }).name;
+
+        return createFormState;
+    },
     post(url: string, options?: { onSuccess?: () => void }) {
-        capturedCreatePost = { url, onSuccess: options?.onSuccess };
+        capturedCreatePost = {
+            url,
+            onSuccess: options?.onSuccess,
+            data: { name: transformName(createFormState.name) },
+        };
     },
     reset() {
         createFormState.name = '';
@@ -46,6 +64,7 @@ beforeEach(() => {
     createFormState.name = '';
     createFormState.errors = {};
     createFormState.invalidFields = [];
+    transformName = (name) => name;
 });
 
 function jsonResponse(body: unknown, ok = true): Response {
@@ -529,6 +548,26 @@ it('creates a new snippet and navigates to it on success', async () => {
     await fireEvent.submit(input.closest('form') as HTMLFormElement);
 
     expect(capturedCreatePost?.url).toBe('/api/projects/my-project/snippets');
+
+    capturedCreatePost?.onSuccess?.();
+
+    expect(routerGet).toHaveBeenCalledWith('/my-project/my-new-snippet');
+});
+
+it('strips the # prefix before creating and navigating to a #-scoped new snippet', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo([], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('Search or jump to');
+    await fireEvent.update(input, '#my-new-snippet');
+    await fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+    expect(capturedCreatePost?.data.name).toBe('my-new-snippet');
 
     capturedCreatePost?.onSuccess?.();
 
