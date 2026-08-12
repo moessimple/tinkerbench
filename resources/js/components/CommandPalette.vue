@@ -687,6 +687,13 @@ async function confirmDelete(name: string): Promise<void> {
                         </li>
                     </template>
                 </ul>
+
+                <p
+                    class="border-t border-line px-3 py-1.5 font-mono text-[11px] text-muted"
+                >
+                    Type <kbd class="text-fg">#</kbd> for snippets,
+                    <kbd class="text-fg">/</kbd> for projects.
+                </p>
             </div>
         </div>
     </div>
