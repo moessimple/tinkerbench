@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Application\Snippets\Requests\UpdateSnippetContentRequest;
 use Illuminate\Validation\Rule;
 
-it('requires content as a bounded string', function (): void {
+it('uses the right validation rules', function (): void {
     expect(new UpdateSnippetContentRequest()->rules())->toEqual([
         'content' => ['required', Rule::string()->max(100000)],
     ]);

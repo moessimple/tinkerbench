@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Application\Snippets\Requests\SnippetNameRequest;
 use Illuminate\Validation\Rule;
 
-it('requires name as a bounded, alpha-dash string', function (): void {
+it('uses the right validation rules', function (): void {
     expect(new SnippetNameRequest()->rules())->toEqual([
         'name' => ['required', Rule::string()->alphaDash(true)->max(200)],
     ]);
