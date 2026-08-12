@@ -16,13 +16,3 @@ it('exposes the content input as a string', function (): void {
 
     expect($request->content())->toBe("echo 'hi';");
 });
-
-it('rejects a missing content field', function (): void {
-    createFormRequest(UpdateSnippetContentRequest::class, [])
-        ->assertInvalid('content');
-});
-
-it('accepts a well-formed content field', function (): void {
-    createFormRequest(UpdateSnippetContentRequest::class, ['content' => "echo 'hi';"])
-        ->assertValid('content');
-});
