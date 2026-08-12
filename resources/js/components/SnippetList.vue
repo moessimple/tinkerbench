@@ -104,6 +104,10 @@ function onGlobalKeydown(event: KeyboardEvent): void {
     }
 }
 
+// Monaco's own keybinding service intercepts and stops most keydown events while
+// the editor has focus, whether or not a custom action is registered for that
+// key; capturing before that dispatch is the only way this still fires with the
+// editor focused, not just elsewhere on the page.
 onMounted(() =>
     window.addEventListener('keydown', onGlobalKeydown, { capture: true }),
 );
