@@ -13,14 +13,15 @@ use Application\Snippets\Controllers\UpdateSnippetNameController;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Support\Facades\Route;
 
+Route::pattern('project', '[A-Za-z0-9_-]+');
 Route::pattern('snippet', '[A-Za-z0-9_-]+');
 
 Route::post('snippets/executions', RunSnippetController::class);
 
 Route::get('api/projects', ListProjectsController::class);
+Route::get('api/projects/{project}/snippets', ListSnippetsController::class);
 
 Route::prefix('api/snippets')->group(function (): void {
-    Route::get('/', ListSnippetsController::class);
     Route::post('/', CreateSnippetController::class)->middleware(HandlePrecognitiveRequests::class);
     Route::put('{snippet}', UpdateSnippetContentController::class);
     Route::patch('{snippet}', UpdateSnippetNameController::class)->middleware(HandlePrecognitiveRequests::class);

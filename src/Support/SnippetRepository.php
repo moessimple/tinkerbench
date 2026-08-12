@@ -13,13 +13,13 @@ use Support\Enums\RenameSnippetResult;
 class SnippetRepository
 {
     /** @return list<string> */
-    public function names(): array
+    public function names(string $project): array
     {
         $names = [];
 
-        foreach (Storage::disk('snippets')->files() as $file) {
+        foreach (Storage::disk('snippets')->files($project) as $file) {
             if (Str::endsWith($file, '.php')) {
-                $names[] = Str::of($file)->beforeLast('.php')->toString();
+                $names[] = Str::of($file)->afterLast('/')->beforeLast('.php')->toString();
             }
         }
 

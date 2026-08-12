@@ -11,14 +11,23 @@ beforeEach(function (): void {
 });
 
 it('lists existing snippet names sorted alphabetically', function (): void {
-    Storage::disk('snippets')->put('zebra.php', 'echo 1;');
-    Storage::disk('snippets')->put('apple.php', 'echo 2;');
+    Storage::disk('snippets')->put('my-project/zebra.php', 'echo 1;');
+    Storage::disk('snippets')->put('my-project/apple.php', 'echo 2;');
 
-    expect(new SnippetRepository()->names())->toBe(['apple', 'zebra']);
+    expect(new SnippetRepository()->names('my-project'))->toBe(['apple', 'zebra']);
 });
 
 it('returns no names when no snippets exist', function (): void {
-    expect(new SnippetRepository()->names())->toBe([]);
+    expect(new SnippetRepository()->names('my-project'))->toBe([]);
+});
+
+it("keeps two projects' snippet lists independent", function (): void {
+    Storage::disk('snippets')->put('project-a/shared-name.php', 'echo "a";');
+    Storage::disk('snippets')->put('project-b/shared-name.php', 'echo "b";');
+    Storage::disk('snippets')->put('project-b/only-in-b.php', 'echo "b only";');
+
+    expect(new SnippetRepository()->names('project-a'))->toBe(['shared-name'])
+        ->and(new SnippetRepository()->names('project-b'))->toBe(['only-in-b', 'shared-name']);
 });
 
 it('creates a snippet with default content when it does not exist yet', function (): void {
