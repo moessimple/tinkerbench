@@ -17,9 +17,9 @@ it('uses the right middleware', function (): void {
 
 it('creates the snippet via the repository', function (): void {
     $this->mock(SnippetRepository::class)
-        ->shouldReceive('ensureExists')->once()->with('my-new-snippet');
+        ->shouldReceive('ensureExists')->once()->with('my-project', 'my-new-snippet');
 
-    $this->postJson('/api/snippets', ['name' => 'my-new-snippet'])
+    $this->postJson('/api/projects/my-project/snippets', ['name' => 'my-new-snippet'])
         ->assertOk()
         ->assertExactJson(['ok' => true]);
 });

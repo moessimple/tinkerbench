@@ -10,9 +10,9 @@ use Support\SnippetRepository;
 
 class CreateSnippetController
 {
-    public function __invoke(SnippetNameRequest $request, SnippetRepository $snippets): JsonResponse
+    public function __invoke(SnippetNameRequest $request, SnippetRepository $snippets, string $project): JsonResponse
     {
-        $snippets->ensureExists($request->name());
+        $snippets->ensureExists($project, $request->name());
 
         return response()->json(['ok' => true]);
     }

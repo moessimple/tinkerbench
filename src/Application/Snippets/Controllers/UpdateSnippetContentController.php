@@ -10,9 +10,9 @@ use Support\SnippetRepository;
 
 class UpdateSnippetContentController
 {
-    public function __invoke(UpdateSnippetContentRequest $request, SnippetRepository $snippets, string $snippet): JsonResponse
+    public function __invoke(UpdateSnippetContentRequest $request, SnippetRepository $snippets, string $project, string $snippet): JsonResponse
     {
-        $snippets->write($snippet, $request->content());
+        $snippets->write($project, $snippet, $request->content());
 
         return response()->json(['ok' => true]);
     }

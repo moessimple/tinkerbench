@@ -28,77 +28,77 @@ class SnippetRepository
         return $names;
     }
 
-    public function ensureExists(string $snippet): void
+    public function ensureExists(string $project, string $snippet): void
     {
-        if ($this->exists($snippet)) {
+        if ($this->exists($project, $snippet)) {
             return;
         }
 
-        $this->write($snippet, $this->defaultContent());
+        $this->write($project, $snippet, $this->defaultContent());
     }
 
-    public function contents(string $snippet): string
+    public function contents(string $project, string $snippet): string
     {
-        return $this->read($this->relativePath($snippet));
+        return $this->read($this->relativePath($project, $snippet));
     }
 
-    public function write(string $snippet, string $contents): void
+    public function write(string $project, string $snippet, string $contents): void
     {
-        Storage::disk('snippets')->put($this->relativePath($snippet), $contents);
+        Storage::disk('snippets')->put($this->relativePath($project, $snippet), $contents);
     }
 
-    public function rename(string $from, string $to): RenameSnippetResult
+    public function rename(string $project, string $from, string $to): RenameSnippetResult
     {
-        $lock = Cache::lock("tinkerbench:snippet-rename:{$to}", 5);
+        $lock = Cache::lock("tinkerbench:snippet-rename:{$project}:{$to}", 5);
         $lock->block(5);
 
         try {
-            return $this->renameWhileLocked($from, $to);
+            return $this->renameWhileLocked($project, $from, $to);
         } finally {
             $lock->release();
         }
     }
 
-    public function delete(string $snippet): bool
+    public function delete(string $project, string $snippet): bool
     {
-        if (! $this->exists($snippet)) {
+        if (! $this->exists($project, $snippet)) {
             return false;
         }
 
-        return Storage::disk('snippets')->delete($this->relativePath($snippet));
+        return Storage::disk('snippets')->delete($this->relativePath($project, $snippet));
     }
 
-    public function path(string $snippet): string
+    public function path(string $project, string $snippet): string
     {
-        return Storage::disk('snippets')->path($this->relativePath($snippet));
+        return Storage::disk('snippets')->path($this->relativePath($project, $snippet));
     }
 
-    private function renameWhileLocked(string $from, string $to): RenameSnippetResult
+    private function renameWhileLocked(string $project, string $from, string $to): RenameSnippetResult
     {
-        if (! $this->exists($from)) {
+        if (! $this->exists($project, $from)) {
             return RenameSnippetResult::Missing;
         }
 
-        if ($this->exists($to)) {
+        if ($this->exists($project, $to)) {
             return RenameSnippetResult::Conflict;
         }
 
         Storage::disk('snippets')->move(
-            $this->relativePath($from),
-            $this->relativePath($to),
+            $this->relativePath($project, $from),
+            $this->relativePath($project, $to),
         );
 
         return RenameSnippetResult::Renamed;
     }
 
-    private function exists(string $snippet): bool
+    private function exists(string $project, string $snippet): bool
     {
-        return Storage::disk('snippets')->exists($this->relativePath($snippet));
+        return Storage::disk('snippets')->exists($this->relativePath($project, $snippet));
     }
 
-    private function relativePath(string $snippet): string
+    private function relativePath(string $project, string $snippet): string
     {
-        return "{$snippet}.php";
+        return "{$project}/{$snippet}.php";
     }
 
     private function defaultContent(): string

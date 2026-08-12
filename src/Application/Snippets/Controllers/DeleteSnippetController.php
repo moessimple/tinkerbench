@@ -9,9 +9,9 @@ use Support\SnippetRepository;
 
 class DeleteSnippetController
 {
-    public function __invoke(SnippetRepository $snippets, string $snippet): JsonResponse
+    public function __invoke(SnippetRepository $snippets, string $project, string $snippet): JsonResponse
     {
-        if (! $snippets->delete($snippet)) {
+        if (! $snippets->delete($project, $snippet)) {
             return response()->json([
                 'ok' => false,
                 'error' => 'Snippet not found',

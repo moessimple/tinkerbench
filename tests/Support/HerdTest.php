@@ -125,6 +125,26 @@ it('falls back to the configured herd php binary when herd reports none', functi
     expect(new Herd()->phpBinary('a-project'))->toBe('/tmp/herd-bin/php');
 });
 
+it('resolves the real php version of a given php binary', function (): void {
+    expect(new Herd()->phpVersion(PHP_BINARY))->toBe(PHP_VERSION);
+});
+
+it('reports the php version as unknown when the given binary produces no output', function (): void {
+    Process::fake(['*' => '']);
+
+    expect(new Herd()->phpVersion('/some/php'))->toBe('unknown');
+});
+
+it('resolves the real laravel version of a given project', function (): void {
+    expect(new Herd()->laravelVersion(PHP_BINARY, base_path()))->toBe(app()->version());
+});
+
+it('reports the laravel version as unknown when the given project produces no output', function (): void {
+    Process::fake(['*' => '']);
+
+    expect(new Herd()->laravelVersion('/some/php', '/some/path'))->toBe('unknown');
+});
+
 it('surfaces the process error when the given php binary does not exist', function (): void {
     config(['services.herd.bin' => '/nonexistent-herd-bin']);
 

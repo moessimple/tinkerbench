@@ -50,6 +50,21 @@ class Herd
         return $binary !== '' ? $binary : $this->php();
     }
 
+    public function phpVersion(string $phpBinary): string
+    {
+        $version = mb_trim($this->run([$phpBinary, '-r', 'echo PHP_VERSION;']));
+
+        return $version !== '' ? $version : 'unknown';
+    }
+
+    public function laravelVersion(string $phpBinary, string $projectPath): string
+    {
+        $probe = 'require $argv[1]."/vendor/autoload.php"; echo (require $argv[1]."/bootstrap/app.php")->version();';
+        $version = mb_trim($this->run([$phpBinary, '-r', $probe, $projectPath]));
+
+        return $version !== '' ? $version : 'unknown';
+    }
+
     public function runSnippet(string $code, string $phpBinary, string $projectPath): SnippetRunResult
     {
         // The child process is a snippet the caller wrote, its runtime isn't bounded. This request is
