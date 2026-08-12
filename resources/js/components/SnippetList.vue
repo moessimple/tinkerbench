@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { router, useHttp } from '@inertiajs/vue3';
 import type { ComponentPublicInstance } from 'vue';
-import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
 import CreateSnippetController from '@/actions/Application/Snippets/Controllers/CreateSnippetController';
 import DeleteSnippetController from '@/actions/Application/Snippets/Controllers/DeleteSnippetController';
 import ListSnippetsController from '@/actions/Application/Snippets/Controllers/ListSnippetsController';
@@ -19,6 +19,8 @@ const browseShortcut = shortcuts.find(
 const isOpen = ref(false);
 const names = ref<string[]>([]);
 const errorMessage = ref('');
+const highlightedIndex = ref(0);
+const createInputEl = useTemplateRef<HTMLInputElement>('createInput');
 
 const renaming = ref<string | null>(null);
 const renameValue = ref('');
@@ -54,11 +56,45 @@ async function toggle(): Promise<void> {
 
     if (isOpen.value) {
         await loadNames();
+        await nextTick();
+        createInputEl.value?.focus();
     }
 }
 
 function close(): void {
     isOpen.value = false;
+}
+
+function moveHighlight(delta: number): void {
+    if (names.value.length === 0) {
+        return;
+    }
+
+    highlightedIndex.value =
+        (highlightedIndex.value + delta + names.value.length) %
+        names.value.length;
+}
+
+function highlight(index: number): void {
+    highlightedIndex.value = index;
+}
+
+function selectHighlighted(): void {
+    const name = names.value[highlightedIndex.value];
+
+    if (name) {
+        openSnippet(name);
+    }
+}
+
+function onSubmit(): void {
+    if (createForm.name.trim()) {
+        createSnippet();
+
+        return;
+    }
+
+    selectHighlighted();
 }
 
 function onGlobalKeydown(event: KeyboardEvent): void {
@@ -86,6 +122,9 @@ async function loadNames(): Promise<void> {
         }
 
         names.value = (await response.json()) as string[];
+
+        const currentIndex = names.value.indexOf(props.currentSnippet);
+        highlightedIndex.value = currentIndex === -1 ? 0 : currentIndex;
     } catch {
         names.value = [];
         errorMessage.value = 'Unable to load snippets.';
@@ -242,15 +281,19 @@ async function confirmDelete(name: string): Promise<void> {
             >
                 <form
                     class="border-b border-line p-2"
-                    @submit.prevent="createSnippet"
+                    @submit.prevent="onSubmit"
                 >
                     <input
+                        ref="createInput"
                         v-model="createForm.name"
                         type="text"
                         aria-label="New snippet name"
                         placeholder="New snippet name…"
                         class="w-full rounded border border-line bg-transparent px-2 py-1 font-mono text-sm text-fg placeholder:text-muted focus:outline-none"
                         @change="createForm.validate('name')"
+                        @keydown.down.prevent="moveHighlight(1)"
+                        @keydown.up.prevent="moveHighlight(-1)"
+                        @keydown.escape="close"
                     />
                     <p
                         v-if="createForm.invalid('name')"
@@ -273,12 +316,18 @@ async function confirmDelete(name: string): Promise<void> {
                     No snippets found.
                 </p>
 
-                <ul v-else class="max-h-64 overflow-auto py-1">
+                <ul v-else role="listbox" class="max-h-64 overflow-auto py-1">
                     <li
-                        v-for="name in names"
+                        v-for="(name, index) in names"
                         :key="name"
+                        role="option"
+                        :aria-selected="index === highlightedIndex"
                         class="group flex flex-col gap-1 px-3 py-1.5 font-mono text-sm text-fg hover:bg-line/30"
-                        :class="{ 'bg-accent/15': name === currentSnippet }"
+                        :class="{
+                            'bg-accent/15': name === currentSnippet,
+                            'bg-line/40': index === highlightedIndex,
+                        }"
+                        @mouseenter="highlight(index)"
                     >
                         <input
                             v-if="renaming === name"

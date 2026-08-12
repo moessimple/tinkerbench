@@ -94,6 +94,118 @@ it('removes the global keydown listener when unmounted', () => {
     });
 });
 
+it('starts with the current snippet highlighted when the panel opens', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['apple', 'scratch', 'zebra'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    await screen.findByText('scratch');
+
+    const options = screen.getAllByRole('option');
+    expect(options[1]?.getAttribute('aria-selected')).toBe('true');
+});
+
+it('highlights the first snippet when the current one is not in the list', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['apple', 'zebra'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'not-in-list' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    await screen.findByText('apple');
+
+    const options = screen.getAllByRole('option');
+    expect(options[0]?.getAttribute('aria-selected')).toBe('true');
+});
+
+it('moves the highlight down and up through the list, wrapping at the ends', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['apple', 'scratch', 'zebra'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('New snippet name');
+
+    await fireEvent.keyDown(input, { key: 'ArrowDown' });
+    expect(
+        screen.getAllByRole('option')[2]?.getAttribute('aria-selected'),
+    ).toBe('true');
+
+    await fireEvent.keyDown(input, { key: 'ArrowDown' });
+    expect(
+        screen.getAllByRole('option')[0]?.getAttribute('aria-selected'),
+    ).toBe('true');
+
+    await fireEvent.keyDown(input, { key: 'ArrowUp' });
+    expect(
+        screen.getAllByRole('option')[2]?.getAttribute('aria-selected'),
+    ).toBe('true');
+});
+
+it('sets the highlight on mouse hover', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['apple', 'zebra'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'apple' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    await screen.findByText('zebra');
+
+    await fireEvent.mouseEnter(screen.getAllByRole('option')[1] as HTMLElement);
+
+    expect(
+        screen.getAllByRole('option')[1]?.getAttribute('aria-selected'),
+    ).toBe('true');
+});
+
+it('opens the highlighted snippet when Enter is pressed with an empty name field', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['apple', 'zebra'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'apple' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('New snippet name');
+    await fireEvent.keyDown(input, { key: 'ArrowDown' });
+    await fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+    expect(routerGet).toHaveBeenCalledWith('/zebra');
+});
+
+it('closes the panel when Escape is pressed on the name field', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('New snippet name');
+    await fireEvent.keyDown(input, { key: 'Escape' });
+
+    expect(screen.queryByRole('dialog', { name: 'Snippets' })).toBeNull();
+});
+
 it('shows the shortcut in the browse button tooltip', () => {
     render(SnippetList, { props: { currentSnippet: 'scratch' } });
 
