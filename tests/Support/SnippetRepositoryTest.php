@@ -24,7 +24,7 @@ it('returns no names when no snippets exist', function (): void {
 it('creates a snippet with default content when it does not exist yet', function (): void {
     new SnippetRepository()->ensureExists('scratch');
 
-    Storage::disk('snippets')->assertExists('scratch.php', "echo 'Hello, world!';");
+    Storage::disk('snippets')->assertExists('scratch.php', "<?php\n\necho 'Hello, world!';");
 });
 
 it('leaves an existing snippet untouched', function (): void {

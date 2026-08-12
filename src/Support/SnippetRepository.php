@@ -103,7 +103,7 @@ class SnippetRepository
 
     private function defaultContent(): string
     {
-        return "echo 'Hello, world!';";
+        return "<?php\n\necho 'Hello, world!';";
     }
 
     private function read(string $path): string
