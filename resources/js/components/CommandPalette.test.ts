@@ -4,7 +4,16 @@ import { reactive } from 'vue';
 
 const routerGet = vi.fn();
 const validateSpy = vi.fn();
-let capturedCreatePost: { url: string; onSuccess?: () => void } | null = null;
+let capturedCreatePost: {
+    url: string;
+    onSuccess?: () => void;
+    data: { name: string };
+} | null = null;
+
+// The real form's transform() runs at both validate() and post() time, so the mock
+// has to apply it too, otherwise a test could observe the untransformed name and miss
+// a transform bug entirely.
+let transformName = (name: string): string => name;
 
 // Mirrors the shape useHttp(...).withPrecognition(...) returns: a reactive form object
 // exposing the field(s) as top-level properties plus validate()/invalid()/errors/post().
@@ -20,8 +29,17 @@ const createFormState = reactive({
     invalid(field: string) {
         return createFormState.invalidFields.includes(field);
     },
+    transform(callback: (data: { name: string }) => { name: string }) {
+        transformName = (name) => callback({ name }).name;
+
+        return createFormState;
+    },
     post(url: string, options?: { onSuccess?: () => void }) {
-        capturedCreatePost = { url, onSuccess: options?.onSuccess };
+        capturedCreatePost = {
+            url,
+            onSuccess: options?.onSuccess,
+            data: { name: transformName(createFormState.name) },
+        };
     },
     reset() {
         createFormState.name = '';
@@ -37,7 +55,7 @@ vi.mock('@inertiajs/vue3', () => ({
     },
 }));
 
-const { default: SnippetList } = await import('./SnippetList.vue');
+const { default: CommandPalette } = await import('./CommandPalette.vue');
 
 beforeEach(() => {
     routerGet.mockClear();
@@ -46,6 +64,7 @@ beforeEach(() => {
     createFormState.name = '';
     createFormState.errors = {};
     createFormState.invalidFields = [];
+    transformName = (name) => name;
 });
 
 function jsonResponse(body: unknown, ok = true): Response {
@@ -53,54 +72,51 @@ function jsonResponse(body: unknown, ok = true): Response {
 }
 
 it('opens the panel via the global Ctrl/Cmd+P shortcut regardless of focus', async () => {
-    vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
-    );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.keyDown(document, { key: 'p', metaKey: true });
 
-    await screen.findByRole('dialog', { name: 'Snippets' });
+    await screen.findByRole('dialog', { name: 'Snippets and projects' });
 });
 
 it('closes the panel via the global Ctrl/Cmd+P shortcut when already open', async () => {
-    vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
-    );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.keyDown(document, { key: 'p', metaKey: true });
-    await screen.findByRole('dialog', { name: 'Snippets' });
+    await screen.findByRole('dialog', { name: 'Snippets and projects' });
     await fireEvent.keyDown(document, { key: 'p', metaKey: true });
 
     expect(screen.queryByRole('dialog', { name: 'Snippets' })).toBeNull();
 });
 
 it('ignores auto-repeated Ctrl/Cmd+P keydown events while a key is held', async () => {
-    vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
-    );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.keyDown(document, { key: 'p', metaKey: true });
-    await screen.findByRole('dialog', { name: 'Snippets' });
+    await screen.findByRole('dialog', { name: 'Snippets and projects' });
     await fireEvent.keyDown(document, {
         key: 'p',
         metaKey: true,
         repeat: true,
     });
 
-    screen.getByRole('dialog', { name: 'Snippets' });
+    screen.getByRole('dialog', { name: 'Snippets and projects' });
 });
 
 it('removes the global keydown listener when unmounted', () => {
     const addSpy = vi.spyOn(window, 'addEventListener');
     const removeSpy = vi.spyOn(window, 'removeEventListener');
-    const rendered = render(SnippetList, {
-        props: { currentSnippet: 'scratch' },
+    const rendered = render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
     });
 
     rendered.unmount();
@@ -113,11 +129,10 @@ it('removes the global keydown listener when unmounted', () => {
 });
 
 it('starts with the current snippet highlighted when the panel opens', async () => {
-    vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue(jsonResponse(['apple', 'scratch', 'zebra'])),
-    );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    vi.stubGlobal('fetch', fetchRoutedTo(['apple', 'scratch', 'zebra'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -129,11 +144,10 @@ it('starts with the current snippet highlighted when the panel opens', async () 
 });
 
 it('highlights the first snippet when the current one is not in the list', async () => {
-    vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue(jsonResponse(['apple', 'zebra'])),
-    );
-    render(SnippetList, { props: { currentSnippet: 'not-in-list' } });
+    vi.stubGlobal('fetch', fetchRoutedTo(['apple', 'zebra'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'not-in-list' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -145,16 +159,15 @@ it('highlights the first snippet when the current one is not in the list', async
 });
 
 it('moves the highlight down and up through the list, wrapping at the ends', async () => {
-    vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue(jsonResponse(['apple', 'scratch', 'zebra'])),
-    );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    vi.stubGlobal('fetch', fetchRoutedTo(['apple', 'scratch', 'zebra'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
-    const input = await screen.findByLabelText('New snippet name');
+    const input = await screen.findByLabelText('Search snippets');
 
     await fireEvent.keyDown(input, { key: 'ArrowDown' });
     expect(
@@ -173,11 +186,10 @@ it('moves the highlight down and up through the list, wrapping at the ends', asy
 });
 
 it('sets the highlight on mouse hover', async () => {
-    vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue(jsonResponse(['apple', 'zebra'])),
-    );
-    render(SnippetList, { props: { currentSnippet: 'apple' } });
+    vi.stubGlobal('fetch', fetchRoutedTo(['apple', 'zebra'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'apple' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -192,49 +204,46 @@ it('sets the highlight on mouse hover', async () => {
 });
 
 it('opens the highlighted snippet when Enter is pressed with an empty name field', async () => {
-    vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue(jsonResponse(['apple', 'zebra'])),
-    );
-    render(SnippetList, { props: { currentSnippet: 'apple' } });
+    vi.stubGlobal('fetch', fetchRoutedTo(['apple', 'zebra'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'apple' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
-    const input = await screen.findByLabelText('New snippet name');
+    const input = await screen.findByLabelText('Search snippets');
     await fireEvent.keyDown(input, { key: 'ArrowDown' });
     await fireEvent.submit(input.closest('form') as HTMLFormElement);
 
-    expect(routerGet).toHaveBeenCalledWith('/zebra');
+    expect(routerGet).toHaveBeenCalledWith('/my-project/zebra');
 });
 
 it('closes the panel when Escape is pressed on the name field', async () => {
-    vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
-    );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
-    const input = await screen.findByLabelText('New snippet name');
+    const input = await screen.findByLabelText('Search snippets');
     await fireEvent.keyDown(input, { key: 'Escape' });
 
     expect(screen.queryByRole('dialog', { name: 'Snippets' })).toBeNull();
 });
 
 it('filters the list as the name field is typed into', async () => {
-    vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue(jsonResponse(['apple', 'scratch', 'zebra'])),
-    );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    vi.stubGlobal('fetch', fetchRoutedTo(['apple', 'scratch', 'zebra'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
-    const input = await screen.findByLabelText('New snippet name');
+    const input = await screen.findByLabelText('Search snippets');
     await fireEvent.update(input, 'ap');
 
     screen.getByText('apple');
@@ -243,16 +252,15 @@ it('filters the list as the name field is typed into', async () => {
 });
 
 it('resets the highlight to the first match when the filter changes', async () => {
-    vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue(jsonResponse(['apple', 'scratch', 'zebra'])),
-    );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    vi.stubGlobal('fetch', fetchRoutedTo(['apple', 'scratch', 'zebra'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
-    const input = await screen.findByLabelText('New snippet name');
+    const input = await screen.findByLabelText('Search snippets');
     await fireEvent.update(input, 'a');
 
     const options = screen.getAllByRole('option');
@@ -260,51 +268,47 @@ it('resets the highlight to the first match when the filter changes', async () =
 });
 
 it('opens the highlighted match when Enter is pressed with a filtered query', async () => {
-    vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue(jsonResponse(['apple', 'scratch', 'zebra'])),
-    );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    vi.stubGlobal('fetch', fetchRoutedTo(['apple', 'scratch', 'zebra'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
-    const input = await screen.findByLabelText('New snippet name');
+    const input = await screen.findByLabelText('Search snippets');
     await fireEvent.update(input, 'zeb');
     await fireEvent.submit(input.closest('form') as HTMLFormElement);
 
-    expect(routerGet).toHaveBeenCalledWith('/zebra');
+    expect(routerGet).toHaveBeenCalledWith('/my-project/zebra');
 });
 
 it('creates a snippet when Enter is pressed and the typed name matches nothing', async () => {
-    const fetchMock = vi
-        .fn()
-        .mockResolvedValueOnce(jsonResponse(['scratch']))
-        .mockResolvedValueOnce(jsonResponse({ ok: true }));
-    vi.stubGlobal('fetch', fetchMock);
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
-    const input = await screen.findByLabelText('New snippet name');
+    const input = await screen.findByLabelText('Search snippets');
     await fireEvent.update(input, 'new-one');
     await fireEvent.submit(input.closest('form') as HTMLFormElement);
 
-    expect(capturedCreatePost?.url).toBe('/api/snippets');
+    expect(capturedCreatePost?.url).toBe('/api/projects/my-project/snippets');
 });
 
 it('shows a hint to create the typed name when nothing matches', async () => {
-    vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
-    );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
-    const input = await screen.findByLabelText('New snippet name');
+    const input = await screen.findByLabelText('Search snippets');
     await fireEvent.update(input, 'new-one');
 
     await screen.findByText(
@@ -313,16 +317,15 @@ it('shows a hint to create the typed name when nothing matches', async () => {
 });
 
 it('clears a typed filter when reopened after being closed without acting on it', async () => {
-    vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue(jsonResponse(['apple', 'scratch', 'zebra'])),
-    );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    vi.stubGlobal('fetch', fetchRoutedTo(['apple', 'scratch', 'zebra'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
-    const input = await screen.findByLabelText('New snippet name');
+    const input = await screen.findByLabelText('Search snippets');
     await fireEvent.update(input, 'no-match-at-all');
     await fireEvent.keyDown(input, { key: 'Escape' });
 
@@ -331,20 +334,19 @@ it('clears a typed filter when reopened after being closed without acting on it'
     );
 
     expect(
-        (await screen.findByLabelText<HTMLInputElement>('New snippet name'))
+        (await screen.findByLabelText<HTMLInputElement>('Search snippets'))
             .value,
-    ).toBe('');
+    ).toBe('#');
     screen.getByText('apple');
     screen.getByText('scratch');
     screen.getByText('zebra');
 });
 
 it('clears an in-progress rename when the panel is closed via the global shortcut', async () => {
-    vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
-    );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -364,11 +366,10 @@ it('clears an in-progress rename when the panel is closed via the global shortcu
 });
 
 it('clears an in-progress delete confirmation when the panel is closed via the global shortcut', async () => {
-    vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
-    );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -389,15 +390,18 @@ it('keeps the highlight in bounds after deleting a filtered, non-current snippet
     const fetchMock = vi
         .fn()
         .mockResolvedValueOnce(jsonResponse(['banana', 'bandana', 'zebra']))
+        .mockResolvedValueOnce(jsonResponse([]))
         .mockResolvedValueOnce(jsonResponse({ ok: true }))
         .mockResolvedValueOnce(jsonResponse(['bandana', 'zebra']));
     vi.stubGlobal('fetch', fetchMock);
-    render(SnippetList, { props: { currentSnippet: 'zebra' } });
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'zebra' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
-    const input = await screen.findByLabelText('New snippet name');
+    const input = await screen.findByLabelText('Search snippets');
     await fireEvent.update(input, 'ban');
     await screen.findByText('banana');
 
@@ -413,24 +417,75 @@ it('keeps the highlight in bounds after deleting a filtered, non-current snippet
 });
 
 it('shows the shortcut in the browse button tooltip', () => {
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     const button = screen.getByRole('button', { name: 'Browse snippets' });
 
     expect(button.title).toBe('Browse snippets (⌘P)');
 });
 
-it('closes when clicking the backdrop', async () => {
-    vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
-    );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+it('opens directly scoped to snippets when the browse snippets icon is clicked', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], ['other-project']));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
-    const dialog = await screen.findByRole('dialog', { name: 'Snippets' });
+
+    await screen.findByRole('dialog', { name: 'Snippets' });
+    screen.getByText('scratch');
+    expect(screen.queryByText('other-project')).toBeNull();
+});
+
+it('opens directly scoped to projects when the browse projects icon is clicked', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], ['other-project']));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse projects' }),
+    );
+
+    await screen.findByRole('dialog', { name: 'Projects' });
+    screen.getByText('other-project');
+    expect(screen.queryByText('scratch')).toBeNull();
+});
+
+it('closes an already-open palette when a scope icon is clicked again', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], ['other-project']));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    await screen.findByRole('dialog', { name: 'Snippets' });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+});
+
+it('closes when clicking the backdrop', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const dialog = await screen.findByRole('dialog', {
+        name: 'Snippets',
+    });
 
     await fireEvent.click(dialog.parentElement as HTMLElement);
 
@@ -438,16 +493,17 @@ it('closes when clicking the backdrop', async () => {
 });
 
 it('does not close when clicking inside the panel', async () => {
-    vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
-    );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
-    const dialog = await screen.findByRole('dialog', { name: 'Snippets' });
+    const dialog = await screen.findByRole('dialog', {
+        name: 'Snippets',
+    });
 
     await fireEvent.click(dialog);
 
@@ -455,11 +511,10 @@ it('does not close when clicking inside the panel', async () => {
 });
 
 it('loads and shows snippet names when opened', async () => {
-    vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue(jsonResponse(['apple', 'zebra'])),
-    );
-    render(SnippetList, { props: { currentSnippet: 'apple' } });
+    vi.stubGlobal('fetch', fetchRoutedTo(['apple', 'zebra'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'apple' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -470,8 +525,10 @@ it('loads and shows snippet names when opened', async () => {
 });
 
 it('shows a message when no snippets exist', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse([])));
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    vi.stubGlobal('fetch', fetchRoutedTo([], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -481,25 +538,29 @@ it('shows a message when no snippets exist', async () => {
 });
 
 it('navigates to the selected snippet', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(['other'])));
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    vi.stubGlobal('fetch', fetchRoutedTo(['other'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
     await fireEvent.click(await screen.findByText('other'));
 
-    expect(routerGet).toHaveBeenCalledWith('/other');
+    expect(routerGet).toHaveBeenCalledWith('/my-project/other');
 });
 
 it('validates the new snippet name when it changes', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse([])));
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    vi.stubGlobal('fetch', fetchRoutedTo([], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
-    const input = await screen.findByLabelText('New snippet name');
+    const input = await screen.findByLabelText('Search snippets');
     await fireEvent.update(input, 'my-new-snippet');
     await fireEvent.change(input);
 
@@ -507,10 +568,12 @@ it('validates the new snippet name when it changes', async () => {
 });
 
 it('shows the server validation message for an invalid new snippet name', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse([])));
+    vi.stubGlobal('fetch', fetchRoutedTo([], []));
     createFormState.invalidFields = ['name'];
     createFormState.errors = { name: 'The name field format is invalid.' };
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -520,29 +583,50 @@ it('shows the server validation message for an invalid new snippet name', async 
 });
 
 it('creates a new snippet and navigates to it on success', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse([])));
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    vi.stubGlobal('fetch', fetchRoutedTo([], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
     );
-    const input = await screen.findByLabelText('New snippet name');
+    const input = await screen.findByLabelText('Search snippets');
     await fireEvent.update(input, 'my-new-snippet');
     await fireEvent.submit(input.closest('form') as HTMLFormElement);
 
-    expect(capturedCreatePost?.url).toBe('/api/snippets');
+    expect(capturedCreatePost?.url).toBe('/api/projects/my-project/snippets');
 
     capturedCreatePost?.onSuccess?.();
 
-    expect(routerGet).toHaveBeenCalledWith('/my-new-snippet');
+    expect(routerGet).toHaveBeenCalledWith('/my-project/my-new-snippet');
+});
+
+it('strips the # prefix before creating and navigating to a #-scoped new snippet', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo([], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('Search snippets');
+    await fireEvent.update(input, '#my-new-snippet');
+    await fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+    expect(capturedCreatePost?.data.name).toBe('my-new-snippet');
+
+    capturedCreatePost?.onSuccess?.();
+
+    expect(routerGet).toHaveBeenCalledWith('/my-project/my-new-snippet');
 });
 
 it('shows a rename input prefilled with the current name when the rename icon is clicked', async () => {
-    vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
-    );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -558,11 +642,10 @@ it('shows a rename input prefilled with the current name when the rename icon is
 });
 
 it('does nothing when renaming is cancelled with Escape', async () => {
-    vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
-    );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -578,15 +661,14 @@ it('does nothing when renaming is cancelled with Escape', async () => {
     expect(
         screen.queryByRole('textbox', { name: 'Rename scratch' }),
     ).toBeNull();
-    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledTimes(2);
 });
 
 it('does nothing when renaming is cancelled by losing focus', async () => {
-    vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
-    );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -600,16 +682,19 @@ it('does nothing when renaming is cancelled by losing focus', async () => {
     expect(
         screen.queryByRole('textbox', { name: 'Rename scratch' }),
     ).toBeNull();
-    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledTimes(2);
 });
 
 it('renames the current snippet and navigates to its new name', async () => {
     const fetchMock = vi
         .fn()
         .mockResolvedValueOnce(jsonResponse(['scratch']))
+        .mockResolvedValueOnce(jsonResponse([]))
         .mockResolvedValueOnce(jsonResponse({ ok: true }));
     vi.stubGlobal('fetch', fetchMock);
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -622,17 +707,22 @@ it('renames the current snippet and navigates to its new name', async () => {
     await fireEvent.update(input, 'renamed');
     await fireEvent.keyDown(input, { key: 'Enter' });
 
-    await vi.waitFor(() => expect(routerGet).toHaveBeenCalledWith('/renamed'));
+    await vi.waitFor(() =>
+        expect(routerGet).toHaveBeenCalledWith('/my-project/renamed'),
+    );
 });
 
 it('reloads the list after renaming a snippet that is not the current one', async () => {
     const fetchMock = vi
         .fn()
         .mockResolvedValueOnce(jsonResponse(['other']))
+        .mockResolvedValueOnce(jsonResponse([]))
         .mockResolvedValueOnce(jsonResponse({ ok: true }))
         .mockResolvedValueOnce(jsonResponse(['renamed']));
     vi.stubGlobal('fetch', fetchMock);
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -651,11 +741,14 @@ it('shows the domain error message inline when renaming fails', async () => {
     const fetchMock = vi
         .fn()
         .mockResolvedValueOnce(jsonResponse(['scratch']))
+        .mockResolvedValueOnce(jsonResponse([]))
         .mockResolvedValueOnce(
             jsonResponse({ ok: false, error: 'name taken' }, false),
         );
     vi.stubGlobal('fetch', fetchMock);
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -675,6 +768,7 @@ it('shows the server validation message inline when renaming fails validation', 
     const fetchMock = vi
         .fn()
         .mockResolvedValueOnce(jsonResponse(['scratch']))
+        .mockResolvedValueOnce(jsonResponse([]))
         .mockResolvedValueOnce(
             jsonResponse(
                 {
@@ -685,7 +779,9 @@ it('shows the server validation message inline when renaming fails validation', 
             ),
         );
     vi.stubGlobal('fetch', fetchMock);
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -702,11 +798,10 @@ it('shows the server validation message inline when renaming fails validation', 
 });
 
 it('shows a delete confirmation when the delete icon is clicked', async () => {
-    vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
-    );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -720,11 +815,10 @@ it('shows a delete confirmation when the delete icon is clicked', async () => {
 });
 
 it('does nothing when delete is cancelled with No', async () => {
-    vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
-    );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -736,15 +830,14 @@ it('does nothing when delete is cancelled with No', async () => {
     await fireEvent.click(screen.getByRole('button', { name: 'No' }));
 
     screen.getByRole('button', { name: 'Delete scratch' });
-    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledTimes(2);
 });
 
 it('does nothing when delete is cancelled with Escape', async () => {
-    vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
-    );
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -758,16 +851,19 @@ it('does nothing when delete is cancelled with Escape', async () => {
     });
 
     screen.getByRole('button', { name: 'Delete scratch' });
-    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledTimes(2);
 });
 
-it('deletes the current snippet and navigates home', async () => {
+it('deletes the current snippet and navigates to the project root', async () => {
     const fetchMock = vi
         .fn()
         .mockResolvedValueOnce(jsonResponse(['scratch']))
+        .mockResolvedValueOnce(jsonResponse([]))
         .mockResolvedValueOnce(jsonResponse({ ok: true }));
     vi.stubGlobal('fetch', fetchMock);
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -778,17 +874,22 @@ it('deletes the current snippet and navigates home', async () => {
     );
     await fireEvent.click(screen.getByRole('button', { name: 'Yes' }));
 
-    await vi.waitFor(() => expect(routerGet).toHaveBeenCalledWith('/'));
+    await vi.waitFor(() =>
+        expect(routerGet).toHaveBeenCalledWith('/my-project'),
+    );
 });
 
 it('reloads the list after deleting a snippet that is not the current one', async () => {
     const fetchMock = vi
         .fn()
         .mockResolvedValueOnce(jsonResponse(['other']))
+        .mockResolvedValueOnce(jsonResponse([]))
         .mockResolvedValueOnce(jsonResponse({ ok: true }))
         .mockResolvedValueOnce(jsonResponse([]));
     vi.stubGlobal('fetch', fetchMock);
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -805,11 +906,14 @@ it('shows the error message inline when deleting fails', async () => {
     const fetchMock = vi
         .fn()
         .mockResolvedValueOnce(jsonResponse(['scratch']))
+        .mockResolvedValueOnce(jsonResponse([]))
         .mockResolvedValueOnce(
             jsonResponse({ ok: false, error: 'delete failed' }, false),
         );
     vi.stubGlobal('fetch', fetchMock);
-    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Browse snippets' }),
@@ -821,4 +925,158 @@ it('shows the error message inline when deleting fails', async () => {
     await fireEvent.click(screen.getByRole('button', { name: 'Yes' }));
 
     await screen.findByText('delete failed');
+});
+
+function fetchRoutedTo(
+    snippetNames: string[],
+    projectNames: string[],
+): ReturnType<typeof vi.fn> {
+    return vi.fn((url: string) =>
+        Promise.resolve(
+            jsonResponse(
+                url.includes('/snippets') ? snippetNames : projectNames,
+            ),
+        ),
+    );
+}
+
+it('filters snippets the same way with an explicit # prefix', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo(['apple', 'zebra'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'apple' },
+    });
+
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+    const input = await screen.findByLabelText('Search or jump to');
+    await fireEvent.update(input, '#ze');
+
+    await screen.findByText('zebra');
+    expect(screen.queryByText('apple')).toBeNull();
+});
+
+it('shows projects and filters them by substring when the field starts with /', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], ['apple', 'zebra']));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+    const input = await screen.findByLabelText('Search or jump to');
+    await fireEvent.update(input, '/ze');
+
+    await screen.findByText('zebra');
+    expect(screen.queryByText('apple')).toBeNull();
+    expect(screen.queryByText('scratch')).toBeNull();
+});
+
+it('navigates to the selected project when Enter is pressed with a match', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], ['apple', 'zebra']));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+    const input = await screen.findByLabelText('Search or jump to');
+    await fireEvent.update(input, '/zeb');
+    await screen.findByText('zebra');
+    await fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+    expect(routerGet).toHaveBeenCalledWith('/zebra');
+});
+
+it('shows "No projects found." with no create action when nothing matches', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], ['apple', 'zebra']));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+    const input = await screen.findByLabelText('Search or jump to');
+    await fireEvent.update(input, '/nope');
+    await screen.findByText('No projects found.');
+    await fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+    expect(routerGet).not.toHaveBeenCalled();
+    expect(capturedCreatePost).toBeNull();
+});
+
+it('shows the project switcher placeholder while in the project category', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], ['apple', 'zebra']));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+    const input = await screen.findByLabelText('Search or jump to');
+    await fireEvent.update(input, '/');
+
+    await screen.findByLabelText('Switch to project');
+});
+
+it('shows snippets and projects grouped into labeled sections by default', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], ['apple', 'zebra']));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+    await screen.findByText('scratch');
+
+    screen.getByText('Snippets');
+    screen.getByText('Projects');
+    screen.getByText('apple');
+    screen.getByText('zebra');
+});
+
+it('filters both sections at once when typing without a prefix', async () => {
+    vi.stubGlobal(
+        'fetch',
+        fetchRoutedTo(['apple', 'scratch'], ['apple-project', 'zebra']),
+    );
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+    const input = await screen.findByLabelText('Search or jump to');
+    await fireEvent.update(input, 'app');
+
+    await screen.findByRole('option', { name: 'apple' });
+    screen.getByRole('option', { name: 'apple-project' });
+    expect(screen.queryByText('scratch')).toBeNull();
+    expect(screen.queryByText('zebra')).toBeNull();
+});
+
+it('moves the highlight from the snippets section into the projects section', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], ['other']));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+    const input = await screen.findByLabelText('Search or jump to');
+    await screen.findByText('other');
+
+    await fireEvent.keyDown(input, { key: 'ArrowDown' });
+
+    expect(
+        screen
+            .getByRole('option', { name: 'other' })
+            .getAttribute('aria-selected'),
+    ).toBe('true');
+});
+
+it('switches to the highlighted project when Enter is pressed after navigating past all snippets', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], ['other']));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+    const input = await screen.findByLabelText('Search or jump to');
+    await screen.findByText('other');
+    await fireEvent.keyDown(input, { key: 'ArrowDown' });
+    await fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+    expect(routerGet).toHaveBeenCalledWith('/other');
 });

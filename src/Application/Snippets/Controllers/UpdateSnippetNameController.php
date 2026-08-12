@@ -11,13 +11,11 @@ use Support\SnippetRepository;
 
 class UpdateSnippetNameController
 {
-    public function __construct(private SnippetRepository $snippets) {}
-
-    public function __invoke(SnippetNameRequest $request, string $snippet): JsonResponse
+    public function __invoke(SnippetNameRequest $request, SnippetRepository $snippets, string $project, string $snippet): JsonResponse
     {
         $newName = $request->name();
 
-        $result = $this->snippets->rename($snippet, $newName);
+        $result = $snippets->rename($project, $snippet, $newName);
 
         if ($result === RenameSnippetResult::Missing) {
             return response()->json([

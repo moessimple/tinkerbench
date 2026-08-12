@@ -9,6 +9,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Assert;
+use Support\Herd;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 
@@ -121,4 +122,16 @@ function createFormRequest(string $requestClass, array $payload = []): TestRespo
     Route::post('form-request-under-test', fn () => resolve($requestClass));
 
     return test()->postJson('form-request-under-test', $payload);
+}
+
+/**
+ * Stubs Herd::projectPath() so the given project resolves to a real-looking path. Every route
+ * under api/projects/{project}/snippets sits behind EnsureKnownProjectMiddleware, so a
+ * controller test for one of those routes needs this unless it's testing the unknown-project
+ * case itself.
+ */
+function mockKnownProject(string $project = 'my-project'): void
+{
+    test()->mock(Herd::class)
+        ->shouldReceive('projectPath')->with($project)->andReturn("/path/to/{$project}");
 }

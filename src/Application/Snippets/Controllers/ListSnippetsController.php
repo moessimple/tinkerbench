@@ -9,10 +9,8 @@ use Support\SnippetRepository;
 
 class ListSnippetsController
 {
-    public function __construct(private SnippetRepository $snippets) {}
-
-    public function __invoke(): JsonResponse
+    public function __invoke(SnippetRepository $snippets, string $project): JsonResponse
     {
-        return response()->json($this->snippets->names());
+        return response()->json($snippets->names($project));
     }
 }

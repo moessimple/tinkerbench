@@ -3,13 +3,14 @@ import { Head, useHttp } from '@inertiajs/vue3';
 import { onBeforeUnmount, ref } from 'vue';
 import RunSnippetController from '@/actions/Application/Snippets/Controllers/RunSnippetController';
 import UpdateSnippetContentController from '@/actions/Application/Snippets/Controllers/UpdateSnippetContentController';
+import CommandPalette from '@/components/CommandPalette.vue';
 import MonacoEditor from '@/components/MonacoEditor.vue';
-import SnippetList from '@/components/SnippetList.vue';
 import { xsrfHeader } from '@/lib/csrf';
 import { shortcuts } from '@/lib/shortcuts';
 
 const props = defineProps<{
     content: string;
+    currentProject: string;
     laravelVersion: string;
     phpVersion: string;
     snippetName: string;
@@ -28,11 +29,17 @@ let saveTimer: ReturnType<typeof window.setTimeout> | undefined;
 let pendingSave = Promise.resolve();
 
 function persistSnippet(content: string): Promise<void> {
-    return fetch(UpdateSnippetContentController.url(props.snippetName), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...xsrfHeader() },
-        body: JSON.stringify({ content }),
-    }).then(() => undefined);
+    return fetch(
+        UpdateSnippetContentController.url([
+            props.currentProject,
+            props.snippetName,
+        ]),
+        {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', ...xsrfHeader() },
+            body: JSON.stringify({ content }),
+        },
+    ).then(() => undefined);
 }
 
 function queueSnippetSave(content: string): Promise<void> {
@@ -52,7 +59,7 @@ onBeforeUnmount(() => window.clearTimeout(saveTimer));
 function run(): void {
     errorMessage.value = '';
 
-    http.post(RunSnippetController.url(), {
+    http.post(RunSnippetController.url(props.currentProject), {
         onSuccess: (data) => {
             output.value = data.output;
         },
@@ -136,7 +143,10 @@ function run(): void {
                                 />
                             </svg>
                         </button>
-                        <SnippetList :current-snippet="snippetName" />
+                        <CommandPalette
+                            :current-project="currentProject"
+                            :current-snippet="snippetName"
+                        />
                     </div>
                     <div class="h-96 min-w-0 flex-1">
                         <MonacoEditor

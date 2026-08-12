@@ -11,10 +11,12 @@ it('uses the right request', function (): void {
 });
 
 it('saves the content via the repository', function (): void {
-    $this->mock(SnippetRepository::class)
-        ->shouldReceive('write')->once()->with('scratch', 'echo "saved";');
+    mockKnownProject();
 
-    $this->putJson('/api/snippets/scratch', ['content' => 'echo "saved";'])
+    $this->mock(SnippetRepository::class)
+        ->shouldReceive('write')->once()->with('my-project', 'scratch', 'echo "saved";');
+
+    $this->putJson('/api/projects/my-project/snippets/scratch', ['content' => 'echo "saved";'])
         ->assertOk()
         ->assertExactJson(['ok' => true]);
 });
