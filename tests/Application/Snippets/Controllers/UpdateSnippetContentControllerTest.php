@@ -21,8 +21,3 @@ it('persists the given content for the named snippet', function (): void {
 
     Storage::disk('snippets')->assertExists('scratch.php', 'echo "saved";');
 });
-
-it('rejects a missing content field', function (): void {
-    $this->putJson('/api/snippets/scratch', [])
-        ->assertInvalid('content');
-});

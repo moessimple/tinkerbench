@@ -39,8 +39,3 @@ it('returns 409 when the target name is already taken', function (): void {
         ->assertStatus(409)
         ->assertExactJson(['ok' => false, 'error' => 'A snippet named "new" already exists']);
 });
-
-it('rejects a name with characters outside the allowed pattern', function (): void {
-    $this->patchJson('/api/snippets/old', ['name' => 'bad name!'])
-        ->assertInvalid('name');
-});

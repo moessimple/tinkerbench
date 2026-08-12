@@ -16,3 +16,13 @@ it('exposes the name input as a string', function (): void {
 
     expect($request->name())->toBe('my-snippet');
 });
+
+it('rejects a name with characters outside the allowed pattern', function (): void {
+    createFormRequest(UpdateSnippetNameRequest::class, ['name' => 'bad name!'])
+        ->assertInvalid('name');
+});
+
+it('accepts a name made of letters, digits, underscores and dashes', function (): void {
+    createFormRequest(UpdateSnippetNameRequest::class, ['name' => 'my-snippet_2'])
+        ->assertValid('name');
+});

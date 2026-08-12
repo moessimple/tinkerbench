@@ -3,7 +3,10 @@
 declare(strict_types=1);
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Assert;
+use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 
 /*
@@ -76,4 +79,20 @@ expect()->extend('toUseFormRequest', function (string $type): self {
 function something(): void
 {
     // ..
+}
+
+/**
+ * Resolves a FormRequest through a real HTTP request against a throwaway route, so its
+ * validation runs for real (including any authorize()/prepareForValidation() a request
+ * declares) instead of validating an extracted rules() array in isolation.
+ *
+ * @param  class-string<FormRequest>  $requestClass
+ * @param  array<string, mixed>  $payload
+ * @return TestResponse<Response>
+ */
+function createFormRequest(string $requestClass, array $payload = []): TestResponse
+{
+    Route::post('form-request-under-test', fn () => resolve($requestClass));
+
+    return test()->postJson('form-request-under-test', $payload);
 }
