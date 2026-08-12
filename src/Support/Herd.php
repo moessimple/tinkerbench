@@ -6,15 +6,51 @@ namespace Support;
 
 use Illuminate\Support\Facades\Process;
 use InvalidArgumentException;
+use RuntimeException;
 
 class Herd
 {
-    public function phpBinary(): string
+    /** @return array<string, string> */
+    public function projects(): array
     {
-        return $this->bin().'/php';
+        return [
+            ...$this->projectPaths($this->run([$this->php(), $this->phar(), 'sites', '--json'])),
+            ...$this->projectPaths($this->run([$this->php(), $this->phar(), 'parked', '--json'])),
+        ];
     }
 
-    public function runSnippet(string $code): SnippetRunResult
+    public function projectPath(string $project): ?string
+    {
+        $path = $this->projects()[$project] ?? null;
+
+        if ($path === null) {
+            return null;
+        }
+
+        return realpath($path) ?: null;
+    }
+
+    public function currentProject(): string
+    {
+        $ownPath = realpath(base_path());
+
+        foreach ($this->projects() as $project => $path) {
+            if (realpath($path) === $ownPath) {
+                return $project;
+            }
+        }
+
+        throw new RuntimeException('tinkerbench is not served by Herd under a known site name.');
+    }
+
+    public function phpBinary(string $project): string
+    {
+        $binary = mb_trim($this->run([$this->php(), $this->phar(), 'which-php', $project]));
+
+        return $binary !== '' ? $binary : $this->php();
+    }
+
+    public function runSnippet(string $code, string $phpBinary, string $projectPath): SnippetRunResult
     {
         // The child process is a snippet the caller wrote, its runtime isn't bounded. This request is
         // itself blocked waiting on it, so without lifting PHP's own max_execution_time the request would
@@ -26,8 +62,9 @@ class Herd
 
         try {
             $result = Process::forever()->run([
-                $this->phpBinary(),
+                $phpBinary,
                 base_path('src/Support/bin/run-snippet.php'),
+                $projectPath,
                 $snippetPath,
             ]);
         } finally {
@@ -41,6 +78,16 @@ class Herd
         return new SnippetRunResult($result->output().$result->errorOutput());
     }
 
+    private function php(): string
+    {
+        return $this->bin().'/php';
+    }
+
+    private function phar(): string
+    {
+        return $this->bin().'/herd.phar';
+    }
+
     private function bin(): string
     {
         $path = config('services.herd.bin');
@@ -48,6 +95,46 @@ class Herd
         throw_if(! is_string($path) || $path === '', InvalidArgumentException::class, 'The services.herd.bin configuration must be a non-empty path.');
 
         return $path;
+    }
+
+    /** @return array<string, string> */
+    private function projectPaths(string $json): array
+    {
+        $entries = json_decode($json, true);
+
+        if (! is_array($entries)) {
+            return [];
+        }
+
+        $projects = [];
+
+        foreach ($entries as $entry) {
+            if (! is_array($entry)) {
+                continue;
+            }
+
+            $site = $entry['site'] ?? null;
+            $path = $entry['path'] ?? null;
+            if (! is_string($site)) {
+                continue;
+            }
+
+            if (! is_string($path)) {
+                continue;
+            }
+
+            $projects[$site] = $path;
+        }
+
+        return $projects;
+    }
+
+    /** @param list<string> $command */
+    private function run(array $command): string
+    {
+        $result = Process::run($command);
+
+        return $result->output() !== '' ? $result->output() : $result->errorOutput();
     }
 
     // Snippets are normally a bare body with no opening tag, but pasting a complete, already-tagged

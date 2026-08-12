@@ -10,12 +10,14 @@ use RuntimeException;
 
 class SnippetRunner
 {
-    public function run(string $snippetPath): void
+    public function run(string $projectPath, string $snippetPath): void
     {
-        // base_path() isn't available yet here: this runs in a subprocess where only Composer's
-        // autoloader has been required so far, the Laravel container that base_path() reads from
-        // doesn't exist until bootstrap/app.php below has run.
-        $app = require dirname(__DIR__, 2).'/bootstrap/app.php';
+        // Invoked as a subprocess under the target project's own Herd-pinned PHP binary, not necessarily
+        // tinkerbench's own, so it boots the target project separately from this file's own, already-loaded
+        // autoloader.
+        require $projectPath.'/vendor/autoload.php';
+
+        $app = require $projectPath.'/bootstrap/app.php';
 
         throw_unless($app instanceof Application, RuntimeException::class, 'bootstrap/app.php did not return an Application instance.');
 
