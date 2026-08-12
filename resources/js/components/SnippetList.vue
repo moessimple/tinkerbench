@@ -27,6 +27,16 @@ function setRenameInputEl(el: Element | ComponentPublicInstance | null): void {
     renameInputEl.value = el as HTMLInputElement | null;
 }
 
+const deleting = ref<string | null>(null);
+const deleteError = ref('');
+const cancelDeleteButtonEl = ref<HTMLButtonElement | null>(null);
+
+function setCancelDeleteButtonEl(
+    el: Element | ComponentPublicInstance | null,
+): void {
+    cancelDeleteButtonEl.value = el as HTMLButtonElement | null;
+}
+
 // Precognition validates against SnippetNameRequest's real rules on the server,
 // so the character-set/length rule lives in exactly one place instead of being
 // duplicated here.
@@ -136,21 +146,31 @@ async function confirmRename(name: string): Promise<void> {
     await loadNames();
 }
 
-async function deleteSnippet(name: string): Promise<void> {
-    if (!window.confirm(`Delete '${name}'?`)) {
-        return;
-    }
+async function startDelete(name: string): Promise<void> {
+    deleting.value = name;
+    deleteError.value = '';
+    await nextTick();
+    cancelDeleteButtonEl.value?.focus();
+}
 
+function cancelDelete(): void {
+    deleting.value = null;
+    deleteError.value = '';
+}
+
+async function confirmDelete(name: string): Promise<void> {
     const response = await fetch(DeleteSnippetController.url(name), {
         method: 'DELETE',
         headers: xsrfHeader(),
     });
 
     if (!response.ok) {
-        window.alert(await errorMessageFrom(response));
+        deleteError.value = await errorMessageFrom(response);
 
         return;
     }
+
+    deleting.value = null;
 
     if (props.currentSnippet === name) {
         // OpenSnippetController.url() with no snippet argument returns '' (a
@@ -246,6 +266,31 @@ async function deleteSnippet(name: string): Promise<void> {
                         @keydown.escape="cancelRename"
                         @blur="cancelRename"
                     />
+                    <div
+                        v-else-if="deleting === name"
+                        class="flex items-center justify-between gap-2"
+                    >
+                        <span class="text-muted">Delete '{{ name }}'?</span>
+                        <span class="flex shrink-0 items-center gap-2">
+                            <button
+                                type="button"
+                                class="rounded px-1.5 py-0.5 text-xs text-red-400 hover:bg-line/50"
+                                @click="confirmDelete(name)"
+                                @keydown.escape="cancelDelete"
+                            >
+                                Yes
+                            </button>
+                            <button
+                                type="button"
+                                :ref="setCancelDeleteButtonEl"
+                                class="rounded px-1.5 py-0.5 text-xs text-muted hover:bg-line/50"
+                                @click="cancelDelete"
+                                @keydown.escape="cancelDelete"
+                            >
+                                No
+                            </button>
+                        </span>
+                    </div>
                     <div v-else class="flex items-center justify-between gap-2">
                         <button
                             type="button"
@@ -281,7 +326,7 @@ async function deleteSnippet(name: string): Promise<void> {
                                 title="Delete snippet"
                                 :aria-label="`Delete ${name}`"
                                 class="flex h-5 w-5 items-center justify-center rounded text-muted hover:bg-line/50 hover:text-fg"
-                                @click="deleteSnippet(name)"
+                                @click="startDelete(name)"
                             >
                                 <svg
                                     viewBox="0 0 16 16"
@@ -303,6 +348,12 @@ async function deleteSnippet(name: string): Promise<void> {
                         class="font-mono text-xs text-red-400"
                     >
                         {{ renameError }}
+                    </p>
+                    <p
+                        v-if="deleting === name && deleteError"
+                        class="font-mono text-xs text-red-400"
+                    >
+                        {{ deleteError }}
                     </p>
                 </li>
             </ul>

@@ -299,12 +299,11 @@ it('shows the server validation message inline when renaming fails validation', 
     await screen.findByText('Too long.');
 });
 
-it('does nothing when delete is not confirmed', async () => {
+it('shows a delete confirmation when the delete icon is clicked', async () => {
     vi.stubGlobal(
         'fetch',
         vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
     render(SnippetList, { props: { currentSnippet: 'scratch' } });
 
     await fireEvent.click(
@@ -315,6 +314,48 @@ it('does nothing when delete is not confirmed', async () => {
         screen.getByRole('button', { name: 'Delete scratch' }),
     );
 
+    await screen.findByText("Delete 'scratch'?");
+});
+
+it('does nothing when delete is cancelled with No', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    await screen.findByText('scratch');
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Delete scratch' }),
+    );
+    await fireEvent.click(screen.getByRole('button', { name: 'No' }));
+
+    screen.getByRole('button', { name: 'Delete scratch' });
+    expect(fetch).toHaveBeenCalledTimes(1);
+});
+
+it('does nothing when delete is cancelled with Escape', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(jsonResponse(['scratch'])),
+    );
+    render(SnippetList, { props: { currentSnippet: 'scratch' } });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    await screen.findByText('scratch');
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Delete scratch' }),
+    );
+    await fireEvent.keyDown(screen.getByRole('button', { name: 'No' }), {
+        key: 'Escape',
+    });
+
+    screen.getByRole('button', { name: 'Delete scratch' });
     expect(fetch).toHaveBeenCalledTimes(1);
 });
 
@@ -324,7 +365,6 @@ it('deletes the current snippet and navigates home', async () => {
         .mockResolvedValueOnce(jsonResponse(['scratch']))
         .mockResolvedValueOnce(jsonResponse({ ok: true }));
     vi.stubGlobal('fetch', fetchMock);
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     render(SnippetList, { props: { currentSnippet: 'scratch' } });
 
     await fireEvent.click(
@@ -334,6 +374,7 @@ it('deletes the current snippet and navigates home', async () => {
     await fireEvent.click(
         screen.getByRole('button', { name: 'Delete scratch' }),
     );
+    await fireEvent.click(screen.getByRole('button', { name: 'Yes' }));
 
     await vi.waitFor(() => expect(routerGet).toHaveBeenCalledWith('/'));
 });
@@ -345,7 +386,6 @@ it('reloads the list after deleting a snippet that is not the current one', asyn
         .mockResolvedValueOnce(jsonResponse({ ok: true }))
         .mockResolvedValueOnce(jsonResponse([]));
     vi.stubGlobal('fetch', fetchMock);
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     render(SnippetList, { props: { currentSnippet: 'scratch' } });
 
     await fireEvent.click(
@@ -353,12 +393,13 @@ it('reloads the list after deleting a snippet that is not the current one', asyn
     );
     await screen.findByText('other');
     await fireEvent.click(screen.getByRole('button', { name: 'Delete other' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Yes' }));
 
     await screen.findByText('No snippets found.');
     expect(routerGet).not.toHaveBeenCalled();
 });
 
-it('shows an alert when deleting fails', async () => {
+it('shows the error message inline when deleting fails', async () => {
     const fetchMock = vi
         .fn()
         .mockResolvedValueOnce(jsonResponse(['scratch']))
@@ -366,8 +407,6 @@ it('shows an alert when deleting fails', async () => {
             jsonResponse({ ok: false, error: 'delete failed' }, false),
         );
     vi.stubGlobal('fetch', fetchMock);
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
     render(SnippetList, { props: { currentSnippet: 'scratch' } });
 
     await fireEvent.click(
@@ -377,8 +416,7 @@ it('shows an alert when deleting fails', async () => {
     await fireEvent.click(
         screen.getByRole('button', { name: 'Delete scratch' }),
     );
+    await fireEvent.click(screen.getByRole('button', { name: 'Yes' }));
 
-    await vi.waitFor(() =>
-        expect(alertSpy).toHaveBeenCalledWith('delete failed'),
-    );
+    await screen.findByText('delete failed');
 });
