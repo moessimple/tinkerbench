@@ -58,6 +58,7 @@
     },
     "overrides": {
         "protobufjs": "^8.6.6",
-        "@opentelemetry/core": "^2.10.0"
+        "@opentelemetry/core": "^2.10.0",
+        "dompurify": "^3.4.13"
     }
 }
