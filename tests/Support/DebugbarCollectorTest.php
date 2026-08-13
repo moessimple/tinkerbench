@@ -1,0 +1,82 @@
+<?php
+
+declare(strict_types=1);
+
+use DebugBar\DataCollector\ExceptionsCollector;
+use Illuminate\Support\Facades\DB;
+use Support\DebugbarCollector;
+
+it('collects the queries and timing of the wrapped closure', function (): void {
+    $debug = new DebugbarCollector()->collect(app(), function (): void {
+        DB::select('select 1 as one');
+    });
+
+    expect(data_get($debug, 'queries.count'))->toBe(1)
+        ->and(data_get($debug, 'queries.statements.0.sql'))->toContain('select 1')
+        ->and(data_get($debug, 'time.measures'))->toHaveCount(1)
+        ->and(data_get($debug, 'time.measures.0.label'))->toBe('snippet');
+});
+
+it('does not collect queries run before the wrapped closure starts', function (): void {
+    DB::select('select 1 as before');
+
+    $debug = new DebugbarCollector()->collect(app(), function (): void {
+        //
+    });
+
+    expect(data_get($debug, 'queries.count'))->toBe(0);
+});
+
+it('includes an exception reported through the passed-in collector without interrupting collection', function (): void {
+    $debug = new DebugbarCollector()->collect(app(), function (ExceptionsCollector $exceptions): void {
+        try {
+            throw new RuntimeException('boom');
+        } catch (Throwable $throwable) {
+            $exceptions->addThrowable($throwable);
+        }
+    });
+
+    expect(data_get($debug, 'exceptions.count'))->toBe(1)
+        ->and(data_get($debug, 'exceptions.exceptions.0.message'))->toBe('boom')
+        ->and(data_get($debug, 'time.measures.0.label'))->toBe('snippet');
+});
+
+it('captures a dumped value without changing what gets printed to stdout', function (): void {
+    ob_start();
+
+    $debug = new DebugbarCollector()->collect(app(), function (): void {
+        dump('captured value');
+    });
+
+    $printed = ob_get_clean();
+
+    expect($printed)->toContain('Sfdump(')
+        ->and(data_get($debug, 'messages.count'))->toBe(1)
+        ->and(data_get($debug, 'messages.messages.0.message'))->toBe('captured value');
+});
+
+it('captures every value of a multi-argument dump() call, each labelled by its position', function (): void {
+    ob_start();
+
+    $debug = new DebugbarCollector()->collect(app(), function (): void {
+        dump('first', 'second');
+    });
+
+    ob_get_clean();
+
+    expect(data_get($debug, 'messages.count'))->toBe(2)
+        ->and(data_get($debug, 'messages.messages.0.message'))->toBe('first')
+        ->and(data_get($debug, 'messages.messages.1.message'))->toBe('second');
+});
+
+it('captures a dumped non-string value as readable text, not just for strings', function (): void {
+    ob_start();
+
+    $debug = new DebugbarCollector()->collect(app(), function (): void {
+        dump(42);
+    });
+
+    ob_get_clean();
+
+    expect(data_get($debug, 'messages.messages.0.message'))->toBe('42');
+});
