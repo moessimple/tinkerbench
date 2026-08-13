@@ -11,4 +11,5 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/js/** | .ai/rules/js.md |
 | src/Application/*/Requests/** | .ai/rules/requests.md |
 | routes/** | .ai/rules/routes.md |
+| tests/Application/*/Controllers/** | .ai/rules/tests-application-controllers.md |
 | tests/** | .ai/rules/tests.md |
