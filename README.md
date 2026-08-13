@@ -41,7 +41,7 @@ composer setup
 
 `composer setup` installs dependencies, configures the environment, and links the project to Herd at `https://tinkerbench.test`.
 
-Set `HERD_BIN` in `.env` if your Herd installation isn't in the default location. Same for `TINKERBENCH_NVM_EXEC` if Herd's Node isn't in the default location.
+Set `HERD_BIN` in `.env` if your Herd installation isn't in the default location. Same for `HERD_NVM_EXEC` if Herd's Node isn't in the default location.
 
 ## Usage
 

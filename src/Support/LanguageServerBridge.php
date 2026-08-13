@@ -38,9 +38,9 @@ class LanguageServerBridge
 
     private function nvmExec(): string
     {
-        $path = config('services.tinkerbench.nvm_exec');
+        $path = config('services.herd.nvm_exec');
 
-        throw_if(! is_string($path) || $path === '', InvalidArgumentException::class, 'The services.tinkerbench.nvm_exec configuration must be a non-empty path.');
+        throw_if(! is_string($path) || $path === '', InvalidArgumentException::class, 'The services.herd.nvm_exec configuration must be a non-empty path.');
 
         return $path;
     }

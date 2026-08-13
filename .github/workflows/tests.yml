@@ -39,8 +39,8 @@ jobs:
       - name: Point HERD_BIN at this runner's PHP
         run: echo "HERD_BIN=$(dirname "$(which php)")" >> "$GITHUB_ENV"
 
-      - name: Point TINKERBENCH_NVM_EXEC at this runner's Node
-        run: echo "TINKERBENCH_NVM_EXEC=$(which env)" >> "$GITHUB_ENV"
+      - name: Point HERD_NVM_EXEC at this runner's Node
+        run: echo "HERD_NVM_EXEC=$(which env)" >> "$GITHUB_ENV"
 
       - name: Resolve tinkerbench.test to localhost
         run: echo "127.0.0.1 tinkerbench.test" | sudo tee -a /etc/hosts

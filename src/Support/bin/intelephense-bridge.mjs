@@ -15,7 +15,7 @@ const INTELEPHENSE_BIN = path.join(PROJECT_ROOT, 'node_modules/.bin/intelephense
 // 127.0.0.1, unlike Chrome/Firefox. Reusing tinkerbench.test's own Herd-issued certificate (signed by the
 // already system-trusted Laravel Valet CA) lets the bridge speak wss:// without minting a new certificate.
 // TINKERBENCH_HERD_CERTIFICATES_DIR overrides this for environments without Herd (CI), the same way
-// services.tinkerbench.nvm_exec is already overridable.
+// services.herd.nvm_exec is already overridable.
 const HERD_CERTIFICATES_DIR = process.env.TINKERBENCH_HERD_CERTIFICATES_DIR ?? path.join(
     os.homedir(),
     'Library/Application Support/Herd/config/valet/Certificates',

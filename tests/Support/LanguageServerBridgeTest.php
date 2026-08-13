@@ -11,7 +11,7 @@ it('spawns a detached bridge process that survives past the request and reports 
     expect($port)->toBeGreaterThan(0);
 
     $connected = Process::run([
-        config('services.tinkerbench.nvm_exec'),
+        config('services.herd.nvm_exec'),
         'node',
         '-e',
         // rejectUnauthorized: false only skips certificate verification for this connectivity check, the
@@ -24,8 +24,8 @@ it('spawns a detached bridge process that survives past the request and reports 
     expect($connected->output())->toContain('connected');
 });
 
-it('throws when the tinkerbench Node runtime is not configured', function (): void {
-    config(['services.tinkerbench.nvm_exec' => null]);
+it('throws when the herd Node runtime is not configured', function (): void {
+    config(['services.herd.nvm_exec' => null]);
 
     new LanguageServerBridge()->start(sys_get_temp_dir(), '8.5');
 })->throws(InvalidArgumentException::class);
