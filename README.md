@@ -39,14 +39,14 @@ cd tinkerbench
 composer setup
 ```
 
-`composer setup` installs dependencies, configures the environment, and links the project to Herd at `https://tinkerbench.test`.
+`composer setup` installs dependencies, configures the environment, and links the project to Herd at [`https://tinkerbench.test`](https://tinkerbench.test).
 
 ## Usage
 
 Open [`https://tinkerbench.test`](https://tinkerbench.test). It opens the `scratch` snippet in the `tinkerbench` project by default.
 
 * Write PHP in the editor and run it with the play button or `⌘Enter`.
-* Press `⌘P` to search snippets, switch to another Herd project (`/` prefix), or create a new snippet by typing a name that doesn't exist yet.
+* Press `⌘P` to search snippets and projects, scope the search to snippets (`#` prefix) or another Herd project (`/` prefix), or create a new snippet by typing a name that doesn't exist yet.
 * Toggle raw/rendered output, clear the output, or maximize the editor from the sidebar icons.
 
 ## Staying Up to Date
