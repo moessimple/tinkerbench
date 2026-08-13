@@ -1,4 +1,7 @@
+
 # tinkerbench
+
+![App](images/app.jpg)
 
 [![tests](https://github.com/moessimple/tinkerbench/actions/workflows/tests.yml/badge.svg)](https://github.com/moessimple/tinkerbench/actions/workflows/tests.yml)
 

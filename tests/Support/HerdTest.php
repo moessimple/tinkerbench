@@ -211,6 +211,12 @@ it('does not duplicate an opening tag the snippet already provides', function ()
     expect($result->output)->toBe('already tagged');
 });
 
+it('formats dd()/dump() output as an HTML dump instead of plain CLI text', function (): void {
+    $result = new Herd()->runSnippet("dump('hello');", PHP_BINARY, base_path());
+
+    expect($result->output)->toContain('Sfdump(');
+});
+
 it('cleans up the temp snippet file after running', function (): void {
     $before = glob(sys_get_temp_dir().'/tinkerbench-snippet-*.php');
 

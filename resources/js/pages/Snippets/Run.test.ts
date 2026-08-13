@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/vue';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { reactive } from 'vue';
+import type * as OutputModule from '@/lib/output';
 
 let capturedPost: {
     url: string;
@@ -75,6 +76,15 @@ vi.mock('@/components/CommandPalette.vue', () => ({
     },
 }));
 
+// detectOutput/highlightJson are cheap, deterministic pure functions and run for real.
+// executeScripts has its own test (output.test.ts) proving it replaces <script> nodes so
+// browsers re-run them; jsdom never executes those scripts regardless, so it's mocked here
+// to prove only that Run.vue calls it at the right time, not that it works.
+vi.mock('@/lib/output', async (importOriginal) => ({
+    ...(await importOriginal<typeof OutputModule>()),
+    executeScripts: vi.fn(),
+}));
+
 const { default: Run } = await import('./Run.vue');
 const props = {
     content: "echo 'hello world';",
@@ -92,10 +102,16 @@ afterEach(() => {
     vi.useRealTimers();
 });
 
-it('sets the page title', () => {
+it('sets the page title to the project and snippet name', () => {
     render(Run, { props });
 
-    expect(capturedTitle).toBe('Snippets');
+    expect(capturedTitle).toBe('my-project / scratch');
+});
+
+it('shows the project and snippet name as the page heading', () => {
+    render(Run, { props });
+
+    screen.getByRole('heading', { name: 'my-project / scratch' });
 });
 
 it('shows the running PHP and Laravel version', () => {
@@ -225,4 +241,113 @@ it('collapses rapid edits into a single save of the latest content', async () =>
             body: JSON.stringify({ content: "echo 'second';" }),
         }),
     );
+});
+
+it('clears the output and any error message', async () => {
+    render(Run, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: 'hi' });
+    await screen.findByText('hi');
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Clear output' }));
+
+    expect(screen.queryByText('hi')).toBeNull();
+});
+
+it('shows the output as escaped text in raw mode', async () => {
+    render(Run, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '<strong>hi</strong>' });
+
+    await screen.findByText('<strong>hi</strong>');
+});
+
+it('renders HTML output as a sandboxed iframe after switching to rendered mode', async () => {
+    render(Run, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '<strong>hi</strong>' });
+    await screen.findByText('<strong>hi</strong>');
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Show rendered output' }),
+    );
+
+    const frame = screen.getByTitle('Rendered HTML output');
+    expect(frame.getAttribute('srcdoc')).toBe('<strong>hi</strong>');
+    expect(frame.getAttribute('sandbox')).toBe('allow-scripts');
+});
+
+it('renders JSON output as pretty-printed, escaped text in rendered mode', async () => {
+    render(Run, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({
+        output: '{"name":"<script>unsafe()</script>"}',
+    });
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Show rendered output' }),
+    );
+
+    const output = screen.getByRole('status', { name: 'Snippet output' });
+    expect(output.textContent).toBe(
+        '{\n  "name": "<script>unsafe()</script>"\n}',
+    );
+    expect(output.querySelector('script')).toBeNull();
+});
+
+it('leaves JSON output as its original raw string in raw mode', async () => {
+    render(Run, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '{"name":"tinkerbench"}' });
+
+    await screen.findByText('{"name":"tinkerbench"}');
+});
+
+it('re-executes embedded scripts when dump output is shown in rendered mode', async () => {
+    const { executeScripts } = await import('@/lib/output');
+    render(Run, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '<script>Sfdump("sf-dump-1")</script>' });
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Show rendered output' }),
+    );
+
+    await vi.waitFor(() => expect(executeScripts).toHaveBeenCalledOnce());
+});
+
+it('re-executes embedded scripts when a run completes while already in rendered mode', async () => {
+    const { executeScripts } = await import('@/lib/output');
+    render(Run, { props });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Show rendered output' }),
+    );
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '<script>Sfdump("sf-dump-1")</script>' });
+
+    await vi.waitFor(() => expect(executeScripts).toHaveBeenCalledOnce());
+});
+
+it('hides the header and shows an exit-fullscreen button when maximized', async () => {
+    render(Run, { props });
+
+    screen.getByText('tinkerbench');
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Toggle fullscreen' }),
+    );
+
+    expect(screen.queryByText('tinkerbench')).toBeNull();
+    screen.getByRole('button', { name: 'Exit fullscreen' });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Exit fullscreen' }),
+    );
+
+    screen.getByText('tinkerbench');
 });

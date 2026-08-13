@@ -16,3 +16,9 @@
     --color-muted: #9198a1;
     --color-accent: #58a6ff;
 }
+
+/* Inertia's <x-inertia::app /> renders a bare <div id="app"> with no way to attach a Tailwind
+   class, so the h-full cascade from <html>/<body> down to the page root is closed here instead. */
+#app {
+    height: 100%;
+}
