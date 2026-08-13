@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Application\Projects\Controllers\ListProjectsController;
+use Application\Projects\Controllers\StartLanguageServerController;
 use Application\Projects\Middleware\EnsureKnownProjectMiddleware;
 use Application\Projects\Middleware\RefreshHerdCacheOnFullPageLoadMiddleware;
 use Application\Snippets\Controllers\CreateSnippetController;
@@ -22,6 +23,9 @@ Route::post('projects/{project}/snippets/executions', RunSnippetController::clas
     ->middleware(EnsureKnownProjectMiddleware::class);
 
 Route::get('api/projects', ListProjectsController::class);
+
+Route::post('api/projects/{project}/language-server', StartLanguageServerController::class)
+    ->middleware(EnsureKnownProjectMiddleware::class);
 
 Route::prefix('api/projects/{project}/snippets')->middleware(EnsureKnownProjectMiddleware::class)->group(function (): void {
     Route::get('/', ListSnippetsController::class);

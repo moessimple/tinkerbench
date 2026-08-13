@@ -2,9 +2,15 @@
 
 declare(strict_types=1);
 
+use Application\Projects\Middleware\EnsureKnownProjectMiddleware;
+use Application\Snippets\Controllers\ListSnippetsController;
 use Mockery\MockInterface;
 use Support\Herd;
 use Support\SnippetRepository;
+
+it('uses the right middleware', function (): void {
+    expect(ListSnippetsController::class)->toUseMiddleware(EnsureKnownProjectMiddleware::class);
+});
 
 it('returns the snippet names from the repository', function (): void {
     mockKnownProject();

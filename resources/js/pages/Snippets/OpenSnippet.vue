@@ -312,6 +312,7 @@ function toggleMaximize(): void {
                     <div class="min-h-0 min-w-0 flex-1">
                         <MonacoEditor
                             :initial-value="http.code"
+                            :project="currentProject"
                             @change="onEditorChange"
                             @run="run"
                         />

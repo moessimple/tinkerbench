@@ -1,10 +1,20 @@
 import { cleanup, render } from '@testing-library/vue';
 import * as monaco from 'monaco-editor';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { attachLanguageServer } from '@/lib/languageServer';
 import MonacoEditor from './MonacoEditor.vue';
 
 vi.mock('@/lib/monacoEditorWorker', () => ({
     createEditorWorker: vi.fn(),
+}));
+
+const languageServerHandle = {
+    dispose: vi.fn(),
+    notifyContentChanged: vi.fn(),
+};
+
+vi.mock('@/lib/languageServer', () => ({
+    attachLanguageServer: vi.fn(),
 }));
 
 const onDidChangeModelContent = vi.fn();
@@ -34,8 +44,13 @@ beforeEach(() => {
     editor.getValue.mockClear();
     editor.layout.mockClear();
     onDidChangeModelContent.mockClear();
+    languageServerHandle.dispose.mockClear();
+    languageServerHandle.notifyContentChanged.mockClear();
     vi.mocked(monaco.editor.create).mockClear();
     vi.mocked(monaco.editor.defineTheme).mockClear();
+    vi.mocked(attachLanguageServer)
+        .mockReset()
+        .mockResolvedValue(languageServerHandle);
 });
 
 function actionRun(id: string): () => void {
@@ -51,7 +66,9 @@ function actionRun(id: string): () => void {
 afterEach(cleanup);
 
 it('creates the editor with PHP syntax highlighting and the github-dark theme', () => {
-    render(MonacoEditor, { props: { initialValue: '<?php echo "initial";' } });
+    render(MonacoEditor, {
+        props: { initialValue: '<?php echo "initial";', project: 'my-project' },
+    });
 
     expect(monaco.editor.defineTheme).toHaveBeenCalledWith(
         'github-dark',
@@ -69,7 +86,7 @@ it('creates the editor with PHP syntax highlighting and the github-dark theme', 
 
 it('emits change with the current content when the editor content changes', () => {
     const rendered = render(MonacoEditor, {
-        props: { initialValue: '<?php echo "initial";' },
+        props: { initialValue: '<?php echo "initial";', project: 'my-project' },
     });
 
     onDidChangeModelContent.mock.calls[0]?.[0]();
@@ -79,7 +96,7 @@ it('emits change with the current content when the editor content changes', () =
 
 it('disposes the editor when unmounted', () => {
     const rendered = render(MonacoEditor, {
-        props: { initialValue: '<?php echo "initial";' },
+        props: { initialValue: '<?php echo "initial";', project: 'my-project' },
     });
 
     rendered.unmount();
@@ -89,7 +106,7 @@ it('disposes the editor when unmounted', () => {
 
 it('emits run when the Ctrl/Cmd+Enter action runs', () => {
     const rendered = render(MonacoEditor, {
-        props: { initialValue: '<?php echo "initial";' },
+        props: { initialValue: '<?php echo "initial";', project: 'my-project' },
     });
 
     actionRun('tinkerbench.run')();
@@ -100,4 +117,51 @@ it('emits run when the Ctrl/Cmd+Enter action runs', () => {
             keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
         }),
     );
+});
+
+it('attaches the language server for the current project', () => {
+    render(MonacoEditor, {
+        props: { initialValue: '<?php echo "initial";', project: 'my-project' },
+    });
+
+    expect(attachLanguageServer).toHaveBeenCalledWith(
+        monaco,
+        'my-project',
+        '<?php echo "initial";',
+    );
+});
+
+it('forwards content changes to the language server once attached', async () => {
+    render(MonacoEditor, {
+        props: { initialValue: '<?php echo "initial";', project: 'my-project' },
+    });
+
+    await vi.mocked(attachLanguageServer).mock.results[0]?.value;
+    onDidChangeModelContent.mock.calls[0]?.[0]();
+
+    expect(languageServerHandle.notifyContentChanged).toHaveBeenCalledWith(
+        '<?php echo "changed";',
+    );
+});
+
+it('disposes the language server once attached and the editor unmounts', async () => {
+    const rendered = render(MonacoEditor, {
+        props: { initialValue: '<?php echo "initial";', project: 'my-project' },
+    });
+
+    await vi.mocked(attachLanguageServer).mock.results[0]?.value;
+    rendered.unmount();
+
+    expect(languageServerHandle.dispose).toHaveBeenCalledOnce();
+});
+
+it('disposes the language server immediately if it resolves after the editor already unmounted', async () => {
+    const rendered = render(MonacoEditor, {
+        props: { initialValue: '<?php echo "initial";', project: 'my-project' },
+    });
+
+    rendered.unmount();
+    await vi.mocked(attachLanguageServer).mock.results[0]?.value;
+
+    expect(languageServerHandle.dispose).toHaveBeenCalledOnce();
 });

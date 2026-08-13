@@ -3,10 +3,16 @@
 declare(strict_types=1);
 
 use App\Http\Middleware\HandleInertiaRequests;
+use Application\Projects\Middleware\RefreshHerdCacheOnFullPageLoadMiddleware;
+use Application\Snippets\Controllers\OpenSnippetController;
 use Inertia\Testing\AssertableInertia;
 use Mockery\MockInterface;
 use Support\Herd;
 use Support\SnippetRepository;
+
+it('uses the right middleware', function (): void {
+    expect(OpenSnippetController::class)->toUseMiddleware(RefreshHerdCacheOnFullPageLoadMiddleware::class);
+});
 
 it('opens the default scratch snippet for the current project', function (): void {
     $this->mock(Herd::class, function (MockInterface $mock): void {

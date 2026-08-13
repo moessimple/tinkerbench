@@ -39,6 +39,7 @@ return [
 
     'herd' => [
         'bin' => env('HERD_BIN', env('HOME').'/Library/Application Support/Herd/bin'),
+        'nvm_exec' => env('HERD_NVM_EXEC', env('HOME').'/Library/Application Support/Herd/config/nvm/nvm-exec'),
     ],
 
 ];
