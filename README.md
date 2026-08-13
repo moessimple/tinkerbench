@@ -19,6 +19,12 @@ A take on Laravel's [`tinker`](https://github.com/laravel/tinker), inspired by [
 
 tinkerbench runs locally on your own machine through Herd. There's no login and no support for multiple users, it's a personal dev tool.
 
+## Roadmap
+
+* A debug panel next to the output panel, showing the queries, timing, dumps, exceptions, and environment info a snippet run touched.
+* Autocompletion for PHP and the target project's own classes.
+* A light theme alongside the current dark one, with a way to switch between them.
+
 ## Requirements
 
 * [Laravel Herd](https://herd.laravel.com), with PHP 8.5 selected as the active version
