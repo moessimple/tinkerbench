@@ -73,6 +73,45 @@ it('shells out to herd only once when called repeatedly on the same instance', f
     Process::assertRanTimes(fn ($process): bool => in_array('parked', $process->command, true), 1);
 });
 
+it('shares the project list cache across separate herd instances', function (): void {
+    config(['services.herd.bin' => '/tmp/herd-bin']);
+    Process::fake([
+        "*'sites' '--json'" => json_encode([
+            ['site' => 'tinkerbench', 'path' => '/path/to/tinkerbench'],
+        ]),
+        "*'parked' '--json'" => json_encode([]),
+    ]);
+
+    new Herd()->projects();
+    new Herd()->projects();
+
+    Process::assertRanTimes(fn ($process): bool => in_array('sites', $process->command, true), 1);
+    Process::assertRanTimes(fn ($process): bool => in_array('parked', $process->command, true), 1);
+});
+
+it('refreshes the project list explicitly', function (): void {
+    config(['services.herd.bin' => '/tmp/herd-bin']);
+    Process::fake([
+        "*'sites' '--json'" => json_encode([]),
+        "*'parked' '--json'" => json_encode([]),
+    ]);
+
+    expect(new Herd()->projects())->toBe([]);
+
+    Process::fake([
+        "*'sites' '--json'" => json_encode([
+            ['site' => 'new-project', 'path' => '/path/to/new-project'],
+        ]),
+        "*'parked' '--json'" => json_encode([]),
+    ]);
+
+    expect(new Herd()->refreshProjects())->toBe([
+        'new-project' => '/path/to/new-project',
+    ])->and(new Herd()->projects())->toBe([
+        'new-project' => '/path/to/new-project',
+    ]);
+});
+
 it('lists just the project names', function (): void {
     config(['services.herd.bin' => '/tmp/herd-bin']);
     Process::fake([
@@ -154,6 +193,30 @@ it('falls back to the configured herd php binary when herd reports none', functi
     ]);
 
     expect(new Herd()->phpBinary('a-project'))->toBe('/tmp/herd-bin/php');
+});
+
+it('shares the resolved php binary cache across separate herd instances', function (): void {
+    config(['services.herd.bin' => '/tmp/herd-bin']);
+    Process::fake([
+        "*'which-php'*" => "/some/project/php\n",
+    ]);
+
+    new Herd()->phpBinary('a-project');
+    new Herd()->phpBinary('a-project');
+
+    Process::assertRanTimes(fn ($process): bool => in_array('which-php', $process->command, true), 1);
+});
+
+it('refreshes the resolved php binary explicitly', function (): void {
+    config(['services.herd.bin' => '/tmp/herd-bin']);
+    Process::fake(["*'which-php'*" => "/some/project/php84\n"]);
+
+    expect(new Herd()->phpBinary('a-project'))->toBe('/some/project/php84');
+
+    Process::fake(["*'which-php'*" => "/some/project/php85\n"]);
+
+    expect(new Herd()->refreshPhpBinary('a-project'))->toBe('/some/project/php85')
+        ->and(new Herd()->phpBinary('a-project'))->toBe('/some/project/php85');
 });
 
 it('resolves the real php version of a given php binary', function (): void {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Support;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -11,16 +12,20 @@ use RuntimeException;
 
 class Herd
 {
-    // The project list can't change mid-request, and a single request routinely asks for it
-    // several times over (once per Herd call that needs to resolve a project), each of which
-    // would otherwise shell out to the Herd CLI twice.
     /** @return array<string, string> */
     public function projects(): array
     {
-        return once(fn (): array => [
-            ...$this->projectPaths($this->run([$this->php(), $this->phar(), 'sites', '--json'])),
-            ...$this->projectPaths($this->run([$this->php(), $this->phar(), 'parked', '--json'])),
-        ]);
+        return Cache::rememberForever('herd:projects', fn (): array => $this->resolveProjects());
+    }
+
+    /** @return array<string, string> */
+    public function refreshProjects(): array
+    {
+        $projects = $this->resolveProjects();
+
+        Cache::forever('herd:projects', $projects);
+
+        return $projects;
     }
 
     /** @return list<string> */
@@ -55,9 +60,16 @@ class Herd
 
     public function phpBinary(string $project): string
     {
-        $binary = mb_trim($this->run([$this->php(), $this->phar(), 'which-php', $project]));
+        return Cache::rememberForever("herd:php-binary:{$project}", fn (): string => $this->resolvePhpBinary($project));
+    }
 
-        return $binary !== '' ? $binary : $this->php();
+    public function refreshPhpBinary(string $project): string
+    {
+        $binary = $this->resolvePhpBinary($project);
+
+        Cache::forever("herd:php-binary:{$project}", $binary);
+
+        return $binary;
     }
 
     public function phpVersion(string $phpBinary): string
@@ -104,6 +116,22 @@ class Herd
         }
 
         return new SnippetRunResult($result->output());
+    }
+
+    /** @return array<string, string> */
+    private function resolveProjects(): array
+    {
+        return [
+            ...$this->projectPaths($this->run([$this->php(), $this->phar(), 'sites', '--json'])),
+            ...$this->projectPaths($this->run([$this->php(), $this->phar(), 'parked', '--json'])),
+        ];
+    }
+
+    private function resolvePhpBinary(string $project): string
+    {
+        $binary = mb_trim($this->run([$this->php(), $this->phar(), 'which-php', $project]));
+
+        return $binary !== '' ? $binary : $this->php();
     }
 
     private function php(): string

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Application\Projects\Controllers\ListProjectsController;
 use Application\Projects\Middleware\EnsureKnownProjectMiddleware;
+use Application\Projects\Middleware\RefreshHerdCacheOnFullPageLoadMiddleware;
 use Application\Snippets\Controllers\CreateSnippetController;
 use Application\Snippets\Controllers\DeleteSnippetController;
 use Application\Snippets\Controllers\ListSnippetsController;
@@ -34,4 +35,5 @@ Route::prefix('api/projects/{project}/snippets')->middleware(EnsureKnownProjectM
 // naming one. EnsureKnownProjectMiddleware always expects a project name in the URL and 404s
 // when it's missing, so it can't guard this route. The project check therefore happens inside
 // OpenSnippetController itself.
-Route::get('{project?}/{snippet?}', OpenSnippetController::class);
+Route::get('{project?}/{snippet?}', OpenSnippetController::class)
+    ->middleware(RefreshHerdCacheOnFullPageLoadMiddleware::class);
