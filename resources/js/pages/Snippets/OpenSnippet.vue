@@ -4,6 +4,7 @@ import { computed, nextTick, onBeforeUnmount, ref, useTemplateRef } from 'vue';
 import RunSnippetController from '@/actions/Application/Snippets/Controllers/RunSnippetController';
 import UpdateSnippetContentController from '@/actions/Application/Snippets/Controllers/UpdateSnippetContentController';
 import CommandPalette from '@/components/CommandPalette.vue';
+import DebugPanel from '@/components/DebugPanel.vue';
 import MonacoEditor from '@/components/MonacoEditor.vue';
 import { xsrfHeader } from '@/lib/csrf';
 import { detectOutput, executeScripts, highlightJson } from '@/lib/output';
@@ -25,6 +26,8 @@ const pageTitle = computed(
 );
 
 const lastResult = ref<OutputResult | null>(null);
+const debug = ref<SnippetDebugPayload | null>(null);
+const activeTab = ref<'debug' | 'output'>('output');
 const errorMessage = ref('');
 const outputMode = ref<'raw' | 'rendered'>('raw');
 const isMaximized = ref(false);
@@ -94,10 +97,13 @@ async function executeDumpScripts(): Promise<void> {
 
 function run(): void {
     errorMessage.value = '';
+    debug.value = null;
+    activeTab.value = 'output';
 
     http.post(RunSnippetController.url(props.currentProject), {
         onSuccess: async (data) => {
             lastResult.value = detectOutput(data.output);
+            debug.value = data.debug;
 
             if (
                 outputMode.value === 'rendered' &&
@@ -117,6 +123,8 @@ function run(): void {
 
 function clearOutput(): void {
     lastResult.value = null;
+    debug.value = null;
+    activeTab.value = 'output';
     errorMessage.value = '';
 }
 
@@ -324,15 +332,41 @@ function toggleMaximize(): void {
                 </div>
 
                 <div class="flex min-h-0 min-w-0 flex-2 flex-col">
-                    <div class="flex shrink-0 border-b border-line">
-                        <span
-                            class="border-b-2 border-accent px-3 py-2 font-mono text-xs font-semibold tracking-widest text-fg uppercase"
+                    <div
+                        role="tablist"
+                        class="flex shrink-0 border-b border-line"
+                    >
+                        <button
+                            type="button"
+                            role="tab"
+                            :aria-selected="activeTab === 'output'"
+                            class="px-3 py-2 font-mono text-xs font-semibold tracking-widest uppercase"
+                            :class="
+                                activeTab === 'output'
+                                    ? 'border-b-2 border-accent text-fg'
+                                    : 'text-muted hover:text-fg'
+                            "
+                            @click="activeTab = 'output'"
                         >
                             Output
-                        </span>
+                        </button>
+                        <button
+                            type="button"
+                            role="tab"
+                            :aria-selected="activeTab === 'debug'"
+                            class="px-3 py-2 font-mono text-xs font-semibold tracking-widest uppercase"
+                            :class="
+                                activeTab === 'debug'
+                                    ? 'border-b-2 border-accent text-fg'
+                                    : 'text-muted hover:text-fg'
+                            "
+                            @click="activeTab = 'debug'"
+                        >
+                            Debug
+                        </button>
                     </div>
                     <div
-                        v-show="!showsFrame"
+                        v-show="activeTab === 'output' && !showsFrame"
                         ref="output"
                         role="status"
                         aria-label="Snippet output"
@@ -350,13 +384,17 @@ function toggleMaximize(): void {
                         <template v-else>{{ outputText }}</template>
                     </div>
                     <iframe
-                        v-show="showsFrame"
+                        v-show="activeTab === 'output' && showsFrame"
                         class="min-h-0 flex-1 border-0 bg-white"
                         sandbox="allow-scripts"
                         title="Rendered HTML output"
                         :srcdoc="
                             lastResult?.type === 'html' ? lastResult.raw : ''
                         "
+                    />
+                    <DebugPanel
+                        v-if="activeTab === 'debug'"
+                        :debug="debug ?? {}"
                     />
                 </div>
             </div>
