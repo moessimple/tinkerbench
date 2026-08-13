@@ -14,6 +14,6 @@ class RunSnippetController
     {
         $result = $action->execute($project, $request->code());
 
-        return response()->json(['output' => $result->output]);
+        return response()->json(['output' => $result->output, 'debug' => $result->debug]);
     }
 }
