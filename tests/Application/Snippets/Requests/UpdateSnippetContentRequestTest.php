@@ -7,7 +7,7 @@ use Illuminate\Validation\Rule;
 
 it('uses the right validation rules', function (): void {
     expect(new UpdateSnippetContentRequest()->rules())->toEqual([
-        'content' => ['required', Rule::string()->max(100000)],
+        'content' => ['required', Rule::string()->max(100_000)],
     ]);
 });
 

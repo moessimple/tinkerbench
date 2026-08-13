@@ -14,7 +14,7 @@ class UpdateSnippetContentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'content' => ['required', Rule::string()->max(100000)],
+            'content' => ['required', Rule::string()->max(100_000)],
         ];
     }
 

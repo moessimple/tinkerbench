@@ -14,7 +14,7 @@ class RunSnippetRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code' => ['required', Rule::string()->max(100000)],
+            'code' => ['required', Rule::string()->max(100_000)],
         ];
     }
 
