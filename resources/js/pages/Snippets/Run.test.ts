@@ -92,10 +92,16 @@ afterEach(() => {
     vi.useRealTimers();
 });
 
-it('sets the page title', () => {
+it('sets the page title to the project and snippet name', () => {
     render(Run, { props });
 
-    expect(capturedTitle).toBe('Snippets');
+    expect(capturedTitle).toBe('my-project / scratch');
+});
+
+it('shows the project and snippet name as the page heading', () => {
+    render(Run, { props });
+
+    screen.getByRole('heading', { name: 'my-project / scratch' });
 });
 
 it('shows the running PHP and Laravel version', () => {
@@ -225,4 +231,54 @@ it('collapses rapid edits into a single save of the latest content', async () =>
             body: JSON.stringify({ content: "echo 'second';" }),
         }),
     );
+});
+
+it('clears the output and any error message', async () => {
+    render(Run, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: 'hi' });
+    await screen.findByText('hi');
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Clear output' }));
+
+    expect(screen.queryByText('hi')).toBeNull();
+});
+
+it('shows the output as escaped text in raw mode', async () => {
+    render(Run, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '<strong>hi</strong>' });
+
+    await screen.findByText('<strong>hi</strong>');
+});
+
+it('renders the output as HTML after switching to rendered mode', async () => {
+    render(Run, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '<strong>hi</strong>' });
+    await screen.findByText('<strong>hi</strong>');
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Show rendered output' }),
+    );
+
+    screen.getByText('hi', { selector: 'strong' });
+});
+
+it('hides the header and shows a minimize button when maximized', async () => {
+    render(Run, { props });
+
+    screen.getByText('tinkerbench');
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Maximize' }));
+
+    expect(screen.queryByText('tinkerbench')).toBeNull();
+    screen.getByRole('button', { name: 'Minimize' });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Minimize' }));
+
+    screen.getByText('tinkerbench');
 });

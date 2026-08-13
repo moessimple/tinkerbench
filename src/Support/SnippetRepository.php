@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Support;
 
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -103,7 +104,7 @@ class SnippetRepository
 
     private function defaultContent(): string
     {
-        return "<?php\n\necho 'Hello, world!';";
+        return File::get(resource_path('stubs/scratch.php'));
     }
 
     private function read(string $path): string

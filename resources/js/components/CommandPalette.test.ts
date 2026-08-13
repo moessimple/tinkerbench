@@ -312,7 +312,7 @@ it('shows a hint to create the typed name when nothing matches', async () => {
     await fireEvent.update(input, 'new-one');
 
     await screen.findByText(
-        'No matches for "new-one". Press Enter to create it.',
+        'No snippet named "new-one" yet. Press Enter to create it.',
     );
 });
 

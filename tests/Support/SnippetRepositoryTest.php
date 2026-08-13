@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Support\Enums\RenameSnippetResult;
 use Support\SnippetRepository;
@@ -33,7 +34,7 @@ it("keeps two projects' snippet lists independent", function (): void {
 it('creates a snippet with default content when it does not exist yet', function (): void {
     new SnippetRepository()->ensureExists('my-project', 'scratch');
 
-    Storage::disk('snippets')->assertExists('my-project/scratch.php', "<?php\n\necho 'Hello, world!';");
+    Storage::disk('snippets')->assertExists('my-project/scratch.php', File::get(resource_path('stubs/scratch.php')));
 });
 
 it('leaves an existing snippet untouched', function (): void {
@@ -50,7 +51,7 @@ it('lets the same snippet name coexist independently in two projects', function 
     new SnippetRepository()->ensureExists('project-b', 'scratch');
 
     expect(new SnippetRepository()->contents('project-a', 'scratch'))->toBe('echo "a";')
-        ->and(new SnippetRepository()->contents('project-b', 'scratch'))->toBe("<?php\n\necho 'Hello, world!';");
+        ->and(new SnippetRepository()->contents('project-b', 'scratch'))->toBe(File::get(resource_path('stubs/scratch.php')));
 });
 
 it('returns the contents of an existing snippet', function (): void {
