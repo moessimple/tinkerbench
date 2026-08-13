@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Support;
 
-class SnippetRunResult
+readonly class SnippetRunResult
 {
     public function __construct(public string $output) {}
 }
