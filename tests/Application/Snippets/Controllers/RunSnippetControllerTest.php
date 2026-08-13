@@ -20,7 +20,7 @@ it('uses the right middleware', function (): void {
 
 it('uses the right action', function (): void {
     $this->mock(RunSnippetAction::class)
-        ->shouldReceive('execute')->once()->with('my-project', Mockery::type('string'))->andReturn(new SnippetRunResult('output'));
+        ->shouldReceive('execute')->once()->with('my-project', Mockery::type('string'))->andReturn(new SnippetRunResult('output', null));
 
     $request = new RunSnippetRequest();
     $request->merge(['code' => 'echo 1;']);
@@ -39,5 +39,17 @@ it('returns the right output', function (): void {
 
     $this->postJson('/projects/my-project/snippets/executions', ['code' => "<?php\n\necho 1 + 1;"])
         ->assertOk()
-        ->assertExactJson(['output' => '2']);
+        ->assertJson(['output' => '2']);
+});
+
+it('returns the debug data from the result', function (): void {
+    $this->partialMock(Herd::class, function (MockInterface $mock): void {
+        $mock->shouldReceive('projectPath')->with('my-project')->andReturn(base_path());
+    });
+    $this->mock(RunSnippetAction::class)
+        ->shouldReceive('execute')->once()->andReturn(new SnippetRunResult('output', ['queries' => ['count' => 1]]));
+
+    $this->postJson('/projects/my-project/snippets/executions', ['code' => 'echo 1;'])
+        ->assertOk()
+        ->assertExactJson(['output' => 'output', 'debug' => ['queries' => ['count' => 1]]]);
 });

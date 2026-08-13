@@ -2,10 +2,14 @@ import { fireEvent, render, screen } from '@testing-library/vue';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { reactive } from 'vue';
 import type * as OutputModule from '@/lib/output';
+import type { SnippetDebugPayload } from '@/types';
 
 let capturedPost: {
     url: string;
-    onSuccess: (data: { output: string }) => void;
+    onSuccess: (data: {
+        debug?: SnippetDebugPayload | null;
+        output: string;
+    }) => void;
     onError: (errors: Record<string, string>) => void;
     onHttpException: (response: { status: number }) => void;
 } | null = null;
@@ -19,7 +23,10 @@ const httpState = reactive({
     post: (
         url: string,
         options: {
-            onSuccess: (data: { output: string }) => void;
+            onSuccess: (data: {
+                debug?: SnippetDebugPayload | null;
+                output: string;
+            }) => void;
             onError: (errors: Record<string, string>) => void;
             onHttpException: (response: { status: number }) => void;
         },
@@ -73,6 +80,16 @@ vi.mock('@/components/CommandPalette.vue', () => ({
     default: {
         props: ['currentProject', 'currentSnippet'],
         template: '<div />',
+    },
+}));
+
+// DebugPanel has its own test (DebugPanel.test.ts) proving what it renders for a given
+// payload; replaced here so this test only proves OpenSnippet.vue wires the tab/data
+// through correctly, not DebugPanel's own rendering.
+vi.mock('@/components/DebugPanel.vue', () => ({
+    default: {
+        props: ['debug'],
+        template: '<div>Debug panel</div>',
     },
 }));
 
@@ -253,6 +270,69 @@ it('clears the output and any error message', async () => {
     await fireEvent.click(screen.getByRole('button', { name: 'Clear output' }));
 
     expect(screen.queryByText('hi')).toBeNull();
+});
+
+it('shows the debug tab even before any run', () => {
+    render(OpenSnippet, { props });
+
+    screen.getByRole('tab', { name: 'Debug' });
+});
+
+it('shows an empty debug panel when the debug tab is clicked before any run', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('tab', { name: 'Debug' }));
+
+    await screen.findByText('Debug panel');
+});
+
+it('shows the debug panel and hides the output view when the debug tab is clicked', async () => {
+    const { container } = render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({
+        output: 'hi',
+        debug: { time: { duration_str: '1ms', measures: [] } },
+    });
+    await fireEvent.click(screen.getByRole('tab', { name: 'Debug' }));
+
+    await screen.findByText('Debug panel');
+    const output = container.querySelector('[aria-label="Snippet output"]');
+    expect(output).toHaveProperty('style.display', 'none');
+});
+
+it('shows the output view again when the output tab is clicked after viewing debug', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({
+        output: 'hi',
+        debug: { time: { duration_str: '1ms', measures: [] } },
+    });
+    await fireEvent.click(await screen.findByRole('tab', { name: 'Debug' }));
+    await fireEvent.click(screen.getByRole('tab', { name: 'Output' }));
+
+    await screen.findByText('hi');
+    expect(screen.queryByText('Debug panel')).toBeNull();
+});
+
+it('clears debug data and resets to the output tab when output is cleared', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({
+        output: 'hi',
+        debug: { time: { duration_str: '1ms', measures: [] } },
+    });
+    await fireEvent.click(screen.getByRole('tab', { name: 'Debug' }));
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Clear output' }));
+
+    expect(screen.getByRole('tab', { name: 'Output' })).toHaveProperty(
+        'ariaSelected',
+        'true',
+    );
+    expect(screen.queryByText('Debug panel')).toBeNull();
 });
 
 it('shows the output as escaped text in raw mode', async () => {

@@ -13,7 +13,7 @@ it('runs the code against the given project', function (): void {
         $mock->shouldReceive('phpBinary')->once()->with('other-project')->andReturn('/path/to/other-project/php');
         $mock->shouldReceive('runSnippet')->once()
             ->with('return 1;', '/path/to/other-project/php', '/path/to/other-project')
-            ->andReturn(new SnippetRunResult('1'));
+            ->andReturn(new SnippetRunResult('1', null));
     });
 
     $result = resolve(RunSnippetAction::class)->execute('other-project', 'return 1;');

@@ -13,6 +13,6 @@ if (PHP_SAPI !== 'cli') {
 
 require __DIR__.'/../../../vendor/autoload.php';
 
-[, $projectPath, $snippetPath] = $argv; // @phpstan-ignore variable.undefined (only ever invoked as a CLI subprocess, see comment above)
+[, $projectPath, $snippetPath, $debugPath] = $argv; // @phpstan-ignore variable.undefined (only ever invoked as a CLI subprocess, see comment above)
 
-new SnippetRunner()->run($projectPath, $snippetPath);
+new SnippetRunner()->run($projectPath, $snippetPath, $debugPath);
