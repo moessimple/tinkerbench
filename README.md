@@ -49,6 +49,15 @@ Open [`https://tinkerbench.test`](https://tinkerbench.test). It opens the `scrat
 * Press `⌘P` to search snippets, switch to another Herd project (`/` prefix), or create a new snippet by typing a name that doesn't exist yet.
 * Toggle raw/rendered output, clear the output, or maximize the editor from the sidebar icons.
 
+## Staying Up to Date
+
+Pull the latest changes and rerun the setup script to bring dependencies and migrations back in sync:
+
+```bash
+git pull
+composer setup
+```
+
 ## Testing
 
 Run the full quality gate (formatting, static analysis, type coverage, and the test suite):
