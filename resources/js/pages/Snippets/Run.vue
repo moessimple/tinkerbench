@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { Head, useHttp } from '@inertiajs/vue3';
-import { computed, onBeforeUnmount, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref, useTemplateRef } from 'vue';
 import RunSnippetController from '@/actions/Application/Snippets/Controllers/RunSnippetController';
 import UpdateSnippetContentController from '@/actions/Application/Snippets/Controllers/UpdateSnippetContentController';
 import CommandPalette from '@/components/CommandPalette.vue';
 import MonacoEditor from '@/components/MonacoEditor.vue';
 import { xsrfHeader } from '@/lib/csrf';
+import { detectOutput, executeScripts, highlightJson } from '@/lib/output';
+import type { OutputResult } from '@/lib/output';
 import { shortcuts } from '@/lib/shortcuts';
 
 const props = defineProps<{
@@ -21,10 +23,27 @@ const pageTitle = computed(
     () => `${props.currentProject} / ${props.snippetName}`,
 );
 
-const output = ref('');
+const lastResult = ref<OutputResult | null>(null);
 const errorMessage = ref('');
 const outputMode = ref<'raw' | 'rendered'>('raw');
 const isMaximized = ref(false);
+const outputEl = useTemplateRef('output');
+
+const outputText = computed(() => lastResult.value?.raw ?? '');
+const renderedJson = computed(() =>
+    lastResult.value?.type === 'json'
+        ? highlightJson(lastResult.value.pretty)
+        : '',
+);
+const showsFrame = computed(
+    () => outputMode.value === 'rendered' && lastResult.value?.type === 'html',
+);
+const showsMarkup = computed(
+    () =>
+        outputMode.value === 'rendered' &&
+        (lastResult.value?.type === 'dump' ||
+            lastResult.value?.type === 'json'),
+);
 
 const http = useHttp<{ code: string }, { output: string }>({
     code: props.content,
@@ -61,12 +80,27 @@ function onEditorChange(content: string): void {
 
 onBeforeUnmount(() => window.clearTimeout(saveTimer));
 
+async function executeDumpScripts(): Promise<void> {
+    await nextTick();
+
+    if (outputEl.value) {
+        executeScripts(outputEl.value);
+    }
+}
+
 function run(): void {
     errorMessage.value = '';
 
     http.post(RunSnippetController.url(props.currentProject), {
-        onSuccess: (data) => {
-            output.value = data.output;
+        onSuccess: async (data) => {
+            lastResult.value = detectOutput(data.output);
+
+            if (
+                outputMode.value === 'rendered' &&
+                lastResult.value.type === 'dump'
+            ) {
+                await executeDumpScripts();
+            }
         },
         onError: (errors) => {
             errorMessage.value = Object.values(errors).join(' ');
@@ -78,12 +112,16 @@ function run(): void {
 }
 
 function clearOutput(): void {
-    output.value = '';
+    lastResult.value = null;
     errorMessage.value = '';
 }
 
-function toggleOutputMode(): void {
+async function toggleOutputMode(): Promise<void> {
     outputMode.value = outputMode.value === 'raw' ? 'rendered' : 'raw';
+
+    if (outputMode.value === 'rendered' && lastResult.value?.type === 'dump') {
+        await executeDumpScripts();
+    }
 }
 
 function toggleMaximize(): void {
@@ -288,14 +326,32 @@ function toggleMaximize(): void {
                             Output
                         </span>
                     </div>
-                    <pre
-                        v-if="outputMode === 'raw'"
-                        class="min-h-0 flex-1 overflow-auto p-4 font-mono text-base leading-6.5 whitespace-pre-wrap"
-                        >{{ output }}</pre>
                     <div
-                        v-else
-                        class="min-h-0 flex-1 overflow-auto p-4 font-mono text-base leading-6.5"
-                        v-html="output"
+                        v-show="!showsFrame"
+                        ref="output"
+                        role="status"
+                        aria-label="Snippet output"
+                        aria-live="polite"
+                        class="min-h-0 flex-1 overflow-auto p-4 font-mono text-base leading-6.5 whitespace-pre-wrap"
+                    >
+                        <span
+                            v-if="showsMarkup"
+                            v-html="
+                                lastResult?.type === 'json'
+                                    ? renderedJson
+                                    : lastResult?.raw
+                            "
+                        />
+                        <template v-else>{{ outputText }}</template>
+                    </div>
+                    <iframe
+                        v-show="showsFrame"
+                        class="min-h-0 flex-1 border-0 bg-white"
+                        sandbox="allow-scripts"
+                        title="Rendered HTML output"
+                        :srcdoc="
+                            lastResult?.type === 'html' ? lastResult.raw : ''
+                        "
                     />
                 </div>
             </div>

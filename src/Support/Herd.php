@@ -82,7 +82,10 @@ class Herd
         file_put_contents($snippetPath, $this->withOpeningTag($code));
 
         try {
-            $result = Process::forever()->run([
+            // Without this, Symfony VarDumper defaults to its plain-text CliDumper under the CLI SAPI
+            // this subprocess runs under, so dd()/dump()/var_dump() output couldn't be told apart from
+            // plain text and rendered as an interactive dump.
+            $result = Process::forever()->env(['VAR_DUMPER_FORMAT' => 'html'])->run([
                 $phpBinary,
                 base_path('src/Support/bin/run-snippet.php'),
                 $projectPath,
