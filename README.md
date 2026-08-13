@@ -19,7 +19,7 @@ A take on Laravel's [`tinker`](https://github.com/laravel/tinker), inspired by [
 * Raw or rendered output. Rendered mode shows `dump()`/`dd()` calls with Symfony's interactive VarDumper, syntax highlights JSON, and renders HTML output in a sandboxed frame.
 * A debug tab next to the output, showing the queries, timing, and dumps a snippet run touched, and any exception it threw.
 
-tinkerbench runs locally on your own machine through Herd. There's no login and no support for multiple users, it's a personal dev tool.
+**tinkerbench runs locally on your own machine through Herd. It's a personal dev tool.**
 
 ## Roadmap
 
