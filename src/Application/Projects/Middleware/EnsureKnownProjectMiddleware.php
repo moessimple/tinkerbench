@@ -8,7 +8,6 @@ use Closure;
 use Illuminate\Http\Request;
 use Support\Herd;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class EnsureKnownProjectMiddleware
 {
@@ -19,7 +18,7 @@ class EnsureKnownProjectMiddleware
     {
         $project = $request->route('project');
 
-        throw_if(! is_string($project) || $this->herd->projectPath($project) === null, NotFoundHttpException::class, "Unknown Herd project: {$project}");
+        abort_if($this->herd->projectPath($project) === null, Response::HTTP_NOT_FOUND, "Unknown Herd project: {$project}");
 
         return $next($request);
     }

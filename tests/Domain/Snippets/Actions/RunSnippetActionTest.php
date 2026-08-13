@@ -6,7 +6,6 @@ use Domain\Snippets\Actions\RunSnippetAction;
 use Mockery\MockInterface;
 use Support\Herd;
 use Support\SnippetRunResult;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 it('runs the code against the given project', function (): void {
     $this->mock(Herd::class, function (MockInterface $mock): void {
@@ -17,7 +16,7 @@ it('runs the code against the given project', function (): void {
             ->andReturn(new SnippetRunResult('1'));
     });
 
-    $result = resolve(RunSnippetAction::class)->execute('return 1;', 'other-project');
+    $result = resolve(RunSnippetAction::class)->execute('other-project', 'return 1;');
 
     expect($result->output)->toBe('1');
 });
@@ -27,5 +26,5 @@ it('throws when the given project is unknown to herd', function (): void {
         $mock->shouldReceive('projectPath')->once()->with('unknown')->andReturn(null);
     });
 
-    resolve(RunSnippetAction::class)->execute('return 1;', 'unknown');
-})->throws(NotFoundHttpException::class);
+    resolve(RunSnippetAction::class)->execute('unknown', 'return 1;');
+})->throws(RuntimeException::class);

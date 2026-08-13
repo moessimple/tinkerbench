@@ -6,7 +6,7 @@ use Support\Herd;
 
 it('returns the project names from herd', function (): void {
     $this->mock(Herd::class)
-        ->shouldReceive('projects')->once()->andReturn(['apple' => '/path/to/apple', 'zebra' => '/path/to/zebra']);
+        ->shouldReceive('projectNames')->once()->andReturn(['apple', 'zebra']);
 
     $this->getJson('/api/projects')
         ->assertOk()

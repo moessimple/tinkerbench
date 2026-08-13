@@ -73,6 +73,20 @@ it('shells out to herd only once when called repeatedly on the same instance', f
     Process::assertRanTimes(fn ($process): bool => in_array('parked', $process->command, true), 1);
 });
 
+it('lists just the project names', function (): void {
+    config(['services.herd.bin' => '/tmp/herd-bin']);
+    Process::fake([
+        "*'sites' '--json'" => json_encode([
+            ['site' => 'tinkerbench', 'path' => '/path/to/tinkerbench'],
+        ]),
+        "*'parked' '--json'" => json_encode([
+            ['site' => 'other-project', 'path' => '/path/to/other-project'],
+        ]),
+    ]);
+
+    expect(new Herd()->projectNames())->toBe(['tinkerbench', 'other-project']);
+});
+
 it('throws when the herd bin path is not configured', function (): void {
     config(['services.herd.bin' => '']);
 

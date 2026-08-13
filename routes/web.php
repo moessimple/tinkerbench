@@ -30,8 +30,8 @@ Route::prefix('api/projects/{project}/snippets')->middleware(EnsureKnownProjectM
     Route::delete('{snippet}', DeleteSnippetController::class);
 });
 
-// Not behind EnsureKnownProjectMiddleware: a bare or single-segment URL is ambiguous (a
-// pre-existing bookmark like /scratch used to mean "open this snippet"), so the controller
-// itself decides whether an unrecognized segment is an unknown project or a snippet name.
-// Wayfinder also can't generate a plain callable for a controller split across two routes.
+// This route also handles the bare URL "/", which opens the developer's current project without
+// naming one. EnsureKnownProjectMiddleware always expects a project name in the URL and 404s
+// when it's missing, so it can't guard this route. The project check therefore happens inside
+// OpenSnippetController itself.
 Route::get('{project?}/{snippet?}', OpenSnippetController::class);

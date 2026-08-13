@@ -11,6 +11,6 @@ class ListProjectsController
 {
     public function __invoke(Herd $herd): JsonResponse
     {
-        return response()->json(array_keys($herd->projects()));
+        return response()->json($herd->projectNames());
     }
 }

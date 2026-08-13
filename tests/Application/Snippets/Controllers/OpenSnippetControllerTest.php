@@ -92,33 +92,21 @@ it('rejects a two-segment url naming a project unknown to herd with a 404', func
     $this->get('/unknown-project/scratch')->assertNotFound();
 });
 
-it('opens a single url segment as a snippet in the current project when it is not a known project', function (): void {
+it('rejects a single unknown url segment with a 404', function (): void {
     $this->mock(Herd::class, function (MockInterface $mock): void {
         $mock->shouldReceive('projectPath')->with('scratch')->once()->andReturn(null);
-        $mock->shouldReceive('currentProject')->once()->andReturn('my-project');
-        $mock->shouldReceive('projectPath')->with('my-project')->andReturn('/path/to/my-project');
-        $mock->shouldReceive('phpBinary')->with('my-project')->andReturn('/path/to/php');
-        $mock->shouldReceive('phpVersion')->andReturn('8.5.0');
-        $mock->shouldReceive('laravelVersion')->andReturn('13.0.0');
+        $mock->shouldReceive('currentProject')->never();
     });
 
-    $this->mock(SnippetRepository::class, function (MockInterface $mock): void {
-        $mock->shouldReceive('ensureExists')->once()->with('my-project', 'scratch');
-        $mock->shouldReceive('contents')->once()->with('my-project', 'scratch')->andReturn("echo 'old bookmark';");
-    });
+    $this->mock(SnippetRepository::class)
+        ->shouldReceive('ensureExists')->never();
 
-    $this->get('/scratch')
-        ->assertInertia(
-            fn (AssertableInertia $page): AssertableInertia => $page
-                ->where('snippetName', 'scratch')
-                ->where('content', "echo 'old bookmark';")
-                ->where('currentProject', 'my-project'),
-        );
+    $this->get('/scratch')->assertNotFound();
 });
 
 it('opens a single url segment as a project switch when it is a known project', function (): void {
     $this->mock(Herd::class, function (MockInterface $mock): void {
-        $mock->shouldReceive('projectPath')->with('other-project')->twice()->andReturn('/path/to/other-project');
+        $mock->shouldReceive('projectPath')->with('other-project')->once()->andReturn('/path/to/other-project');
         $mock->shouldReceive('currentProject')->never();
         $mock->shouldReceive('phpBinary')->with('other-project')->andReturn('/path/to/php');
         $mock->shouldReceive('phpVersion')->andReturn('8.5.0');

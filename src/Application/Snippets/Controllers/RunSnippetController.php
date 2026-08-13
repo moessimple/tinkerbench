@@ -12,7 +12,7 @@ class RunSnippetController
 {
     public function __invoke(RunSnippetRequest $request, RunSnippetAction $action, string $project): JsonResponse
     {
-        $result = $action->execute($request->code(), $project);
+        $result = $action->execute($project, $request->code());
 
         return response()->json(['output' => $result->output]);
     }

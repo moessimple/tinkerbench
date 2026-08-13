@@ -15,7 +15,7 @@ it('uses the right request', function (): void {
 
 it('uses the right action', function (): void {
     $this->mock(RunSnippetAction::class)
-        ->shouldReceive('execute')->once()->with(Mockery::type('string'), 'my-project')->andReturn(new SnippetRunResult('output'));
+        ->shouldReceive('execute')->once()->with('my-project', Mockery::type('string'))->andReturn(new SnippetRunResult('output'));
 
     $request = new RunSnippetRequest();
     $request->merge(['code' => 'echo 1;']);
