@@ -303,3 +303,26 @@ it('cleans up the temp snippet file after running', function (): void {
 
     expect($after)->toBe($before);
 });
+
+it('cleans up the temp debug file after running', function (): void {
+    $before = glob(sys_get_temp_dir().'/tinkerbench-debug-*.json');
+
+    new Herd()->runSnippet("<?php\n\nreturn 'cleanup check';", PHP_BINARY, base_path());
+
+    $after = glob(sys_get_temp_dir().'/tinkerbench-debug-*.json');
+
+    expect($after)->toBe($before);
+});
+
+it('returns the debug data collected by the subprocess', function (): void {
+    $result = new Herd()->runSnippet("<?php\n\nreturn 'ok';", PHP_BINARY, base_path());
+
+    expect(data_get($result->debug, 'time.measures.0.label'))->toBe('snippet');
+});
+
+it('returns debug data collected before an uncaught exception', function (): void {
+    $result = new Herd()->runSnippet("<?php\n\nthrow new RuntimeException('boom');", PHP_BINARY, base_path());
+
+    expect(data_get($result->debug, 'exceptions.count'))->toBe(1)
+        ->and(data_get($result->debug, 'exceptions.exceptions.0.message'))->toBe('boom');
+});

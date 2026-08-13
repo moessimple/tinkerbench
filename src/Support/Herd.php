@@ -95,6 +95,7 @@ class Herd
         set_time_limit(0);
 
         $snippetPath = sys_get_temp_dir().'/tinkerbench-snippet-'.Str::random(32).'.php';
+        $debugPath = sys_get_temp_dir().'/tinkerbench-debug-'.Str::random(32).'.json';
         file_put_contents($snippetPath, $code);
 
         try {
@@ -106,16 +107,41 @@ class Herd
                 base_path('src/Support/bin/run-snippet.php'),
                 $projectPath,
                 $snippetPath,
+                $debugPath,
             ]);
+
+            $debug = $this->readDebugData($debugPath);
         } finally {
             unlink($snippetPath);
+
+            if (file_exists($debugPath)) {
+                unlink($debugPath);
+            }
         }
 
         if (! $result->successful()) {
-            return new SnippetRunResult($result->output().$result->errorOutput(), null);
+            return new SnippetRunResult($result->output().$result->errorOutput(), $debug);
         }
 
-        return new SnippetRunResult($result->output(), null);
+        return new SnippetRunResult($result->output(), $debug);
+    }
+
+    /** @return array<array-key, mixed>|null */
+    private function readDebugData(string $debugPath): ?array
+    {
+        if (! file_exists($debugPath)) {
+            return null;
+        }
+
+        $contents = file_get_contents($debugPath);
+
+        if ($contents === false) {
+            return null;
+        }
+
+        $decoded = json_decode($contents, true);
+
+        return is_array($decoded) ? $decoded : null;
     }
 
     /** @return array<string, string> */
