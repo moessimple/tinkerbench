@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/vue';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { reactive } from 'vue';
+import type * as OutputModule from '@/lib/output';
 
 let capturedPost: {
     url: string;
@@ -80,7 +81,7 @@ vi.mock('@/components/CommandPalette.vue', () => ({
 // browsers re-run them; jsdom never executes those scripts regardless, so it's mocked here
 // to prove only that Run.vue calls it at the right time, not that it works.
 vi.mock('@/lib/output', async (importOriginal) => ({
-    ...(await importOriginal<typeof import('@/lib/output')>()),
+    ...(await importOriginal<typeof OutputModule>()),
     executeScripts: vi.fn(),
 }));
 
