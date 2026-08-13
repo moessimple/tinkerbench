@@ -133,13 +133,7 @@ class Herd
             return null;
         }
 
-        $contents = file_get_contents($debugPath);
-
-        if ($contents === false) {
-            return null;
-        }
-
-        $decoded = json_decode($contents, true);
+        $decoded = json_decode(file_get_contents($debugPath) ?: '', true);
 
         return is_array($decoded) ? $decoded : null;
     }
