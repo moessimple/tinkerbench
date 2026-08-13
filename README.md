@@ -27,7 +27,7 @@ tinkerbench runs locally on your own machine through Herd. There's no login and 
 
 ## Requirements
 
-* [Laravel Herd](https://herd.laravel.com), with PHP 8.5 selected as the active version
+* [Laravel Herd](https://herd.laravel.com)
 
 ## Installation
 
@@ -40,8 +40,6 @@ composer setup
 ```
 
 `composer setup` installs dependencies, configures the environment, and links the project to Herd at `https://tinkerbench.test`.
-
-Set `HERD_BIN` in `.env` if your Herd installation isn't in the default location. Same for `HERD_NVM_EXEC` if Herd's Node isn't in the default location.
 
 ## Usage
 
