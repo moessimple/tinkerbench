@@ -15,6 +15,7 @@ A take on Laravel's [`tinker`](https://github.com/laravel/tinker), inspired by [
 * Saves multiple named snippets per project. Create, rename, and delete them as needed.
 * Command palette (`⌘P`) to jump between snippets and projects, similar to an editor's quick open.
 * Monaco based editor with PHP syntax highlighting, autosave, and a run shortcut (`⌘Enter`).
+* PHP autocompletion, hover documentation, and signature help for the target project's own code, powered by intelephense (the same language server VS Code uses).
 * Raw or rendered output. Rendered mode shows `dump()`/`dd()` calls with Symfony's interactive VarDumper, syntax highlights JSON, and renders HTML output in a sandboxed frame.
 
 tinkerbench runs locally on your own machine through Herd. There's no login and no support for multiple users, it's a personal dev tool.
@@ -22,7 +23,6 @@ tinkerbench runs locally on your own machine through Herd. There's no login and 
 ## Roadmap
 
 * A debug panel next to the output panel, showing the queries, timing, dumps, exceptions, and environment info a snippet run touched.
-* Autocompletion for PHP and the target project's own classes.
 * A light theme alongside the current dark one, with a way to switch between them.
 
 ## Requirements
@@ -41,7 +41,7 @@ composer setup
 
 `composer setup` installs dependencies, configures the environment, and links the project to Herd at `https://tinkerbench.test`.
 
-Set `HERD_BIN` in `.env` if your Herd installation isn't in the default location.
+Set `HERD_BIN` in `.env` if your Herd installation isn't in the default location. Same for `TINKERBENCH_NVM_EXEC` if Herd's Node isn't in the default location.
 
 ## Usage
 
