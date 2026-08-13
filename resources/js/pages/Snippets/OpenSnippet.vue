@@ -371,7 +371,7 @@ function toggleMaximize(): void {
                         role="status"
                         aria-label="Snippet output"
                         aria-live="polite"
-                        class="min-h-0 flex-1 overflow-auto p-4 font-mono text-base leading-6.5 whitespace-pre-wrap"
+                        class="min-h-0 flex-1 overflow-auto p-4 font-mono text-base leading-6.5 whitespace-pre-wrap [font-variant-ligatures:none]"
                     >
                         <span
                             v-if="showsMarkup"

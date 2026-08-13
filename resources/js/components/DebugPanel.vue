@@ -10,7 +10,7 @@ defineProps<{
     <div
         role="tabpanel"
         aria-label="Snippet debug"
-        class="flex-1 overflow-auto p-4 font-mono text-sm"
+        class="flex-1 overflow-auto p-4 font-mono text-base [font-variant-ligatures:none]"
     >
         <section v-if="debug.time" class="mt-6 first:mt-0">
             <h2
