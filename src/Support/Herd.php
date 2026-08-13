@@ -112,10 +112,10 @@ class Herd
         }
 
         if (! $result->successful()) {
-            return new SnippetRunResult($result->output().$result->errorOutput());
+            return new SnippetRunResult($result->output().$result->errorOutput(), null);
         }
 
-        return new SnippetRunResult($result->output());
+        return new SnippetRunResult($result->output(), null);
     }
 
     /** @return array<string, string> */

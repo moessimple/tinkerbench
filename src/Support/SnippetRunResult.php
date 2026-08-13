@@ -6,5 +6,6 @@ namespace Support;
 
 readonly class SnippetRunResult
 {
-    public function __construct(public string $output) {}
+    /** @param array<array-key, mixed>|null $debug */
+    public function __construct(public string $output, public ?array $debug) {}
 }

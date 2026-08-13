@@ -20,7 +20,7 @@ it('uses the right middleware', function (): void {
 
 it('uses the right action', function (): void {
     $this->mock(RunSnippetAction::class)
-        ->shouldReceive('execute')->once()->with('my-project', Mockery::type('string'))->andReturn(new SnippetRunResult('output'));
+        ->shouldReceive('execute')->once()->with('my-project', Mockery::type('string'))->andReturn(new SnippetRunResult('output', null));
 
     $request = new RunSnippetRequest();
     $request->merge(['code' => 'echo 1;']);
