@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Application\Projects\Middleware\EnsureKnownProjectMiddleware;
 use Application\Snippets\Controllers\UpdateSnippetNameController;
 use Application\Snippets\Requests\SnippetNameRequest;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
@@ -17,7 +18,9 @@ it('uses the right request', function (): void {
 });
 
 it('uses the right middleware', function (): void {
-    expect(UpdateSnippetNameController::class)->toUseMiddleware(HandlePrecognitiveRequests::class);
+    expect(UpdateSnippetNameController::class)
+        ->toUseMiddleware(HandlePrecognitiveRequests::class)
+        ->toUseMiddleware(EnsureKnownProjectMiddleware::class);
 });
 
 it('renames the snippet via the repository', function (): void {

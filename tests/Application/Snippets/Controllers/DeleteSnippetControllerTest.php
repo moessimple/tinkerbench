@@ -2,10 +2,16 @@
 
 declare(strict_types=1);
 
+use Application\Projects\Middleware\EnsureKnownProjectMiddleware;
+use Application\Snippets\Controllers\DeleteSnippetController;
 use Support\SnippetRepository;
 
 beforeEach(function (): void {
     mockKnownProject();
+});
+
+it('uses the right middleware', function (): void {
+    expect(DeleteSnippetController::class)->toUseMiddleware(EnsureKnownProjectMiddleware::class);
 });
 
 it('deletes the snippet via the repository', function (): void {
