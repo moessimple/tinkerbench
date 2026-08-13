@@ -17,12 +17,12 @@ A take on Laravel's [`tinker`](https://github.com/laravel/tinker), inspired by [
 * Monaco based editor with PHP syntax highlighting, autosave, and a run shortcut (`⌘Enter`).
 * PHP autocompletion, hover documentation, and signature help for the target project's own code, powered by intelephense (the same language server VS Code uses).
 * Raw or rendered output. Rendered mode shows `dump()`/`dd()` calls with Symfony's interactive VarDumper, syntax highlights JSON, and renders HTML output in a sandboxed frame.
+* A debug tab next to the output, showing the queries, timing, and dumps a snippet run touched, and any exception it threw.
 
 tinkerbench runs locally on your own machine through Herd. There's no login and no support for multiple users, it's a personal dev tool.
 
 ## Roadmap
 
-* A debug panel next to the output panel, showing the queries, timing, dumps, exceptions, and environment info a snippet run touched.
 * A light theme alongside the current dark one, with a way to switch between them.
 
 ## Requirements
