@@ -589,8 +589,7 @@ async function confirmDelete(name: string): Promise<void> {
                             :aria-selected="index === highlightedIndex"
                             class="group flex flex-col gap-1 px-3 py-1.5 font-mono text-sm text-fg hover:bg-line/30"
                             :class="{
-                                'bg-accent/15': name === currentSnippet,
-                                'bg-line/40': index === highlightedIndex,
+                                'bg-line/60': index === highlightedIndex,
                             }"
                             @mouseenter="highlight(index)"
                         >
@@ -638,10 +637,15 @@ async function confirmDelete(name: string): Promise<void> {
                             >
                                 <button
                                     type="button"
-                                    class="flex-1 truncate text-left"
+                                    class="flex flex-1 items-center gap-1.5 truncate text-left"
                                     @click="openSnippet(name)"
                                 >
-                                    {{ name }}
+                                    <span
+                                        v-if="name === currentSnippet"
+                                        class="h-1.5 w-1.5 shrink-0 rounded-full bg-accent"
+                                        aria-hidden="true"
+                                    />
+                                    <span class="truncate">{{ name }}</span>
                                 </button>
                                 <span
                                     class="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100"
@@ -719,8 +723,7 @@ async function confirmDelete(name: string): Promise<void> {
                             "
                             class="flex flex-col gap-1 px-3 py-1.5 font-mono text-sm text-fg hover:bg-line/30"
                             :class="{
-                                'bg-accent/15': name === currentProject,
-                                'bg-line/40':
+                                'bg-line/60':
                                     projectEntryIndex(index) ===
                                     highlightedIndex,
                             }"
@@ -728,10 +731,15 @@ async function confirmDelete(name: string): Promise<void> {
                         >
                             <button
                                 type="button"
-                                class="flex-1 truncate text-left"
+                                class="flex flex-1 items-center gap-1.5 truncate text-left"
                                 @click="switchProject(name)"
                             >
-                                {{ name }}
+                                <span
+                                    v-if="name === currentProject"
+                                    class="h-1.5 w-1.5 shrink-0 rounded-full bg-accent"
+                                    aria-hidden="true"
+                                />
+                                <span class="truncate">{{ name }}</span>
                             </button>
                         </li>
                     </template>
