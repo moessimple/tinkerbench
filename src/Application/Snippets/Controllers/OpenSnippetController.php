@@ -25,7 +25,7 @@ class OpenSnippetController
 
         $phpBinary = $herd->phpBinary($project);
 
-        return Inertia::render('Snippets/Run', [
+        return Inertia::render('Snippets/OpenSnippet', [
             'snippetName' => $snippetName,
             'content' => $snippets->contents($project, $snippetName),
             'currentProject' => $project,

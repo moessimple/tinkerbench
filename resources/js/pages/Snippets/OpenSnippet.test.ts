@@ -68,7 +68,7 @@ vi.mock('@/components/MonacoEditor.vue', () => ({
 
 // CommandPalette has its own test (CommandPalette.test.ts) proving switching/creating/
 // renaming/deleting/its own global Ctrl+P shortcut; replaced here so this test stays
-// focused on Run.vue's own responsibilities.
+// focused on OpenSnippet.vue's own responsibilities.
 vi.mock('@/components/CommandPalette.vue', () => ({
     default: {
         props: ['currentProject', 'currentSnippet'],
@@ -79,13 +79,13 @@ vi.mock('@/components/CommandPalette.vue', () => ({
 // detectOutput/highlightJson are cheap, deterministic pure functions and run for real.
 // executeScripts has its own test (output.test.ts) proving it replaces <script> nodes so
 // browsers re-run them; jsdom never executes those scripts regardless, so it's mocked here
-// to prove only that Run.vue calls it at the right time, not that it works.
+// to prove only that OpenSnippet.vue calls it at the right time, not that it works.
 vi.mock('@/lib/output', async (importOriginal) => ({
     ...(await importOriginal<typeof OutputModule>()),
     executeScripts: vi.fn(),
 }));
 
-const { default: Run } = await import('./Run.vue');
+const { default: OpenSnippet } = await import('./OpenSnippet.vue');
 const props = {
     content: "echo 'hello world';",
     currentProject: 'my-project',
@@ -103,32 +103,32 @@ afterEach(() => {
 });
 
 it('sets the page title to the project and snippet name', () => {
-    render(Run, { props });
+    render(OpenSnippet, { props });
 
     expect(capturedTitle).toBe('my-project / scratch');
 });
 
 it('shows the project and snippet name as the page heading', () => {
-    render(Run, { props });
+    render(OpenSnippet, { props });
 
     screen.getByRole('heading', { name: 'my-project / scratch' });
 });
 
 it('shows the running PHP and Laravel version', () => {
-    render(Run, { props });
+    render(OpenSnippet, { props });
 
     screen.getByText('PHP 8.5.0 · Laravel 13.0.0');
 });
 
 it('pre-fills the editor with the snippet content from its props', () => {
-    render(Run, { props });
+    render(OpenSnippet, { props });
 
     const editor = screen.getByLabelText('Snippet code') as HTMLTextAreaElement;
     expect(editor.value).toBe("echo 'hello world';");
 });
 
 it('sends the entered code to the run endpoint', async () => {
-    render(Run, { props });
+    render(OpenSnippet, { props });
 
     await fireEvent.update(screen.getByLabelText('Snippet code'), "echo 'hi';");
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
@@ -138,7 +138,7 @@ it('sends the entered code to the run endpoint', async () => {
 });
 
 it('shows the returned output', async () => {
-    render(Run, { props });
+    render(OpenSnippet, { props });
 
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
     capturedPost?.onSuccess({ output: 'hi' });
@@ -147,7 +147,7 @@ it('shows the returned output', async () => {
 });
 
 it('shows a validation error message when the request fails', async () => {
-    render(Run, { props });
+    render(OpenSnippet, { props });
 
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
     capturedPost?.onError({ code: 'The code field is required.' });
@@ -156,7 +156,7 @@ it('shows a validation error message when the request fails', async () => {
 });
 
 it('shows a generic error message when the server request fails', async () => {
-    render(Run, { props });
+    render(OpenSnippet, { props });
 
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
     capturedPost?.onHttpException({ status: 500 });
@@ -165,7 +165,7 @@ it('shows a generic error message when the server request fails', async () => {
 });
 
 it('runs the snippet when the editor emits run', async () => {
-    render(Run, { props });
+    render(OpenSnippet, { props });
 
     await fireEvent.click(screen.getByRole('button', { name: 'Emit run' }));
 
@@ -173,7 +173,7 @@ it('runs the snippet when the editor emits run', async () => {
 });
 
 it('shows the run shortcut in the button tooltip', () => {
-    render(Run, { props });
+    render(OpenSnippet, { props });
 
     const button = screen.getByRole('button', { name: 'Run snippet' });
 
@@ -183,7 +183,7 @@ it('shows the run shortcut in the button tooltip', () => {
 it('disables the run button and shows a running label while processing', () => {
     httpState.processing = true;
 
-    render(Run, { props });
+    render(OpenSnippet, { props });
 
     const button = screen.getByRole('button', {
         name: 'Running…',
@@ -200,7 +200,7 @@ it('saves edited content 500ms after the last change', async () => {
     });
     vi.stubGlobal('fetch', fetchMock);
     vi.useFakeTimers();
-    render(Run, { props });
+    render(OpenSnippet, { props });
 
     await fireEvent.update(
         screen.getByLabelText('Snippet code'),
@@ -226,7 +226,7 @@ it('collapses rapid edits into a single save of the latest content', async () =>
     });
     vi.stubGlobal('fetch', fetchMock);
     vi.useFakeTimers();
-    render(Run, { props });
+    render(OpenSnippet, { props });
     const editor = screen.getByLabelText('Snippet code');
 
     await fireEvent.update(editor, "echo 'first';");
@@ -244,7 +244,7 @@ it('collapses rapid edits into a single save of the latest content', async () =>
 });
 
 it('clears the output and any error message', async () => {
-    render(Run, { props });
+    render(OpenSnippet, { props });
 
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
     capturedPost?.onSuccess({ output: 'hi' });
@@ -256,7 +256,7 @@ it('clears the output and any error message', async () => {
 });
 
 it('shows the output as escaped text in raw mode', async () => {
-    render(Run, { props });
+    render(OpenSnippet, { props });
 
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
     capturedPost?.onSuccess({ output: '<strong>hi</strong>' });
@@ -265,7 +265,7 @@ it('shows the output as escaped text in raw mode', async () => {
 });
 
 it('renders HTML output as a sandboxed iframe after switching to rendered mode', async () => {
-    render(Run, { props });
+    render(OpenSnippet, { props });
 
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
     capturedPost?.onSuccess({ output: '<strong>hi</strong>' });
@@ -281,7 +281,7 @@ it('renders HTML output as a sandboxed iframe after switching to rendered mode',
 });
 
 it('renders JSON output as pretty-printed, escaped text in rendered mode', async () => {
-    render(Run, { props });
+    render(OpenSnippet, { props });
 
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
     capturedPost?.onSuccess({
@@ -299,7 +299,7 @@ it('renders JSON output as pretty-printed, escaped text in rendered mode', async
 });
 
 it('leaves JSON output as its original raw string in raw mode', async () => {
-    render(Run, { props });
+    render(OpenSnippet, { props });
 
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
     capturedPost?.onSuccess({ output: '{"name":"tinkerbench"}' });
@@ -309,7 +309,7 @@ it('leaves JSON output as its original raw string in raw mode', async () => {
 
 it('re-executes embedded scripts when dump output is shown in rendered mode', async () => {
     const { executeScripts } = await import('@/lib/output');
-    render(Run, { props });
+    render(OpenSnippet, { props });
 
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
     capturedPost?.onSuccess({ output: '<script>Sfdump("sf-dump-1")</script>' });
@@ -322,7 +322,7 @@ it('re-executes embedded scripts when dump output is shown in rendered mode', as
 
 it('re-executes embedded scripts when a run completes while already in rendered mode', async () => {
     const { executeScripts } = await import('@/lib/output');
-    render(Run, { props });
+    render(OpenSnippet, { props });
 
     await fireEvent.click(
         screen.getByRole('button', { name: 'Show rendered output' }),
@@ -334,7 +334,7 @@ it('re-executes embedded scripts when a run completes while already in rendered 
 });
 
 it('hides the header and shows an exit-fullscreen button when maximized', async () => {
-    render(Run, { props });
+    render(OpenSnippet, { props });
 
     screen.getByText('tinkerbench');
 

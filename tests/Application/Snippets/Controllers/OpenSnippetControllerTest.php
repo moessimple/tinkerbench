@@ -29,7 +29,7 @@ it('opens the default scratch snippet for the current project', function (): voi
         ->assertOk()
         ->assertInertia(
             fn (AssertableInertia $page): AssertableInertia => $page
-                ->component('Snippets/Run')
+                ->component('Snippets/OpenSnippet')
                 ->where('snippetName', 'scratch')
                 ->where('content', "echo 'Hello, world!';")
                 ->where('currentProject', 'my-project'),
@@ -85,7 +85,7 @@ it('uses cached herd data for inertia navigation', function (): void {
     ])
         ->get('/my-project/scratch')
         ->assertOk()
-        ->assertJsonPath('component', 'Snippets/Run')
+        ->assertJsonPath('component', 'Snippets/OpenSnippet')
         ->assertJsonPath('props.currentProject', 'my-project');
 });
 
