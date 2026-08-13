@@ -9,5 +9,6 @@ Before planning or editing, find the row whose globs match the file's path and r
 | tests/Application/Snippets/Controllers/** | .ai/rules/controllers.md |
 | **/* | .ai/rules/general.md |
 | resources/js/** | .ai/rules/js.md |
+| src/Application/*/Requests/** | .ai/rules/requests.md |
 | routes/** | .ai/rules/routes.md |
 | tests/** | .ai/rules/tests.md |

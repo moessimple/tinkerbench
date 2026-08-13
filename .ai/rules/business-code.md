@@ -18,7 +18,7 @@ Suffix by type: Action, Controller, Query, Request, Resource, Job, Middleware. M
 Each class in src/Domain, src/Application, src/Support gets a matching test at the same relative path under tests/ (src/Domain/Billing/Actions/CreateInvoiceAction.php mirrors tests/Domain/Billing/Actions/CreateInvoiceActionTest.php). Mandatory. tests/Architecture is the only exception, it checks cross-layer relationships instead of mirroring one class.
 
 ## No final classes, anywhere
-No class in the app is `final`. It blocks Mockery from creating a class double ("cannot override methods of a final class"), which forces awkward workarounds when a test needs to mock a class directly. Decided after hitting this concretely with RunSnippetAction. Pint's final_class/final_internal_class/final_public_method_for_abstract_class are disabled in pint.json so it doesn't get re-added automatically. Enforced project-wide by tests/Architecture/ArchTest.php, not just for src/Domain|Application|Support.
+No class in the app is `final`. It blocks Mockery from creating a class double ("cannot override methods of a final class"), which forces awkward workarounds when a test needs to mock a class directly. Decided after hitting this concretely with RunSnippetAction. Enforced project-wide by tests/Architecture/ArchTest.php, not just for src/Domain|Application|Support.
 
 Readonly classes/properties are fine, including for Domain/Application/Support: they only cause the same Mockery problem (cannot extend a readonly class) on a class you actually need to mock directly in a test, e.g. an Action or a Support class with behavior. A plain DTO/value object that's never mocked, only constructed with real values, has no reason to avoid `readonly`.
 
