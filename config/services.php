@@ -41,4 +41,8 @@ return [
         'bin' => env('HERD_BIN', env('HOME').'/Library/Application Support/Herd/bin'),
     ],
 
+    'tinkerbench' => [
+        'nvm_exec' => env('TINKERBENCH_NVM_EXEC', env('HOME').'/Library/Application Support/Herd/config/nvm/nvm-exec'),
+    ],
+
 ];
