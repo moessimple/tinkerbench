@@ -268,17 +268,21 @@ it('renders the output as HTML after switching to rendered mode', async () => {
     screen.getByText('hi', { selector: 'strong' });
 });
 
-it('hides the header and shows a minimize button when maximized', async () => {
+it('hides the header and shows an exit-fullscreen button when maximized', async () => {
     render(Run, { props });
 
     screen.getByText('tinkerbench');
 
-    await fireEvent.click(screen.getByRole('button', { name: 'Maximize' }));
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Toggle fullscreen' }),
+    );
 
     expect(screen.queryByText('tinkerbench')).toBeNull();
-    screen.getByRole('button', { name: 'Minimize' });
+    screen.getByRole('button', { name: 'Exit fullscreen' });
 
-    await fireEvent.click(screen.getByRole('button', { name: 'Minimize' }));
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Exit fullscreen' }),
+    );
 
     screen.getByText('tinkerbench');
 });

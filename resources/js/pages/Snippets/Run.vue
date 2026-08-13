@@ -94,13 +94,13 @@ function toggleMaximize(): void {
 <template>
     <Head :title="pageTitle" />
 
-    <div class="flex min-h-screen flex-col bg-canvas text-fg">
+    <div class="flex h-full flex-col bg-canvas text-fg">
         <div
             v-if="!isMaximized"
-            class="mx-auto shrink-0 px-4 pt-10 pb-6 text-center"
+            class="mx-auto hidden max-w-358 shrink-0 px-4 pt-10 pb-8 text-center min-[900px]:block"
         >
             <div
-                class="mb-4 flex items-center justify-center gap-2 font-mono text-xs font-semibold tracking-widest text-muted uppercase"
+                class="mb-6 flex items-center justify-center gap-2 font-mono text-xs font-semibold tracking-widest text-muted uppercase"
             >
                 <svg
                     viewBox="0 0 16 16"
@@ -121,7 +121,7 @@ function toggleMaximize(): void {
                 </svg>
                 tinkerbench
             </div>
-            <h1 class="text-3xl font-bold text-fg">
+            <h1 class="font-mono text-2xl font-semibold text-fg">
                 {{ currentProject }}
                 <span class="text-muted">/</span>
                 {{ snippetName }}
@@ -132,14 +132,19 @@ function toggleMaximize(): void {
         </div>
 
         <div
-            class="flex w-full flex-1 flex-col gap-4 px-6"
-            :class="isMaximized ? 'fixed inset-0 z-30 bg-canvas py-4' : 'mb-6'"
+            class="flex min-h-0 w-full flex-1"
+            :class="
+                isMaximized
+                    ? 'fixed inset-0 z-30'
+                    : 'mx-auto mb-6 max-w-358 rounded-md px-4'
+            "
         >
             <div
-                class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-line bg-surface min-[900px]:flex-row"
+                class="flex w-full flex-col overflow-hidden bg-surface min-[900px]:flex-row"
+                :class="{ 'rounded-md border border-line': !isMaximized }"
             >
                 <div
-                    class="flex min-h-0 min-w-0 flex-3 border-b border-line min-[900px]:border-r min-[900px]:border-b-0"
+                    class="flex min-h-0 min-w-0 flex-3 border-b border-line min-[900px]:border-b-0"
                 >
                     <div
                         class="flex w-12 shrink-0 flex-col items-center gap-1 border-r border-line py-3"
@@ -207,30 +212,22 @@ function toggleMaximize(): void {
                             @click="toggleOutputMode"
                         >
                             <svg
-                                v-if="outputMode === 'raw'"
                                 viewBox="0 0 16 16"
                                 width="16"
                                 height="16"
-                                fill="currentColor"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.5"
+                                stroke-linecap="round"
                                 aria-hidden="true"
                             >
-                                <path
-                                    fill-rule="evenodd"
-                                    d="M4.72 3.22a.75.75 0 0 1 0 1.06L2.06 8l2.66 2.72a.75.75 0 1 1-1.06 1.06L.47 8.53a.75.75 0 0 1 0-1.06l3.19-3.25a.75.75 0 0 1 1.06 0Zm6.56 0a.75.75 0 0 1 1.06 0l3.19 3.25a.75.75 0 0 1 0 1.06l-3.19 3.25a.75.75 0 1 1-1.06-1.06L13.94 8l-2.66-2.72a.75.75 0 0 1 0-1.06Z"
-                                />
-                            </svg>
-                            <svg
-                                v-else
-                                viewBox="0 0 16 16"
-                                width="16"
-                                height="16"
-                                fill="currentColor"
-                                aria-hidden="true"
-                            >
-                                <path
-                                    d="M8 3C4.5 3 1.7 5.4 1 8c.7 2.6 3.5 5 7 5s6.3-2.4 7-5c-.7-2.6-3.5-5-7-5Zm0 8.2A3.2 3.2 0 1 1 8 4.8a3.2 3.2 0 0 1 0 6.4Z"
-                                />
-                                <circle cx="8" cy="8" r="1.6" />
+                                <template v-if="outputMode === 'raw'">
+                                    <path
+                                        d="M1 8s2.7-4.5 7-4.4S15 8 15 8s-2.7 4.5-7 4.4S1 8 1 8Z"
+                                    />
+                                    <circle cx="8" cy="8" r="1.6" />
+                                </template>
+                                <path v-else d="M5 4 2 8l3 4M11 4l3 4-3 4" />
                             </svg>
                         </button>
                         <CommandPalette
@@ -239,42 +236,37 @@ function toggleMaximize(): void {
                         />
                         <button
                             type="button"
-                            :title="isMaximized ? 'Minimize' : 'Maximize'"
-                            :aria-label="isMaximized ? 'Minimize' : 'Maximize'"
+                            :title="
+                                isMaximized
+                                    ? 'Exit fullscreen'
+                                    : 'Toggle fullscreen'
+                            "
+                            :aria-label="
+                                isMaximized
+                                    ? 'Exit fullscreen'
+                                    : 'Toggle fullscreen'
+                            "
                             :aria-pressed="isMaximized"
                             class="flex h-8 w-8 items-center justify-center rounded text-muted hover:bg-line/30 hover:text-fg"
                             @click="toggleMaximize"
                         >
                             <svg
-                                v-if="!isMaximized"
                                 viewBox="0 0 16 16"
                                 width="16"
                                 height="16"
                                 fill="none"
                                 stroke="currentColor"
-                                stroke-width="1.4"
+                                stroke-width="1.5"
                                 stroke-linecap="round"
-                                stroke-linejoin="round"
                                 aria-hidden="true"
                             >
                                 <path
-                                    d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"
+                                    v-if="isMaximized"
+                                    d="M6 2v4H2M10 14v-4h4M14 6h-4V2M2 10h4v4"
                                 />
-                            </svg>
-                            <svg
-                                v-else
-                                viewBox="0 0 16 16"
-                                width="16"
-                                height="16"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.4"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                aria-hidden="true"
-                            >
                                 <path
-                                    d="M6 2v4H2M10 2v4h4M6 14v-4H2M10 14v-4h4"
+                                    v-else
+                                    d="M2 6V2h4M14 10v4h-4M10 2h4v4M2 10v4h4"
                                 />
                             </svg>
                         </button>
@@ -289,30 +281,32 @@ function toggleMaximize(): void {
                 </div>
 
                 <div class="flex min-h-0 min-w-0 flex-2 flex-col">
-                    <div
-                        class="flex shrink-0 items-center border-b border-line px-4"
-                    >
+                    <div class="flex shrink-0 border-b border-line">
                         <span
-                            class="border-b-2 border-accent px-0 py-3 font-mono text-xs font-semibold tracking-widest text-fg uppercase"
+                            class="border-b-2 border-accent px-3 py-2 font-mono text-xs font-semibold tracking-widest text-fg uppercase"
                         >
                             Output
                         </span>
                     </div>
                     <pre
                         v-if="outputMode === 'raw'"
-                        class="min-h-0 flex-1 overflow-auto p-4 font-mono text-sm whitespace-pre-wrap"
+                        class="min-h-0 flex-1 overflow-auto p-4 font-mono text-base leading-6.5 whitespace-pre-wrap"
                         >{{ output }}</pre>
                     <div
                         v-else
-                        class="min-h-0 flex-1 overflow-auto p-4 font-mono text-sm"
+                        class="min-h-0 flex-1 overflow-auto p-4 font-mono text-base leading-6.5"
                         v-html="output"
                     />
                 </div>
             </div>
-
-            <p v-if="errorMessage" class="font-mono text-sm text-red-400">
-                {{ errorMessage }}
-            </p>
         </div>
+
+        <p
+            v-if="errorMessage"
+            role="alert"
+            class="fixed right-4 bottom-4 rounded-md border border-red-500/40 bg-surface px-4 py-3 font-mono text-sm text-red-400 shadow-2xl"
+        >
+            {{ errorMessage }}
+        </p>
     </div>
 </template>

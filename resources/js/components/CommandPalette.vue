@@ -453,6 +453,26 @@ async function confirmDelete(name: string): Promise<void> {
     <div class="relative flex flex-col items-center gap-1">
         <button
             type="button"
+            title="Switch project"
+            aria-label="Switch project"
+            class="flex h-8 w-8 items-center justify-center rounded text-muted hover:bg-line/30 hover:text-fg"
+            @click="openScoped('/')"
+        >
+            <svg
+                viewBox="0 0 16 16"
+                width="16"
+                height="16"
+                fill="currentColor"
+                aria-hidden="true"
+            >
+                <path
+                    fill-rule="evenodd"
+                    d="M11.5 7a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0Zm-.82 4.74a6 6 0 1 1 1.06-1.06l3.04 3.04a.75.75 0 1 1-1.06 1.06l-3.04-3.04Z"
+                />
+            </svg>
+        </button>
+        <button
+            type="button"
             :title="`Browse snippets (${browseShortcut})`"
             aria-label="Browse snippets"
             class="flex h-8 w-8 items-center justify-center rounded text-muted hover:bg-line/30 hover:text-fg"
@@ -468,25 +488,6 @@ async function confirmDelete(name: string): Promise<void> {
                 <path
                     fill-rule="evenodd"
                     d="M2 3.75A.75.75 0 0 1 2.75 3h10.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 3.75Zm0 4A.75.75 0 0 1 2.75 7h10.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 7.75Zm0 4A.75.75 0 0 1 2.75 11h10.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75Z"
-                />
-            </svg>
-        </button>
-        <button
-            type="button"
-            title="Browse projects"
-            aria-label="Browse projects"
-            class="flex h-8 w-8 items-center justify-center rounded text-muted hover:bg-line/30 hover:text-fg"
-            @click="openScoped('/')"
-        >
-            <svg
-                viewBox="0 0 16 16"
-                width="16"
-                height="16"
-                fill="currentColor"
-                aria-hidden="true"
-            >
-                <path
-                    d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"
                 />
             </svg>
         </button>

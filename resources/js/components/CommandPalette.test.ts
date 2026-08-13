@@ -426,6 +426,16 @@ it('shows the shortcut in the browse button tooltip', () => {
     expect(button.title).toBe('Browse snippets (⌘P)');
 });
 
+it('shows a plain tooltip on the switch project button', () => {
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    const button = screen.getByRole('button', { name: 'Switch project' });
+
+    expect(button.title).toBe('Switch project');
+});
+
 it('opens directly scoped to snippets when the browse snippets icon is clicked', async () => {
     vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], ['other-project']));
     render(CommandPalette, {
@@ -441,14 +451,14 @@ it('opens directly scoped to snippets when the browse snippets icon is clicked',
     expect(screen.queryByText('other-project')).toBeNull();
 });
 
-it('opens directly scoped to projects when the browse projects icon is clicked', async () => {
+it('opens directly scoped to projects when the switch project icon is clicked', async () => {
     vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], ['other-project']));
     render(CommandPalette, {
         props: { currentProject: 'my-project', currentSnippet: 'scratch' },
     });
 
     await fireEvent.click(
-        screen.getByRole('button', { name: 'Browse projects' }),
+        screen.getByRole('button', { name: 'Switch project' }),
     );
 
     await screen.findByRole('dialog', { name: 'Projects' });
