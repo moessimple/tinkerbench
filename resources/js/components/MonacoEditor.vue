@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import * as monaco from 'monaco-editor';
 import { onBeforeUnmount, onMounted, useTemplateRef } from 'vue';
+import { attachLanguageServer } from '@/lib/languageServer';
+import type { LanguageServerHandle } from '@/lib/languageServer';
 import { createEditorWorker } from '@/lib/monacoEditorWorker';
 
 self.MonacoEnvironment = {
     getWorker: createEditorWorker,
 };
 
-const props = defineProps<{ initialValue: string }>();
+const props = defineProps<{ initialValue: string; project: string }>();
 const emit = defineEmits<{
     change: [content: string];
     run: [];
@@ -15,6 +17,8 @@ const emit = defineEmits<{
 
 const editorElement = useTemplateRef('editorElement');
 let editor: monaco.editor.IStandaloneCodeEditor | null = null;
+let languageServer: LanguageServerHandle | null = null;
+let unmounted = false;
 
 function layout(): void {
     editor?.layout();
@@ -62,7 +66,10 @@ onMounted(() => {
     });
 
     editor.onDidChangeModelContent(() => {
-        emit('change', editor?.getValue() ?? '');
+        const value = editor?.getValue() ?? '';
+
+        emit('change', value);
+        languageServer?.notifyContentChanged(value);
     });
     editor.addAction({
         id: 'tinkerbench.run',
@@ -71,10 +78,24 @@ onMounted(() => {
         run: () => emit('run'),
     });
     editor.focus();
+
+    attachLanguageServer(monaco, props.project, props.initialValue).then(
+        (handle) => {
+            if (unmounted) {
+                handle.dispose();
+
+                return;
+            }
+
+            languageServer = handle;
+        },
+    );
 });
 
 onBeforeUnmount(() => {
+    unmounted = true;
     editor?.dispose();
+    languageServer?.dispose();
 });
 </script>
 
