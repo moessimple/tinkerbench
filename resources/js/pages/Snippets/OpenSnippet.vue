@@ -9,6 +9,7 @@ import { xsrfHeader } from '@/lib/csrf';
 import { detectOutput, executeScripts, highlightJson } from '@/lib/output';
 import type { OutputResult } from '@/lib/output';
 import { shortcuts } from '@/lib/shortcuts';
+import type { SnippetDebugPayload } from '@/types';
 
 const props = defineProps<{
     content: string;
@@ -45,7 +46,10 @@ const showsMarkup = computed(
             lastResult.value?.type === 'json'),
 );
 
-const http = useHttp<{ code: string }, { output: string }>({
+const http = useHttp<
+    { code: string },
+    { debug: SnippetDebugPayload | null; output: string }
+>({
     code: props.content,
 });
 
