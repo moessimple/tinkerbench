@@ -1,6 +1,11 @@
 import { cleanup, render } from '@testing-library/vue';
+import * as monaco from 'monaco-editor';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import MonacoEditor from './MonacoEditor.vue';
+
+vi.mock('@/lib/monacoEditorWorker', () => ({
+    createEditorWorker: vi.fn(),
+}));
 
 const onDidChangeModelContent = vi.fn();
 const addAction = vi.fn();
@@ -13,6 +18,15 @@ const editor = {
     onDidChangeModelContent,
 };
 
+vi.mock('monaco-editor', () => ({
+    editor: {
+        create: vi.fn(() => editor),
+        defineTheme: vi.fn(),
+    },
+    KeyCode: { Enter: 3 },
+    KeyMod: { CtrlCmd: 2048 },
+}));
+
 beforeEach(() => {
     addAction.mockClear();
     editor.dispose.mockClear();
@@ -20,21 +34,8 @@ beforeEach(() => {
     editor.getValue.mockClear();
     editor.layout.mockClear();
     onDidChangeModelContent.mockClear();
-
-    window.require = Object.assign(
-        (_modules: string[], callback: () => void) => callback(),
-        {
-            config: vi.fn(),
-        },
-    );
-    window.monaco = {
-        editor: {
-            create: vi.fn(() => editor),
-            defineTheme: vi.fn(),
-        },
-        KeyCode: { Enter: 3 },
-        KeyMod: { CtrlCmd: 2048 },
-    };
+    vi.mocked(monaco.editor.create).mockClear();
+    vi.mocked(monaco.editor.defineTheme).mockClear();
 });
 
 function actionRun(id: string): () => void {
@@ -52,11 +53,11 @@ afterEach(cleanup);
 it('creates the editor with PHP syntax highlighting and the github-dark theme', () => {
     render(MonacoEditor, { props: { initialValue: '<?php echo "initial";' } });
 
-    expect(window.monaco.editor.defineTheme).toHaveBeenCalledWith(
+    expect(monaco.editor.defineTheme).toHaveBeenCalledWith(
         'github-dark',
         expect.any(Object),
     );
-    expect(window.monaco.editor.create).toHaveBeenCalledWith(
+    expect(monaco.editor.create).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({
             value: '<?php echo "initial";',
@@ -96,9 +97,7 @@ it('emits run when the Ctrl/Cmd+Enter action runs', () => {
     expect(rendered.emitted().run).toHaveLength(1);
     expect(addAction).toHaveBeenCalledWith(
         expect.objectContaining({
-            keybindings: [
-                window.monaco.KeyMod.CtrlCmd | window.monaco.KeyCode.Enter,
-            ],
+            keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
         }),
     );
 });

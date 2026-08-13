@@ -17,6 +17,5 @@
     </head>
     <body class="h-screen font-sans antialiased">
         <x-inertia::app />
-        <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.56.0/min/vs/loader.js"></script>
     </body>
 </html>
