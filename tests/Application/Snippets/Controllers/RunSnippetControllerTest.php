@@ -32,7 +32,7 @@ it('returns the right output', function (): void {
         $mock->shouldReceive('phpBinary')->with('my-project')->andReturn(PHP_BINARY);
     });
 
-    $this->postJson('/projects/my-project/snippets/executions', ['code' => 'echo 1 + 1;'])
+    $this->postJson('/projects/my-project/snippets/executions', ['code' => "<?php\n\necho 1 + 1;"])
         ->assertOk()
         ->assertExactJson(['output' => '2']);
 });

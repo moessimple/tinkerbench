@@ -165,19 +165,19 @@ it('reports the laravel version as unknown when the given project produces no ou
 it('surfaces the process error when the given php binary does not exist', function (): void {
     config(['services.herd.bin' => '/nonexistent-herd-bin']);
 
-    $result = new Herd()->runSnippet("return 'unreachable';", '/nonexistent-herd-bin/php', base_path());
+    $result = new Herd()->runSnippet("<?php\n\nreturn 'unreachable';", '/nonexistent-herd-bin/php', base_path());
 
     expect($result->output)->not->toBe('');
 });
 
 it('runs a snippet in a subprocess and returns its output', function (): void {
-    $result = new Herd()->runSnippet("return 'from the subprocess';", PHP_BINARY, base_path());
+    $result = new Herd()->runSnippet("<?php\n\nreturn 'from the subprocess';", PHP_BINARY, base_path());
 
     expect($result->output)->toBe('from the subprocess');
 });
 
 it('boots the target project so snippets can use its Laravel helpers', function (): void {
-    $result = new Herd()->runSnippet("return config('app.name');", PHP_BINARY, base_path());
+    $result = new Herd()->runSnippet("<?php\n\nreturn config('app.name');", PHP_BINARY, base_path());
 
     expect($result->output)->toBe(config('app.name'));
 });
@@ -185,34 +185,34 @@ it('boots the target project so snippets can use its Laravel helpers', function 
 it('lets two snippets that redeclare the same class both succeed', function (): void {
     $herd = new Herd();
 
-    $first = $herd->runSnippet("class DuplicateSnippetClass {}\n\nreturn 'first';", PHP_BINARY, base_path());
-    $second = $herd->runSnippet("class DuplicateSnippetClass {}\n\nreturn 'second';", PHP_BINARY, base_path());
+    $first = $herd->runSnippet("<?php\n\nclass DuplicateSnippetClass {}\n\nreturn 'first';", PHP_BINARY, base_path());
+    $second = $herd->runSnippet("<?php\n\nclass DuplicateSnippetClass {}\n\nreturn 'second';", PHP_BINARY, base_path());
 
     expect($first->output)->toBe('first')
         ->and($second->output)->toBe('second');
 });
 
 it('surfaces a thrown exception via the process error output', function (): void {
-    $result = new Herd()->runSnippet("throw new RuntimeException('boom');", PHP_BINARY, base_path());
+    $result = new Herd()->runSnippet("<?php\n\nthrow new RuntimeException('boom');", PHP_BINARY, base_path());
 
     expect($result->output)->toContain('boom');
 });
 
 it('keeps output printed before an uncaught exception instead of discarding it', function (): void {
-    $result = new Herd()->runSnippet("echo 'partial output'; throw new RuntimeException('boom');", PHP_BINARY, base_path());
+    $result = new Herd()->runSnippet("<?php\n\necho 'partial output'; throw new RuntimeException('boom');", PHP_BINARY, base_path());
 
     expect($result->output)->toContain('partial output')
         ->and($result->output)->toContain('boom');
 });
 
-it('does not duplicate an opening tag the snippet already provides', function (): void {
-    $result = new Herd()->runSnippet("<?php\n\nreturn 'already tagged';", PHP_BINARY, base_path());
+it('echoes the snippet back verbatim when it has no opening tag', function (): void {
+    $result = new Herd()->runSnippet("return 'missing tag';", PHP_BINARY, base_path());
 
-    expect($result->output)->toBe('already tagged');
+    expect($result->output)->toBe("return 'missing tag';");
 });
 
 it('formats dd()/dump() output as an HTML dump instead of plain CLI text', function (): void {
-    $result = new Herd()->runSnippet("dump('hello');", PHP_BINARY, base_path());
+    $result = new Herd()->runSnippet("<?php\n\ndump('hello');", PHP_BINARY, base_path());
 
     expect($result->output)->toContain('Sfdump(');
 });
@@ -220,7 +220,7 @@ it('formats dd()/dump() output as an HTML dump instead of plain CLI text', funct
 it('cleans up the temp snippet file after running', function (): void {
     $before = glob(sys_get_temp_dir().'/tinkerbench-snippet-*.php');
 
-    new Herd()->runSnippet("return 'cleanup check';", PHP_BINARY, base_path());
+    new Herd()->runSnippet("<?php\n\nreturn 'cleanup check';", PHP_BINARY, base_path());
 
     $after = glob(sys_get_temp_dir().'/tinkerbench-snippet-*.php');
 
