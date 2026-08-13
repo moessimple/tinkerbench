@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Support\Enums\Disk;
 use Support\Enums\RenameSnippetResult;
 
 class SnippetRepository
@@ -18,7 +19,7 @@ class SnippetRepository
     {
         $names = [];
 
-        foreach (Storage::disk('snippets')->files($project) as $file) {
+        foreach (Storage::disk(Disk::Snippets)->files($project) as $file) {
             if (Str::endsWith($file, '.php')) {
                 $names[] = Str::of($file)->afterLast('/')->beforeLast('.php')->toString();
             }
@@ -45,7 +46,7 @@ class SnippetRepository
 
     public function write(string $project, string $snippet, string $contents): void
     {
-        Storage::disk('snippets')->put($this->relativePath($project, $snippet), $contents);
+        Storage::disk(Disk::Snippets)->put($this->relativePath($project, $snippet), $contents);
     }
 
     public function rename(string $project, string $from, string $to): RenameSnippetResult
@@ -66,12 +67,12 @@ class SnippetRepository
             return false;
         }
 
-        return Storage::disk('snippets')->delete($this->relativePath($project, $snippet));
+        return Storage::disk(Disk::Snippets)->delete($this->relativePath($project, $snippet));
     }
 
     public function path(string $project, string $snippet): string
     {
-        return Storage::disk('snippets')->path($this->relativePath($project, $snippet));
+        return Storage::disk(Disk::Snippets)->path($this->relativePath($project, $snippet));
     }
 
     private function renameWhileLocked(string $project, string $from, string $to): RenameSnippetResult
@@ -84,7 +85,7 @@ class SnippetRepository
             return RenameSnippetResult::Conflict;
         }
 
-        Storage::disk('snippets')->move(
+        Storage::disk(Disk::Snippets)->move(
             $this->relativePath($project, $from),
             $this->relativePath($project, $to),
         );
@@ -94,7 +95,7 @@ class SnippetRepository
 
     private function exists(string $project, string $snippet): bool
     {
-        return Storage::disk('snippets')->exists($this->relativePath($project, $snippet));
+        return Storage::disk(Disk::Snippets)->exists($this->relativePath($project, $snippet));
     }
 
     private function relativePath(string $project, string $snippet): string
@@ -109,7 +110,7 @@ class SnippetRepository
 
     private function read(string $path): string
     {
-        $contents = Storage::disk('snippets')->get($path);
+        $contents = Storage::disk(Disk::Snippets)->get($path);
 
         throw_if($contents === null, RuntimeException::class, "The snippet at {$path} is missing.");
 
