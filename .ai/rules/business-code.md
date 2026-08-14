@@ -17,6 +17,8 @@ Suffix by type: Action, Controller, Query, Request, Resource, Job, Middleware. M
 ## Every business code class needs a 1:1 mirrored test
 Each class in src/Domain, src/Application, src/Support gets a matching test at the same relative path under tests/ (src/Domain/Billing/Actions/CreateInvoiceAction.php mirrors tests/Domain/Billing/Actions/CreateInvoiceActionTest.php). Mandatory. tests/Architecture is the only exception, it checks cross-layer relationships instead of mirroring one class.
 
+The mirrored file only guarantees the class isn't forgotten, not that it's fully covered: tests.md's "every public method gets its own isolated test" is what actually closes that gap, follow it once the test file exists.
+
 ## No final classes, anywhere
 No class in the app is `final`. It blocks Mockery from creating a class double ("cannot override methods of a final class"), which forces awkward workarounds when a test needs to mock a class directly. Decided after hitting this concretely with RunSnippetAction. Enforced project-wide by tests/Architecture/ArchTest.php, not just for src/Domain|Application|Support.
 
