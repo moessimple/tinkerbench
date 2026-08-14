@@ -245,41 +245,6 @@ function toggleMaximize(): void {
                                 />
                             </svg>
                         </button>
-                        <button
-                            type="button"
-                            :title="
-                                outputMode === 'raw'
-                                    ? 'Show rendered output'
-                                    : 'Show raw output'
-                            "
-                            :aria-label="
-                                outputMode === 'raw'
-                                    ? 'Show rendered output'
-                                    : 'Show raw output'
-                            "
-                            :aria-pressed="outputMode === 'rendered'"
-                            class="flex h-8 w-8 items-center justify-center rounded text-muted hover:bg-line/30 hover:text-fg"
-                            @click="toggleOutputMode"
-                        >
-                            <svg
-                                viewBox="0 0 16 16"
-                                width="16"
-                                height="16"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.5"
-                                stroke-linecap="round"
-                                aria-hidden="true"
-                            >
-                                <template v-if="outputMode === 'raw'">
-                                    <path
-                                        d="M1 8s2.7-4.5 7-4.4S15 8 15 8s-2.7 4.5-7 4.4S1 8 1 8Z"
-                                    />
-                                    <circle cx="8" cy="8" r="1.6" />
-                                </template>
-                                <path v-else d="M5 4 2 8l3 4M11 4l3 4-3 4" />
-                            </svg>
-                        </button>
                         <CommandPalette
                             :current-project="currentProject"
                             :current-snippet="snippetName"
@@ -363,6 +328,41 @@ function toggleMaximize(): void {
                             @click="activeTab = 'debug'"
                         >
                             Debug
+                        </button>
+                        <button
+                            type="button"
+                            :title="
+                                outputMode === 'raw'
+                                    ? 'Show rendered output'
+                                    : 'Show raw output'
+                            "
+                            :aria-label="
+                                outputMode === 'raw'
+                                    ? 'Show rendered output'
+                                    : 'Show raw output'
+                            "
+                            :aria-pressed="outputMode === 'rendered'"
+                            class="ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded text-muted hover:bg-line/30 hover:text-fg"
+                            @click="toggleOutputMode"
+                        >
+                            <svg
+                                viewBox="0 0 16 16"
+                                width="16"
+                                height="16"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.5"
+                                stroke-linecap="round"
+                                aria-hidden="true"
+                            >
+                                <template v-if="outputMode === 'raw'">
+                                    <path
+                                        d="M1 8s2.7-4.5 7-4.4S15 8 15 8s-2.7 4.5-7 4.4S1 8 1 8Z"
+                                    />
+                                    <circle cx="8" cy="8" r="1.6" />
+                                </template>
+                                <path v-else d="M5 4 2 8l3 4M11 4l3 4-3 4" />
+                            </svg>
                         </button>
                     </div>
                     <div
