@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { Head, useHttp } from '@inertiajs/vue3';
-import { computed, nextTick, onBeforeUnmount, ref, useTemplateRef } from 'vue';
+import {
+    computed,
+    nextTick,
+    onBeforeUnmount,
+    onMounted,
+    ref,
+    useTemplateRef,
+} from 'vue';
 import RunSnippetController from '@/actions/Application/Snippets/Controllers/RunSnippetController';
 import UpdateSnippetContentController from '@/actions/Application/Snippets/Controllers/UpdateSnippetContentController';
 import CommandPalette from '@/components/CommandPalette.vue';
@@ -86,6 +93,21 @@ function onEditorChange(content: string): void {
 }
 
 onBeforeUnmount(() => window.clearTimeout(saveTimer));
+
+function onGlobalKeydown(event: KeyboardEvent): void {
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        window.clearTimeout(saveTimer);
+        void queueSnippetSave(http.code);
+    }
+}
+
+onMounted(() =>
+    window.addEventListener('keydown', onGlobalKeydown, { capture: true }),
+);
+onBeforeUnmount(() =>
+    window.removeEventListener('keydown', onGlobalKeydown, { capture: true }),
+);
 
 async function executeDumpScripts(): Promise<void> {
     await nextTick();

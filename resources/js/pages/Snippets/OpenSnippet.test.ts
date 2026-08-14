@@ -260,6 +260,44 @@ it('collapses rapid edits into a single save of the latest content', async () =>
     );
 });
 
+it('flushes the pending debounced save immediately on Ctrl/Cmd+S', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ ok: true }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    vi.useFakeTimers();
+    render(OpenSnippet, { props });
+
+    await fireEvent.update(
+        screen.getByLabelText('Snippet code'),
+        "echo 'edited';",
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    document.dispatchEvent(
+        new KeyboardEvent('keydown', {
+            key: 's',
+            metaKey: true,
+            cancelable: true,
+            bubbles: true,
+        }),
+    );
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+        '/api/projects/my-project/snippets/scratch',
+        expect.objectContaining({
+            body: JSON.stringify({ content: "echo 'edited';" }),
+        }),
+    );
+
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+});
+
 it('clears the output and any error message', async () => {
     render(OpenSnippet, { props });
 
@@ -430,4 +468,33 @@ it('hides the header and shows an exit-fullscreen button when maximized', async 
     );
 
     screen.getByText('tinkerbench');
+});
+
+it('prevents the native browser save dialog on Ctrl/Cmd+S', () => {
+    render(OpenSnippet, { props });
+
+    const event = new KeyboardEvent('keydown', {
+        key: 's',
+        metaKey: true,
+        cancelable: true,
+        bubbles: true,
+    });
+    const preventDefaultSpy = vi.spyOn(event, 'preventDefault');
+    document.dispatchEvent(event);
+
+    expect(preventDefaultSpy).toHaveBeenCalled();
+});
+
+it('removes the global Ctrl/Cmd+S listener when unmounted', () => {
+    const addSpy = vi.spyOn(window, 'addEventListener');
+    const removeSpy = vi.spyOn(window, 'removeEventListener');
+    const rendered = render(OpenSnippet, { props });
+
+    rendered.unmount();
+
+    const [, handler] =
+        addSpy.mock.calls.find(([type]) => type === 'keydown') ?? [];
+    expect(removeSpy).toHaveBeenCalledWith('keydown', handler, {
+        capture: true,
+    });
 });
