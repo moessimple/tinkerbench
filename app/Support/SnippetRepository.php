@@ -70,11 +70,6 @@ class SnippetRepository
         return Storage::disk(Disk::Snippets)->delete($this->relativePath($project, $snippet));
     }
 
-    public function path(string $project, string $snippet): string
-    {
-        return Storage::disk(Disk::Snippets)->path($this->relativePath($project, $snippet));
-    }
-
     private function renameWhileLocked(string $project, string $from, string $to): RenameSnippetResult
     {
         if (! $this->exists($project, $from)) {

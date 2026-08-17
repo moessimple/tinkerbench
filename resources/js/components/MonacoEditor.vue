@@ -20,16 +20,6 @@ let editor: monaco.editor.IStandaloneCodeEditor | null = null;
 let languageServer: LanguageServerHandle | null = null;
 let unmounted = false;
 
-function layout(): void {
-    editor?.layout();
-}
-
-function content(): string {
-    return editor?.getValue() ?? props.initialValue;
-}
-
-defineExpose({ content, layout });
-
 onMounted(() => {
     monaco.editor.defineTheme('github-dark', {
         base: 'vs-dark',

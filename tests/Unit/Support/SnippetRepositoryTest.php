@@ -117,9 +117,3 @@ it('deletes an existing snippet', function (): void {
 it('reports that a missing snippet was not deleted', function (): void {
     expect(new SnippetRepository()->delete('my-project', 'missing'))->toBeFalse();
 });
-
-it('resolves the absolute path of a snippet', function (): void {
-    $path = new SnippetRepository()->path('my-project', 'scratch');
-
-    expect($path)->toBe(Storage::disk(Disk::Snippets)->path('my-project/scratch.php'));
-});

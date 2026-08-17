@@ -32,7 +32,13 @@ const httpsServer = createServer({
     cert: readFileSync(path.join(HERD_CERTIFICATES_DIR, 'tinkerbench.test.crt')),
     key: readFileSync(path.join(HERD_CERTIFICATES_DIR, 'tinkerbench.test.key')),
 });
-const server = new WebSocketServer({ server: httpsServer });
+// Rejects any WebSocket handshake not sent from tinkerbench's own page, so another origin open in the
+// same browser can't drive this bridge's LSP session (cross-site WebSocket hijacking): unlike fetch(),
+// browsers always send Origin on a WS handshake regardless of same-origin, so this is a reliable check.
+const server = new WebSocketServer({
+    server: httpsServer,
+    verifyClient: ({ origin }) => origin === 'https://tinkerbench.test',
+});
 
 let idleTimer = null;
 
