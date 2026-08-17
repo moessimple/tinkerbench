@@ -5,8 +5,8 @@ paths:
 
 # Tests
 
-## Test level is free, behavior coverage is not
-Unit vs Http doesn't matter, cover the observable behavior end to end. Unit tests (tests/Unit/) prove Actions/Support/Enums classes in isolation; Http tests (tests/Http/) prove routing, serialization, and multiple classes interacting (flow, wiring, happy path).
+## Unit owns the behavior matrix, Http only proves the endpoint
+tests/Http/ contains Controller tests only, they prove a public endpoint: routing, controller-wiring (right FormRequest/Middleware/collaborator used, see controllers.md), and response shaping. Every other component, Actions, Support classes, Enums, FormRequests, Middleware, is not a public endpoint itself and belongs in tests/Unit/, mirroring its namespace under App\ (e.g. App\Http\Requests\X → tests/Unit/Http/Requests, App\Support\X → tests/Unit/Support). Its Unit test carries the component's full behavior matrix, even when proving it requires a real HTTP request/response cycle (a FormRequest's validation via createFormRequest(), a Middleware via a throwaway route), the mechanism used to invoke a component doesn't decide which folder its test lives in, only whether the component is itself a public endpoint does.
 
 ## Assert behavior, not implementation details
 Assert return values, persisted state, dispatched events/jobs, HTTP responses. Not private methods or internal call order, unless the delegation itself is a documented contract.

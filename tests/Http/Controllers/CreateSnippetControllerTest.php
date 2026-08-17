@@ -18,11 +18,19 @@ it('uses the right middleware', function (): void {
         ->toUseMiddleware(EnsureKnownProject::class);
 });
 
-it('creates the snippet via the repository', function (): void {
+it('uses the right repository', function (): void {
     mockKnownProject();
 
     $this->mock(SnippetRepository::class)
         ->shouldReceive('ensureExists')->once()->with('my-project', 'my-new-snippet');
+
+    $this->postJson('/api/projects/my-project/snippets', ['name' => 'my-new-snippet']);
+});
+
+it('creates the snippet via the repository', function (): void {
+    mockKnownProject();
+
+    $this->mock(SnippetRepository::class)->shouldReceive('ensureExists');
 
     $this->postJson('/api/projects/my-project/snippets', ['name' => 'my-new-snippet'])
         ->assertOk()

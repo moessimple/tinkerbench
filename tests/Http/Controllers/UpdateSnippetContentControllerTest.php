@@ -15,11 +15,19 @@ it('uses the right middleware', function (): void {
     expect(UpdateSnippetContentController::class)->toUseMiddleware(EnsureKnownProject::class);
 });
 
-it('saves the content via the repository', function (): void {
+it('uses the right repository', function (): void {
     mockKnownProject();
 
     $this->mock(SnippetRepository::class)
         ->shouldReceive('write')->once()->with('my-project', 'scratch', 'echo "saved";');
+
+    $this->putJson('/api/projects/my-project/snippets/scratch', ['content' => 'echo "saved";']);
+});
+
+it('saves the content via the repository', function (): void {
+    mockKnownProject();
+
+    $this->mock(SnippetRepository::class)->shouldReceive('write');
 
     $this->putJson('/api/projects/my-project/snippets/scratch', ['content' => 'echo "saved";'])
         ->assertOk()

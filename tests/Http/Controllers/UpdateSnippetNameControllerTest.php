@@ -23,9 +23,16 @@ it('uses the right middleware', function (): void {
         ->toUseMiddleware(EnsureKnownProject::class);
 });
 
-it('renames the snippet via the repository', function (): void {
+it('uses the right repository', function (): void {
     $this->mock(SnippetRepository::class)
         ->shouldReceive('rename')->once()->with('my-project', 'old', 'new')->andReturn(RenameSnippetResult::Renamed);
+
+    $this->patchJson('/api/projects/my-project/snippets/old', ['name' => 'new']);
+});
+
+it('renames the snippet via the repository', function (): void {
+    $this->mock(SnippetRepository::class)
+        ->shouldReceive('rename')->andReturn(RenameSnippetResult::Renamed);
 
     $this->patchJson('/api/projects/my-project/snippets/old', ['name' => 'new'])
         ->assertOk()
@@ -34,7 +41,7 @@ it('renames the snippet via the repository', function (): void {
 
 it('returns 404 when the repository reports the snippet is missing', function (): void {
     $this->mock(SnippetRepository::class)
-        ->shouldReceive('rename')->once()->with('my-project', 'missing', 'new')->andReturn(RenameSnippetResult::Missing);
+        ->shouldReceive('rename')->andReturn(RenameSnippetResult::Missing);
 
     $this->patchJson('/api/projects/my-project/snippets/missing', ['name' => 'new'])
         ->assertNotFound()
@@ -43,7 +50,7 @@ it('returns 404 when the repository reports the snippet is missing', function ()
 
 it('returns 409 when the repository reports a name conflict', function (): void {
     $this->mock(SnippetRepository::class)
-        ->shouldReceive('rename')->once()->with('my-project', 'old', 'new')->andReturn(RenameSnippetResult::Conflict);
+        ->shouldReceive('rename')->andReturn(RenameSnippetResult::Conflict);
 
     $this->patchJson('/api/projects/my-project/snippets/old', ['name' => 'new'])
         ->assertStatus(409)

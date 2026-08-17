@@ -47,7 +47,7 @@ it('returns the debug data from the result', function (): void {
         $mock->shouldReceive('projectPath')->with('my-project')->andReturn(base_path());
     });
     $this->mock(RunSnippetAction::class)
-        ->shouldReceive('execute')->once()->andReturn(new SnippetRunResult('output', ['queries' => ['count' => 1]]));
+        ->shouldReceive('execute')->andReturn(new SnippetRunResult('output', ['queries' => ['count' => 1]]));
 
     $this->postJson('/projects/my-project/snippets/executions', ['code' => 'echo 1;'])
         ->assertOk()

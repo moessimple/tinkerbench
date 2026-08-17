@@ -14,9 +14,15 @@ it('uses the right middleware', function (): void {
     expect(DeleteSnippetController::class)->toUseMiddleware(EnsureKnownProject::class);
 });
 
-it('deletes the snippet via the repository', function (): void {
+it('uses the right repository', function (): void {
     $this->mock(SnippetRepository::class)
         ->shouldReceive('delete')->once()->with('my-project', 'scratch')->andReturn(true);
+
+    $this->deleteJson('/api/projects/my-project/snippets/scratch');
+});
+
+it('deletes the snippet via the repository', function (): void {
+    $this->mock(SnippetRepository::class)->shouldReceive('delete')->andReturn(true);
 
     $this->deleteJson('/api/projects/my-project/snippets/scratch')
         ->assertOk()
@@ -24,8 +30,7 @@ it('deletes the snippet via the repository', function (): void {
 });
 
 it('returns 404 when the repository reports the snippet is missing', function (): void {
-    $this->mock(SnippetRepository::class)
-        ->shouldReceive('delete')->once()->with('my-project', 'missing')->andReturn(false);
+    $this->mock(SnippetRepository::class)->shouldReceive('delete')->andReturn(false);
 
     $this->deleteJson('/api/projects/my-project/snippets/missing')
         ->assertNotFound()
