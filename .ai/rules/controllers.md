@@ -1,6 +1,6 @@
 ---
 paths:
-  - 'tests/Http/Controllers/**'
+  - 'tests/Http/**'
 ---
 
 # Controllers
