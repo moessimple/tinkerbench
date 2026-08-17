@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use App\Actions\RunSnippetAction;
 use App\Http\Controllers\RunSnippetController;
-use App\Http\Middleware\EnsureKnownProjectMiddleware;
+use App\Http\Middleware\EnsureKnownProject;
 use App\Http\Requests\RunSnippetRequest;
 use App\Support\Herd;
 use App\Support\SnippetRunResult;
@@ -15,7 +15,7 @@ it('uses the right request', function (): void {
 });
 
 it('uses the right middleware', function (): void {
-    expect(RunSnippetController::class)->toUseMiddleware(EnsureKnownProjectMiddleware::class);
+    expect(RunSnippetController::class)->toUseMiddleware(EnsureKnownProject::class);
 });
 
 it('uses the right action', function (): void {

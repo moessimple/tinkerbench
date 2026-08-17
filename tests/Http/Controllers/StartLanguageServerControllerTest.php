@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use App\Actions\StartLanguageServerAction;
 use App\Http\Controllers\StartLanguageServerController;
-use App\Http\Middleware\EnsureKnownProjectMiddleware;
+use App\Http\Middleware\EnsureKnownProject;
 use App\Support\Herd;
 use App\Support\LanguageServerBridge;
 use Mockery\MockInterface;
@@ -17,7 +17,7 @@ it('uses the right action', function (): void {
 });
 
 it('uses the right middleware', function (): void {
-    expect(StartLanguageServerController::class)->toUseMiddleware(EnsureKnownProjectMiddleware::class);
+    expect(StartLanguageServerController::class)->toUseMiddleware(EnsureKnownProject::class);
 });
 
 it('returns the port for a known project', function (): void {

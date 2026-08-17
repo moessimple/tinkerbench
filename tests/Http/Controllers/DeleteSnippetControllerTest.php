@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\DeleteSnippetController;
-use App\Http\Middleware\EnsureKnownProjectMiddleware;
+use App\Http\Middleware\EnsureKnownProject;
 use App\Support\SnippetRepository;
 
 beforeEach(function (): void {
@@ -11,7 +11,7 @@ beforeEach(function (): void {
 });
 
 it('uses the right middleware', function (): void {
-    expect(DeleteSnippetController::class)->toUseMiddleware(EnsureKnownProjectMiddleware::class);
+    expect(DeleteSnippetController::class)->toUseMiddleware(EnsureKnownProject::class);
 });
 
 it('deletes the snippet via the repository', function (): void {

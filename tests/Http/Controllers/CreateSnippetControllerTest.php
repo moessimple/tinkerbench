@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\CreateSnippetController;
-use App\Http\Middleware\EnsureKnownProjectMiddleware;
+use App\Http\Middleware\EnsureKnownProject;
 use App\Http\Requests\SnippetNameRequest;
 use App\Support\SnippetRepository;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
@@ -15,7 +15,7 @@ it('uses the right request', function (): void {
 it('uses the right middleware', function (): void {
     expect(CreateSnippetController::class)
         ->toUseMiddleware(HandlePrecognitiveRequests::class)
-        ->toUseMiddleware(EnsureKnownProjectMiddleware::class);
+        ->toUseMiddleware(EnsureKnownProject::class);
 });
 
 it('creates the snippet via the repository', function (): void {

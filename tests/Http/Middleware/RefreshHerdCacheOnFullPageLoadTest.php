@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Http\Middleware\RefreshHerdCacheOnFullPageLoadMiddleware;
+use App\Http\Middleware\RefreshHerdCacheOnFullPageLoad;
 use App\Support\Herd;
 use Illuminate\Support\Facades\Route;
 use Mockery\MockInterface;
@@ -15,7 +15,7 @@ it("refreshes the project cache and the requested project's php binary on a full
     });
 
     Route::get('api/testing/project-under-test/{project?}', fn (?string $project = null): string => $project ?? 'none')
-        ->middleware(RefreshHerdCacheOnFullPageLoadMiddleware::class);
+        ->middleware(RefreshHerdCacheOnFullPageLoad::class);
 
     $this->get('api/testing/project-under-test/known-project')
         ->assertOk()
@@ -30,7 +30,7 @@ it('resolves and refreshes the current project when the url names none', functio
     });
 
     Route::get('api/testing/project-under-test/{project?}', fn (?string $project = null): string => $project ?? 'none')
-        ->middleware(RefreshHerdCacheOnFullPageLoadMiddleware::class);
+        ->middleware(RefreshHerdCacheOnFullPageLoad::class);
 
     $this->get('api/testing/project-under-test')
         ->assertOk()
@@ -45,7 +45,7 @@ it('does not refresh a php binary for a project unknown to herd', function (): v
     });
 
     Route::get('api/testing/project-under-test/{project?}', fn (?string $project = null): string => $project ?? 'none')
-        ->middleware(RefreshHerdCacheOnFullPageLoadMiddleware::class);
+        ->middleware(RefreshHerdCacheOnFullPageLoad::class);
 
     $this->get('api/testing/project-under-test/unknown-project')
         ->assertOk()
@@ -60,7 +60,7 @@ it('skips the refresh entirely for inertia navigation requests', function (): vo
     });
 
     Route::get('api/testing/project-under-test/{project?}', fn (?string $project = null): string => $project ?? 'none')
-        ->middleware(RefreshHerdCacheOnFullPageLoadMiddleware::class);
+        ->middleware(RefreshHerdCacheOnFullPageLoad::class);
 
     $this->withHeaders(['X-Inertia' => 'true'])
         ->get('api/testing/project-under-test/known-project')

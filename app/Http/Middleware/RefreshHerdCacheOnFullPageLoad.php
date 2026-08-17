@@ -9,16 +9,24 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class EnsureKnownProjectMiddleware
+class RefreshHerdCacheOnFullPageLoad
 {
     public function __construct(private Herd $herd) {}
 
     /** @param Closure(Request): Response $next */
     public function handle(Request $request, Closure $next): Response
     {
-        $project = $request->route('project');
+        if ($request->headers->has('X-Inertia')) {
+            return $next($request);
+        }
 
-        abort_if($this->herd->projectPath($project) === null, Response::HTTP_NOT_FOUND, "Unknown Herd project: {$project}");
+        $projects = $this->herd->refreshProjects();
+        $project = $request->route('project');
+        $project = is_string($project) ? $project : $this->herd->currentProject();
+
+        if (array_key_exists($project, $projects)) {
+            $this->herd->refreshPhpBinary($project);
+        }
 
         return $next($request);
     }

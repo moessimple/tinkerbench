@@ -126,7 +126,7 @@ function createFormRequest(string $requestClass, array $payload = []): TestRespo
 
 /**
  * Stubs Herd::projectPath() so the given project resolves to a real-looking path. Every route
- * under api/projects/{project}/snippets sits behind EnsureKnownProjectMiddleware, so a
+ * under api/projects/{project}/snippets sits behind EnsureKnownProject, so a
  * controller test for one of those routes needs this unless it's testing the unknown-project
  * case itself.
  */

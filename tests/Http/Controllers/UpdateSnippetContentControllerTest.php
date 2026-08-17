@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\UpdateSnippetContentController;
-use App\Http\Middleware\EnsureKnownProjectMiddleware;
+use App\Http\Middleware\EnsureKnownProject;
 use App\Http\Requests\UpdateSnippetContentRequest;
 use App\Support\SnippetRepository;
 
@@ -12,7 +12,7 @@ it('uses the right request', function (): void {
 });
 
 it('uses the right middleware', function (): void {
-    expect(UpdateSnippetContentController::class)->toUseMiddleware(EnsureKnownProjectMiddleware::class);
+    expect(UpdateSnippetContentController::class)->toUseMiddleware(EnsureKnownProject::class);
 });
 
 it('saves the content via the repository', function (): void {

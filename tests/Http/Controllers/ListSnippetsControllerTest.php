@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\ListSnippetsController;
-use App\Http\Middleware\EnsureKnownProjectMiddleware;
+use App\Http\Middleware\EnsureKnownProject;
 use App\Support\Herd;
 use App\Support\SnippetRepository;
 use Mockery\MockInterface;
 
 it('uses the right middleware', function (): void {
-    expect(ListSnippetsController::class)->toUseMiddleware(EnsureKnownProjectMiddleware::class);
+    expect(ListSnippetsController::class)->toUseMiddleware(EnsureKnownProject::class);
 });
 
 it('returns the snippet names from the repository', function (): void {
