@@ -21,3 +21,6 @@ Actions are mocked directly in controller tests (`$this->mock(SomeAction::class)
 
 ## Wrap multi-model writes in a transaction
 When an action writes to more than one model, wrap the writes in `DB::transaction()` inside the action itself, not at the call site.
+
+## session()/auth()/request() stay in App\Http
+Actions and Support classes must not call session(), auth(), or request() directly, that pulls implicit HTTP-request context into code that's supposed to be callable from anywhere (a command, a job, a test), not only from behind a web request. Resolve what's needed in the controller/request and pass it in explicitly. Enforced by tests/Arch/GlobalsTest.php.

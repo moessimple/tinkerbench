@@ -19,3 +19,6 @@ Each class in app/Actions, app/Support, app/Enums gets a matching test at the sa
 Controllers/Requests/Middleware don't get this mandatory 1:1 mirror: they're proven through tests/Http/ flow tests instead (see tests.md).
 
 The mirrored file only guarantees the class isn't forgotten, not that it's fully covered: tests.md's "every public method gets its own isolated test" is what actually closes that gap, follow it once the test file exists.
+
+## Enums stay plain value types
+Enums in app/Enums must not extend, implement, or use anything (no traits, no interfaces besides the backing type). They're plain domain nouns, not behavior carriers, see business-code.md's naming convention. Enforced by tests/Arch/EnumsTest.php.

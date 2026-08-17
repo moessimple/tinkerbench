@@ -10,6 +10,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | **/* | .ai/rules/general.md |
 | app/Http/Controllers/** | .ai/rules/http-controllers.md |
 | resources/js/** | .ai/rules/js.md |
+| app/Models/** | .ai/rules/models.md |
 | app/Http/Requests/** | .ai/rules/requests.md |
 | routes/** | .ai/rules/routes.md |
 | tests/Http/Controllers/** | .ai/rules/tests-http-controllers.md |
