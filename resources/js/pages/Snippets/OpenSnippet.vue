@@ -8,8 +8,8 @@ import {
     ref,
     useTemplateRef,
 } from 'vue';
-import RunSnippetController from '@/actions/Application/Snippets/Controllers/RunSnippetController';
-import UpdateSnippetContentController from '@/actions/Application/Snippets/Controllers/UpdateSnippetContentController';
+import RunSnippetController from '@/actions/App/Http/Controllers/RunSnippetController';
+import UpdateSnippetContentController from '@/actions/App/Http/Controllers/UpdateSnippetContentController';
 import CommandPalette from '@/components/CommandPalette.vue';
 import DebugPanel from '@/components/DebugPanel.vue';
 import MonacoEditor from '@/components/MonacoEditor.vue';

@@ -10,12 +10,12 @@ import {
     useTemplateRef,
     watch,
 } from 'vue';
-import ListProjectsController from '@/actions/Application/Projects/Controllers/ListProjectsController';
-import CreateSnippetController from '@/actions/Application/Snippets/Controllers/CreateSnippetController';
-import DeleteSnippetController from '@/actions/Application/Snippets/Controllers/DeleteSnippetController';
-import ListSnippetsController from '@/actions/Application/Snippets/Controllers/ListSnippetsController';
-import OpenSnippetController from '@/actions/Application/Snippets/Controllers/OpenSnippetController';
-import UpdateSnippetNameController from '@/actions/Application/Snippets/Controllers/UpdateSnippetNameController';
+import CreateSnippetController from '@/actions/App/Http/Controllers/CreateSnippetController';
+import DeleteSnippetController from '@/actions/App/Http/Controllers/DeleteSnippetController';
+import ListProjectsController from '@/actions/App/Http/Controllers/ListProjectsController';
+import ListSnippetsController from '@/actions/App/Http/Controllers/ListSnippetsController';
+import OpenSnippetController from '@/actions/App/Http/Controllers/OpenSnippetController';
+import UpdateSnippetNameController from '@/actions/App/Http/Controllers/UpdateSnippetNameController';
 import { xsrfHeader } from '@/lib/csrf';
 import { shortcuts } from '@/lib/shortcuts';
 

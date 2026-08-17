@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Support\Herd;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Routing\MiddlewareNameResolver;
 use Illuminate\Routing\Router;
@@ -9,7 +10,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Assert;
-use Support\Herd;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 
@@ -25,7 +25,7 @@ use Tests\TestCase;
 */
 
 pest()->extend(TestCase::class)
-    ->in('Support', 'Domain', 'Application');
+    ->in('Unit', 'Http');
 
 /*
 |--------------------------------------------------------------------------

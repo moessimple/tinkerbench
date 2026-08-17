@@ -6,7 +6,7 @@ paths:
 # Tests
 
 ## Test level is free, behavior coverage is not
-Unit vs feature/HTTP doesn't matter, cover the observable behavior end to end. Prefer unit tests for Domain classes; add feature/HTTP tests where routing, serialization, or multiple classes interacting needs proving.
+Unit vs Http doesn't matter, cover the observable behavior end to end. Unit tests (tests/Unit/) prove Actions/Support/Enums classes in isolation; Http tests (tests/Http/) prove routing, serialization, and multiple classes interacting (flow, wiring, happy path).
 
 ## Assert behavior, not implementation details
 Assert return values, persisted state, dispatched events/jobs, HTTP responses. Not private methods or internal call order, unless the delegation itself is a documented contract.

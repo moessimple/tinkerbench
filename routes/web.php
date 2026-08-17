@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-use Application\Projects\Controllers\ListProjectsController;
-use Application\Projects\Controllers\StartLanguageServerController;
-use Application\Projects\Middleware\EnsureKnownProjectMiddleware;
-use Application\Projects\Middleware\RefreshHerdCacheOnFullPageLoadMiddleware;
-use Application\Snippets\Controllers\CreateSnippetController;
-use Application\Snippets\Controllers\DeleteSnippetController;
-use Application\Snippets\Controllers\ListSnippetsController;
-use Application\Snippets\Controllers\OpenSnippetController;
-use Application\Snippets\Controllers\RunSnippetController;
-use Application\Snippets\Controllers\UpdateSnippetContentController;
-use Application\Snippets\Controllers\UpdateSnippetNameController;
+use App\Http\Controllers\CreateSnippetController;
+use App\Http\Controllers\DeleteSnippetController;
+use App\Http\Controllers\ListProjectsController;
+use App\Http\Controllers\ListSnippetsController;
+use App\Http\Controllers\OpenSnippetController;
+use App\Http\Controllers\RunSnippetController;
+use App\Http\Controllers\StartLanguageServerController;
+use App\Http\Controllers\UpdateSnippetContentController;
+use App\Http\Controllers\UpdateSnippetNameController;
+use App\Http\Middleware\EnsureKnownProjectMiddleware;
+use App\Http\Middleware\RefreshHerdCacheOnFullPageLoadMiddleware;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Support\Facades\Route;
 

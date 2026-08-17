@@ -1,5 +1,5 @@
 import type * as Monaco from 'monaco-editor';
-import StartLanguageServerController from '@/actions/Application/Projects/Controllers/StartLanguageServerController';
+import StartLanguageServerController from '@/actions/App/Http/Controllers/StartLanguageServerController';
 import { xsrfHeader } from '@/lib/csrf';
 
 const DOCUMENT_URI = 'file:///tinkerbench-snippet.php';

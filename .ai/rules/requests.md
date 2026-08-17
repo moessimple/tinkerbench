@@ -1,6 +1,6 @@
 ---
 paths:
-  - 'src/Application/*/Requests/**'
+  - 'app/Http/Requests/**'
 ---
 
 # Requests
