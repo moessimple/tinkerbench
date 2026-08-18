@@ -7,30 +7,19 @@ namespace App\Http\Controllers;
 use App\Enums\RenameSnippetResult;
 use App\Http\Requests\SnippetNameRequest;
 use App\Support\SnippetRepository;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 
 class UpdateSnippetNameController
 {
-    public function __invoke(SnippetNameRequest $request, SnippetRepository $snippets, string $project, string $snippet): JsonResponse
+    public function __invoke(SnippetNameRequest $request, SnippetRepository $snippets, string $project, string $snippet): Response
     {
         $newName = $request->name();
 
         $result = $snippets->rename($project, $snippet, $newName);
 
-        if ($result === RenameSnippetResult::Missing) {
-            return response()->json([
-                'ok' => false,
-                'error' => 'Snippet not found',
-            ], 404);
-        }
+        abort_if($result === RenameSnippetResult::Missing, 404, 'Snippet not found');
+        abort_if($result === RenameSnippetResult::Conflict, 409, "A snippet named '{$newName}' already exists");
 
-        if ($result === RenameSnippetResult::Conflict) {
-            return response()->json([
-                'ok' => false,
-                'error' => "A snippet named \"{$newName}\" already exists",
-            ], 409);
-        }
-
-        return response()->json(['ok' => true]);
+        return response()->noContent();
     }
 }

@@ -5,19 +5,14 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Support\SnippetRepository;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 
 class DeleteSnippetController
 {
-    public function __invoke(SnippetRepository $snippets, string $project, string $snippet): JsonResponse
+    public function __invoke(SnippetRepository $snippets, string $project, string $snippet): Response
     {
-        if (! $snippets->delete($project, $snippet)) {
-            return response()->json([
-                'ok' => false,
-                'error' => 'Snippet not found',
-            ], 404);
-        }
+        abort_unless($snippets->delete($project, $snippet), 404, 'Snippet not found');
 
-        return response()->json(['ok' => true]);
+        return response()->noContent();
     }
 }

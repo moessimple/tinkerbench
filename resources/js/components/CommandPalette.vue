@@ -345,18 +345,18 @@ function createSnippet(): void {
     });
 }
 
-// Laravel shapes a validation failure as { message, errors }, but the domain-level
-// failures this project's own controllers return (rename conflicts, missing snippets)
-// are shaped as { ok, error }; this reads whichever one the response actually has.
+// Both a validation failure (Laravel's { message, errors }) and a domain-level
+// failure ({ message } from abort()) carry a top-level message; field-specific
+// validation messages take precedence when present.
 async function errorMessageFrom(response: Response): Promise<string> {
     const body = (await response.json()) as {
-        error?: string;
+        message?: string;
         errors?: Record<string, string[]>;
     };
 
     return body.errors
         ? Object.values(body.errors).flat().join(' ')
-        : (body.error ?? 'Request failed');
+        : (body.message ?? 'Request failed');
 }
 
 async function startRename(name: string): Promise<void> {

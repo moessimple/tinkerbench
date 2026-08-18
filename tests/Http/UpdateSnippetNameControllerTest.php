@@ -35,8 +35,7 @@ it('renames the snippet via the repository', function (): void {
         ->shouldReceive('rename')->andReturn(RenameSnippetResult::Renamed);
 
     $this->patchJson('/api/projects/my-project/snippets/old', ['name' => 'new'])
-        ->assertOk()
-        ->assertExactJson(['ok' => true]);
+        ->assertNoContent();
 });
 
 it('returns 404 when the repository reports the snippet is missing', function (): void {
@@ -45,7 +44,7 @@ it('returns 404 when the repository reports the snippet is missing', function ()
 
     $this->patchJson('/api/projects/my-project/snippets/missing', ['name' => 'new'])
         ->assertNotFound()
-        ->assertExactJson(['ok' => false, 'error' => 'Snippet not found']);
+        ->assertJsonPath('message', 'Snippet not found');
 });
 
 it('returns 409 when the repository reports a name conflict', function (): void {
@@ -54,5 +53,5 @@ it('returns 409 when the repository reports a name conflict', function (): void 
 
     $this->patchJson('/api/projects/my-project/snippets/old', ['name' => 'new'])
         ->assertStatus(409)
-        ->assertExactJson(['ok' => false, 'error' => 'A snippet named "new" already exists']);
+        ->assertJsonPath('message', "A snippet named 'new' already exists");
 });

@@ -25,8 +25,7 @@ it('deletes the snippet via the repository', function (): void {
     $this->mock(SnippetRepository::class)->shouldReceive('delete')->andReturn(true);
 
     $this->deleteJson('/api/projects/my-project/snippets/scratch')
-        ->assertOk()
-        ->assertExactJson(['ok' => true]);
+        ->assertNoContent();
 });
 
 it('returns 404 when the repository reports the snippet is missing', function (): void {
@@ -34,5 +33,5 @@ it('returns 404 when the repository reports the snippet is missing', function ()
 
     $this->deleteJson('/api/projects/my-project/snippets/missing')
         ->assertNotFound()
-        ->assertExactJson(['ok' => false, 'error' => 'Snippet not found']);
+        ->assertJsonPath('message', 'Snippet not found');
 });

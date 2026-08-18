@@ -752,9 +752,7 @@ it('shows the domain error message inline when renaming fails', async () => {
         .fn()
         .mockResolvedValueOnce(jsonResponse(['scratch']))
         .mockResolvedValueOnce(jsonResponse([]))
-        .mockResolvedValueOnce(
-            jsonResponse({ ok: false, error: 'name taken' }, false),
-        );
+        .mockResolvedValueOnce(jsonResponse({ message: 'name taken' }, false));
     vi.stubGlobal('fetch', fetchMock);
     render(CommandPalette, {
         props: { currentProject: 'my-project', currentSnippet: 'scratch' },
@@ -918,7 +916,7 @@ it('shows the error message inline when deleting fails', async () => {
         .mockResolvedValueOnce(jsonResponse(['scratch']))
         .mockResolvedValueOnce(jsonResponse([]))
         .mockResolvedValueOnce(
-            jsonResponse({ ok: false, error: 'delete failed' }, false),
+            jsonResponse({ message: 'delete failed' }, false),
         );
     vi.stubGlobal('fetch', fetchMock);
     render(CommandPalette, {

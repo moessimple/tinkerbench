@@ -33,6 +33,5 @@ it('creates the snippet via the repository', function (): void {
     $this->mock(SnippetRepository::class)->shouldReceive('ensureExists');
 
     $this->postJson('/api/projects/my-project/snippets', ['name' => 'my-new-snippet'])
-        ->assertOk()
-        ->assertExactJson(['ok' => true]);
+        ->assertNoContent();
 });
