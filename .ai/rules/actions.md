@@ -5,7 +5,7 @@ paths:
 
 # Actions
 
-Actions hold reusable business logic and are expected to be called from more than one place (controllers, jobs, commands, etc.), not written as a controller-only extraction. Naming/suffix and the mandatory 1:1 unit test mirror are shared with Support/Enums, see business-code.md.
+Actions hold reusable business logic and are expected to be called from more than one place (controllers, jobs, commands, etc.), not written as a controller-only extraction. Naming/suffix and the mandatory 1:1 unit test mirror are shared with Support/Enums, see app.md.
 
 ## Single execute() entrypoint
 Actions expose exactly one public method, `execute()`, not `handle()`. Enforced by tests/Arch/ActionsTest.php: only `__construct` and `execute` may be public.
