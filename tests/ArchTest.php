@@ -34,8 +34,8 @@ arch('no class is final')
 |
 | Every class in app/Actions, app/Support, app/Enums gets a matching unit
 | test at the same relative path under tests/Unit/, e.g.
-| app/Actions/Snippets/RunSnippetAction.php mirrors
-| tests/Unit/Actions/Snippets/RunSnippetActionTest.php. Files that don't
+| app/Actions/RunSnippetAction.php mirrors
+| tests/Unit/Actions/RunSnippetActionTest.php. Files that don't
 | declare a class/enum/interface/trait (like the CLI entry script under
 | Support/bin) are skipped, they have nothing to unit test directly.
 |

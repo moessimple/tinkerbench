@@ -92,7 +92,7 @@ jobs:
         run: php artisan key:generate
 
       - name: Install npm dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build assets
         run: npm run build

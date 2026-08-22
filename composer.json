@@ -2,10 +2,13 @@
     "$schema": "https://getcomposer.org/schema.json",
     "name": "moessimple/tinkerbench",
     "type": "project",
-    "description": "A Laravel, Inertia, and Vue application.",
+    "description": "A browser based PHP REPL for any project linked in Laravel Herd.",
     "keywords": [
         "laravel",
-        "framework"
+        "herd",
+        "tinker",
+        "repl",
+        "php"
     ],
     "license": "MIT",
     "require": {
