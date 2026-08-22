@@ -260,6 +260,100 @@ it('collapses rapid edits into a single save of the latest content', async () =>
     );
 });
 
+it('shows a message and does not clear the editor when a save fails with an error status', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 500 });
+    vi.stubGlobal('fetch', fetchMock);
+    vi.useFakeTimers();
+    render(OpenSnippet, { props });
+
+    await fireEvent.update(
+        screen.getByLabelText('Snippet code'),
+        "echo 'edited';",
+    );
+    await vi.advanceTimersByTimeAsync(500);
+
+    await vi.waitFor(() => screen.getByText('Unable to save changes (500).'));
+});
+
+it('clears the save-failed message once a later save succeeds', async () => {
+    const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: false, status: 500 })
+        .mockResolvedValueOnce({ ok: true });
+    vi.stubGlobal('fetch', fetchMock);
+    vi.useFakeTimers();
+    render(OpenSnippet, { props });
+    const editor = screen.getByLabelText('Snippet code');
+
+    await fireEvent.update(editor, "echo 'first';");
+    await vi.advanceTimersByTimeAsync(500);
+    await vi.waitFor(() => screen.getByText('Unable to save changes (500).'));
+
+    await fireEvent.update(editor, "echo 'second';");
+    await vi.advanceTimersByTimeAsync(500);
+
+    await vi.waitFor(() =>
+        expect(screen.queryByText('Unable to save changes (500).')).toBeNull(),
+    );
+});
+
+it('still saves later edits after an earlier save is rejected by a network failure', async () => {
+    const fetchMock = vi
+        .fn()
+        .mockRejectedValueOnce(new Error('network down'))
+        .mockResolvedValueOnce({ ok: true });
+    vi.stubGlobal('fetch', fetchMock);
+    vi.useFakeTimers();
+    render(OpenSnippet, { props });
+    const editor = screen.getByLabelText('Snippet code');
+
+    await fireEvent.update(editor, "echo 'first';");
+    await vi.advanceTimersByTimeAsync(500);
+    await fireEvent.update(editor, "echo 'second';");
+    await vi.advanceTimersByTimeAsync(500);
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(fetchMock).toHaveBeenLastCalledWith(
+        '/api/projects/my-project/snippets/scratch',
+        expect.objectContaining({
+            body: JSON.stringify({ content: "echo 'second';" }),
+        }),
+    );
+});
+
+it('flushes a pending debounced save on unmount instead of dropping it', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal('fetch', fetchMock);
+    vi.useFakeTimers();
+    const rendered = render(OpenSnippet, { props });
+
+    await fireEvent.update(
+        screen.getByLabelText('Snippet code'),
+        "echo 'edited';",
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    rendered.unmount();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+        '/api/projects/my-project/snippets/scratch',
+        expect.objectContaining({
+            body: JSON.stringify({ content: "echo 'edited';" }),
+        }),
+    );
+});
+
+it('does not send a redundant save on unmount when no edit is pending', () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal('fetch', fetchMock);
+    const rendered = render(OpenSnippet, { props });
+
+    rendered.unmount();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+});
+
 it('flushes the pending debounced save immediately on Ctrl/Cmd+S', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
         ok: true,

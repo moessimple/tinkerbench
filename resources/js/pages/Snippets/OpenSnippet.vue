@@ -63,6 +63,8 @@ const http = useHttp<
     code: props.content,
 });
 
+const saveError = ref('');
+
 let saveTimer: ReturnType<typeof window.setTimeout> | undefined;
 let pendingSave = Promise.resolve();
 
@@ -77,28 +79,54 @@ function persistSnippet(content: string): Promise<void> {
             headers: { 'Content-Type': 'application/json', ...xsrfHeader() },
             body: JSON.stringify({ content }),
         },
-    ).then(() => undefined);
+    ).then((response) => {
+        if (!response.ok) {
+            throw new Error(`Unable to save changes (${response.status}).`);
+        }
+    });
 }
 
-function queueSnippetSave(content: string): Promise<void> {
-    pendingSave = pendingSave.then(() => persistSnippet(content));
+function queueSnippetSave(content: string): void {
+    // Recover from a prior rejection here, not by handling it where pendingSave is read,
+    // so one failed save can't permanently block every save queued after it.
+    pendingSave = pendingSave
+        .catch(() => undefined)
+        .then(() => persistSnippet(content));
 
-    return pendingSave;
+    pendingSave.then(
+        () => (saveError.value = ''),
+        (error: unknown) =>
+            (saveError.value =
+                error instanceof Error
+                    ? error.message
+                    : 'Unable to save changes.'),
+    );
 }
 
 function onEditorChange(content: string): void {
     http.code = content;
     window.clearTimeout(saveTimer);
-    saveTimer = window.setTimeout(() => void queueSnippetSave(content), 500);
+    saveTimer = window.setTimeout(() => queueSnippetSave(content), 500);
 }
 
-onBeforeUnmount(() => window.clearTimeout(saveTimer));
+function flushPendingSave(): void {
+    if (saveTimer === undefined) {
+        return;
+    }
+
+    window.clearTimeout(saveTimer);
+    saveTimer = undefined;
+    queueSnippetSave(http.code);
+}
+
+onBeforeUnmount(flushPendingSave);
 
 function onGlobalKeydown(event: KeyboardEvent): void {
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
         event.preventDefault();
         window.clearTimeout(saveTimer);
-        void queueSnippetSave(http.code);
+        saveTimer = undefined;
+        queueSnippetSave(http.code);
     }
 }
 
@@ -428,6 +456,13 @@ function toggleMaximize(): void {
             class="fixed right-4 bottom-4 rounded-md border border-red-500/40 bg-surface px-4 py-3 font-mono text-sm text-red-400 shadow-2xl"
         >
             {{ errorMessage }}
+        </p>
+        <p
+            v-if="saveError"
+            role="alert"
+            class="fixed top-4 right-4 rounded-md border border-red-500/40 bg-surface px-4 py-3 font-mono text-sm text-red-400 shadow-2xl"
+        >
+            {{ saveError }}
         </p>
     </div>
 </template>
