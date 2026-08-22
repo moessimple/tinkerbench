@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use Illuminate\Process\Exceptions\ProcessTimedOutException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
@@ -12,6 +13,8 @@ use RuntimeException;
 
 class Herd
 {
+    private const int DEFAULT_SNIPPET_TIMEOUT_SECONDS = 300;
+
     /** @return array<string, string> */
     public function projects(): array
     {
@@ -87,12 +90,14 @@ class Herd
         return $version !== '' ? $version : 'unknown';
     }
 
-    public function runSnippet(string $code, string $phpBinary, string $projectPath): SnippetRunResult
+    public function runSnippet(string $code, string $phpBinary, string $projectPath, int $timeoutSeconds = self::DEFAULT_SNIPPET_TIMEOUT_SECONDS): SnippetRunResult
     {
-        // The child process is a snippet the caller wrote, its runtime isn't bounded. This request is
-        // itself blocked waiting on it, so without lifting PHP's own max_execution_time the request would
-        // fatally time out from under a snippet that is still running fine.
-        set_time_limit(0);
+        // The child process is a snippet the caller wrote, bounded to $timeoutSeconds below so a runaway
+        // infinite loop can't tie up this request (and the php-fpm worker handling it) forever. This request
+        // is itself blocked waiting on it, so PHP's own max_execution_time is lifted past that same bound,
+        // with headroom for the process to actually be killed, otherwise the request would fatally time out
+        // from under a snippet that Process::timeout() is still waiting to terminate.
+        set_time_limit($timeoutSeconds + 30);
 
         $snippetPath = sys_get_temp_dir().'/tinkerbench-snippet-'.Str::random(32).'.php';
         $debugPath = sys_get_temp_dir().'/tinkerbench-debug-'.Str::random(32).'.json';
@@ -102,7 +107,7 @@ class Herd
             // Without this, Symfony VarDumper defaults to its plain-text CliDumper under the CLI SAPI
             // this subprocess runs under, so dd()/dump()/var_dump() output couldn't be told apart from
             // plain text and rendered as an interactive dump.
-            $result = Process::forever()->env(['VAR_DUMPER_FORMAT' => 'html'])->run([
+            $result = Process::timeout($timeoutSeconds)->env(['VAR_DUMPER_FORMAT' => 'html'])->run([
                 $phpBinary,
                 base_path('app/Support/bin/run-snippet.php'),
                 $projectPath,
@@ -111,6 +116,8 @@ class Herd
             ]);
 
             $debug = $this->readDebugData($debugPath);
+        } catch (ProcessTimedOutException $processTimedOutException) {
+            return new SnippetRunResult($processTimedOutException->result->output().$processTimedOutException->result->errorOutput()."\nSnippet timed out after {$timeoutSeconds} seconds.", null);
         } finally {
             unlink($snippetPath);
 

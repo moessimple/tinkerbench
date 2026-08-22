@@ -329,6 +329,13 @@ it('returns the debug data collected by the subprocess', function (): void {
     expect(data_get($result->debug, 'time.measures.0.label'))->toBe('snippet');
 });
 
+it('kills a snippet that runs past its timeout and returns a graceful result instead of hanging', function (): void {
+    $result = new Herd()->runSnippet("<?php\n\nsleep(5);", PHP_BINARY, base_path(), timeoutSeconds: 1);
+
+    expect($result->output)->toContain('Snippet timed out after 1 seconds.')
+        ->and($result->debug)->toBeNull();
+});
+
 it('returns debug data collected before an uncaught exception', function (): void {
     $result = new Herd()->runSnippet("<?php\n\nthrow new RuntimeException('boom');", PHP_BINARY, base_path());
 
