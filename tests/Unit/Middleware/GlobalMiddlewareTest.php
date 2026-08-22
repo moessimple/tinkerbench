@@ -17,3 +17,13 @@ it('rejects a non-loopback request', function (string $method, string $uri): voi
     'delete snippet' => ['DELETE', 'api/projects/my-project/snippets/my-snippet'],
     'open snippet' => ['GET', 'my-project/my-snippet'],
 ]);
+
+it('rejects a non-loopback request to a route outside the web middleware group', function (string $method, string $uri): void {
+    $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.5'])
+        ->call($method, $uri)
+        ->assertForbidden();
+})->with([
+    'boost browser logs' => ['POST', '_boost/browser-logs'],
+    'storage serve' => ['GET', 'storage/some-file.txt'],
+    'health check' => ['GET', 'up'],
+]);

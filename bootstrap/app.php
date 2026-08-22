@@ -18,13 +18,19 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Herd's nginx only ever connects to php-fpm from 127.0.0.1, even for a request tunneled in via
+        // `herd share`: Expose terminates the real remote connection itself and forwards it locally. Trusting
+        // that peer for X-Forwarded-For lets EnsureRequestIsLocal see the tunneled visitor's real IP instead
+        // of always reading 127.0.0.1. Expose's own edge sets this header from the real connection and
+        // discards whatever a client tries to claim, so it can't be spoofed by the visitor.
+        $middleware->trustProxies(at: ['127.0.0.1', '::1'], headers: Request::HEADER_X_FORWARDED_FOR);
+
+        $middleware->prepend(EnsureRequestIsLocal::class);
+
         $middleware->web(append: [
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-        ],
-            prepend: [
-                EnsureRequestIsLocal::class,
-            ]);
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
