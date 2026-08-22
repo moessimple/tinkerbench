@@ -9,4 +9,5 @@ enum RenameSnippetResult
     case Renamed;
     case Missing;
     case Conflict;
+    case Failed;
 }

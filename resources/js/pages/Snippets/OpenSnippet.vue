@@ -109,24 +109,22 @@ function onEditorChange(content: string): void {
     saveTimer = window.setTimeout(() => queueSnippetSave(content), 500);
 }
 
-function flushPendingSave(): void {
-    if (saveTimer === undefined) {
-        return;
-    }
-
+function flushSave(): void {
     window.clearTimeout(saveTimer);
     saveTimer = undefined;
     queueSnippetSave(http.code);
 }
 
-onBeforeUnmount(flushPendingSave);
+onBeforeUnmount(() => {
+    if (saveTimer !== undefined) {
+        flushSave();
+    }
+});
 
 function onGlobalKeydown(event: KeyboardEvent): void {
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
         event.preventDefault();
-        window.clearTimeout(saveTimer);
-        saveTimer = undefined;
-        queueSnippetSave(http.code);
+        flushSave();
     }
 }
 

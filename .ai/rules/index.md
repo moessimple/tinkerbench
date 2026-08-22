@@ -4,14 +4,14 @@ Before planning or editing, find the row whose globs match the file's path and r
 
 | Applies to | Rule file |
 | --- | --- |
-| **/* | .ai/rules/general.md |
-| app/** | .ai/rules/app.md |
 | app/Actions/** | .ai/rules/actions.md |
-| app/Support/** | .ai/rules/support.md |
-| app/Enums/** | .ai/rules/enums.md |
+| app/** | .ai/rules/app.md |
 | app/Http/Controllers/** | .ai/rules/controllers.md |
-| app/Http/Requests/** | .ai/rules/requests.md |
-| app/Models/** | .ai/rules/models.md |
+| app/Enums/** | .ai/rules/enums.md |
+| **/* | .ai/rules/general.md |
 | resources/js/** | .ai/rules/js.md |
+| app/Models/** | .ai/rules/models.md |
+| app/Http/Requests/** | .ai/rules/requests.md |
 | routes/** | .ai/rules/routes.md |
+| app/Support/** | .ai/rules/support.md |
 | tests/** | .ai/rules/tests.md |

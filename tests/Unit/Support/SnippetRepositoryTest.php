@@ -5,8 +5,11 @@ declare(strict_types=1);
 use App\Enums\Disk;
 use App\Enums\RenameSnippetResult;
 use App\Support\SnippetRepository;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Mockery\MockInterface;
 
 beforeEach(function (): void {
     Storage::fake(Disk::Snippets);
@@ -33,15 +36,26 @@ it("keeps two projects' snippet lists independent", function (): void {
 });
 
 it('creates a snippet with default content when it does not exist yet', function (): void {
-    new SnippetRepository()->ensureExists('my-project', 'scratch');
+    expect(new SnippetRepository()->ensureExists('my-project', 'scratch'))->toBeTrue();
 
     Storage::disk(Disk::Snippets)->assertExists('my-project/scratch.php', File::get(resource_path('stubs/scratch.php')));
+});
+
+it('reports failure instead of success when creating a missing snippet fails', function (): void {
+    Storage::shouldReceive('disk')
+        ->with(Disk::Snippets)
+        ->andReturn(Mockery::mock(Filesystem::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('exists')->andReturn(false);
+            $mock->shouldReceive('put')->once()->andReturn(false);
+        }));
+
+    expect(new SnippetRepository()->ensureExists('my-project', 'scratch'))->toBeFalse();
 });
 
 it('leaves an existing snippet untouched', function (): void {
     Storage::disk(Disk::Snippets)->put('my-project/scratch.php', 'echo "kept";');
 
-    new SnippetRepository()->ensureExists('my-project', 'scratch');
+    expect(new SnippetRepository()->ensureExists('my-project', 'scratch'))->toBeTrue();
 
     Storage::disk(Disk::Snippets)->assertExists('my-project/scratch.php', 'echo "kept";');
 });
@@ -66,9 +80,31 @@ it('throws when reading the contents of a missing snippet', function (): void {
 })->throws(RuntimeException::class, 'The snippet at my-project/missing.php is missing.');
 
 it('writes the given content to a snippet', function (): void {
-    new SnippetRepository()->write('my-project', 'scratch', 'echo "written";');
+    expect(new SnippetRepository()->write('my-project', 'scratch', 'echo "written";'))->toBeTrue();
 
     Storage::disk(Disk::Snippets)->assertExists('my-project/scratch.php', 'echo "written";');
+});
+
+it('reports failure instead of success when writing a snippet fails', function (): void {
+    Storage::shouldReceive('disk')
+        ->with(Disk::Snippets)
+        ->andReturn(Mockery::mock(Filesystem::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('put')->once()->andReturn(false);
+        }));
+
+    expect(new SnippetRepository()->write('my-project', 'scratch', 'echo "written";'))->toBeFalse();
+});
+
+it('logs the failure when writing a snippet fails', function (): void {
+    Log::shouldReceive('error')->once()->with('Unable to write the snippet at my-project/scratch.php.');
+
+    Storage::shouldReceive('disk')
+        ->with(Disk::Snippets)
+        ->andReturn(Mockery::mock(Filesystem::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('put')->once()->andReturn(false);
+        }));
+
+    new SnippetRepository()->write('my-project', 'scratch', 'echo "written";');
 });
 
 it('renames an existing snippet to an unused name', function (): void {
@@ -95,6 +131,34 @@ it('reports a conflict when the target snippet name is already taken', function 
 
     expect($result)->toBe(RenameSnippetResult::Conflict);
     Storage::disk(Disk::Snippets)->assertExists('my-project/old.php', 'echo 1;');
+});
+
+it('reports failure instead of success when renaming a snippet fails', function (): void {
+    Storage::shouldReceive('disk')
+        ->with(Disk::Snippets)
+        ->andReturn(Mockery::mock(Filesystem::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('exists')->with('my-project/old.php')->andReturn(true);
+            $mock->shouldReceive('exists')->with('my-project/new.php')->andReturn(false);
+            $mock->shouldReceive('move')->once()->andReturn(false);
+        }));
+
+    $result = new SnippetRepository()->rename('my-project', 'old', 'new');
+
+    expect($result)->toBe(RenameSnippetResult::Failed);
+});
+
+it('logs the failure when renaming a snippet fails', function (): void {
+    Log::shouldReceive('error')->once()->with('Unable to rename the snippet at my-project/old.php to my-project/new.php.');
+
+    Storage::shouldReceive('disk')
+        ->with(Disk::Snippets)
+        ->andReturn(Mockery::mock(Filesystem::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('exists')->with('my-project/old.php')->andReturn(true);
+            $mock->shouldReceive('exists')->with('my-project/new.php')->andReturn(false);
+            $mock->shouldReceive('move')->once()->andReturn(false);
+        }));
+
+    new SnippetRepository()->rename('my-project', 'old', 'new');
 });
 
 it('does not conflict with a same-named snippet in a different project when renaming', function (): void {

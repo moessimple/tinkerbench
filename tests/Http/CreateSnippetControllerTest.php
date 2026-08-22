@@ -22,7 +22,7 @@ it('uses the right repository', function (): void {
     mockKnownProject();
 
     $this->mock(SnippetRepository::class)
-        ->shouldReceive('ensureExists')->once()->with('my-project', 'my-new-snippet');
+        ->shouldReceive('ensureExists')->once()->with('my-project', 'my-new-snippet')->andReturn(true);
 
     $this->postJson('/api/projects/my-project/snippets', ['name' => 'my-new-snippet']);
 });
@@ -30,8 +30,18 @@ it('uses the right repository', function (): void {
 it('creates the snippet via the repository', function (): void {
     mockKnownProject();
 
-    $this->mock(SnippetRepository::class)->shouldReceive('ensureExists');
+    $this->mock(SnippetRepository::class)->shouldReceive('ensureExists')->andReturn(true);
 
     $this->postJson('/api/projects/my-project/snippets', ['name' => 'my-new-snippet'])
         ->assertNoContent();
+});
+
+it('reports a server error as JSON when the repository fails to create the snippet', function (): void {
+    mockKnownProject();
+
+    $this->mock(SnippetRepository::class)->shouldReceive('ensureExists')->andReturn(false);
+
+    $this->postJson('/api/projects/my-project/snippets', ['name' => 'my-new-snippet'])
+        ->assertServerError()
+        ->assertJsonPath('message', 'Unable to create the snippet.');
 });

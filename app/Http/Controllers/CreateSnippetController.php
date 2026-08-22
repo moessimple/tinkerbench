@@ -12,7 +12,7 @@ class CreateSnippetController
 {
     public function __invoke(SnippetNameRequest $request, SnippetRepository $snippets, string $project): Response
     {
-        $snippets->ensureExists($project, $request->name());
+        abort_unless($snippets->ensureExists($project, $request->name()), Response::HTTP_INTERNAL_SERVER_ERROR, 'Unable to create the snippet.');
 
         return response()->noContent();
     }

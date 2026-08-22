@@ -55,3 +55,12 @@ it('returns 409 when the repository reports a name conflict', function (): void 
         ->assertStatus(409)
         ->assertJsonPath('message', "A snippet named 'new' already exists");
 });
+
+it('reports a server error as JSON when the repository fails to rename', function (): void {
+    $this->mock(SnippetRepository::class)
+        ->shouldReceive('rename')->andReturn(RenameSnippetResult::Failed);
+
+    $this->patchJson('/api/projects/my-project/snippets/old', ['name' => 'new'])
+        ->assertServerError()
+        ->assertJsonPath('message', 'Unable to rename the snippet.');
+});

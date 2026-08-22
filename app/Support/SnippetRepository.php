@@ -30,13 +30,13 @@ class SnippetRepository
         return $names;
     }
 
-    public function ensureExists(string $project, string $snippet): void
+    public function ensureExists(string $project, string $snippet): bool
     {
         if ($this->exists($project, $snippet)) {
-            return;
+            return true;
         }
 
-        $this->write($project, $snippet, $this->defaultContent());
+        return $this->write($project, $snippet, $this->defaultContent());
     }
 
     public function contents(string $project, string $snippet): string
@@ -44,9 +44,16 @@ class SnippetRepository
         return $this->read($this->relativePath($project, $snippet));
     }
 
-    public function write(string $project, string $snippet, string $contents): void
+    public function write(string $project, string $snippet, string $contents): bool
     {
-        Storage::disk(Disk::Snippets)->put($this->relativePath($project, $snippet), $contents);
+        $path = $this->relativePath($project, $snippet);
+        $saved = (bool) Storage::disk(Disk::Snippets)->put($path, $contents);
+
+        if (! $saved) {
+            logger()->error("Unable to write the snippet at {$path}.");
+        }
+
+        return $saved;
     }
 
     public function rename(string $project, string $from, string $to): RenameSnippetResult
@@ -80,10 +87,14 @@ class SnippetRepository
             return RenameSnippetResult::Conflict;
         }
 
-        Storage::disk(Disk::Snippets)->move(
-            $this->relativePath($project, $from),
-            $this->relativePath($project, $to),
-        );
+        $fromPath = $this->relativePath($project, $from);
+        $toPath = $this->relativePath($project, $to);
+
+        if (! Storage::disk(Disk::Snippets)->move($fromPath, $toPath)) {
+            logger()->error("Unable to rename the snippet at {$fromPath} to {$toPath}.");
+
+            return RenameSnippetResult::Failed;
+        }
 
         return RenameSnippetResult::Renamed;
     }

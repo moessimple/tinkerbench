@@ -9,5 +9,6 @@ it('has exactly the expected rename outcomes', function (): void {
         RenameSnippetResult::Renamed,
         RenameSnippetResult::Missing,
         RenameSnippetResult::Conflict,
+        RenameSnippetResult::Failed,
     ]);
 });

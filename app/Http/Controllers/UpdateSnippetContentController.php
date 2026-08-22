@@ -12,7 +12,7 @@ class UpdateSnippetContentController
 {
     public function __invoke(UpdateSnippetContentRequest $request, SnippetRepository $snippets, string $project, string $snippet): Response
     {
-        $snippets->write($project, $snippet, $request->content());
+        abort_unless($snippets->write($project, $snippet, $request->content()), Response::HTTP_INTERNAL_SERVER_ERROR, 'Unable to save the snippet.');
 
         return response()->noContent();
     }

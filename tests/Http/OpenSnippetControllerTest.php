@@ -27,7 +27,7 @@ it('opens the default scratch snippet for the current project', function (): voi
     });
 
     $this->mock(SnippetRepository::class, function (MockInterface $mock): void {
-        $mock->shouldReceive('ensureExists')->once()->with('my-project', 'scratch');
+        $mock->shouldReceive('ensureExists')->once()->with('my-project', 'scratch')->andReturn(true);
         $mock->shouldReceive('contents')->once()->with('my-project', 'scratch')->andReturn("echo 'Hello, world!';");
     });
 
@@ -40,6 +40,24 @@ it('opens the default scratch snippet for the current project', function (): voi
                 ->where('content', "echo 'Hello, world!';")
                 ->where('currentProject', 'my-project'),
         );
+});
+
+it('reports a server error as JSON when the repository fails to create the default snippet', function (): void {
+    $this->mock(Herd::class, function (MockInterface $mock): void {
+        $mock->shouldReceive('refreshProjects')->once()->andReturn(['my-project' => '/path/to/project']);
+        $mock->shouldReceive('currentProject')->twice()->andReturn('my-project');
+        $mock->shouldReceive('projectPath')->with('my-project')->andReturn('/path/to/project');
+        $mock->shouldReceive('refreshPhpBinary')->with('my-project')->andReturn('/path/to/php');
+    });
+
+    $this->mock(SnippetRepository::class, function (MockInterface $mock): void {
+        $mock->shouldReceive('ensureExists')->once()->with('my-project', 'scratch')->andReturn(false);
+        $mock->shouldReceive('contents')->never();
+    });
+
+    $this->getJson('/')
+        ->assertServerError()
+        ->assertJsonPath('message', 'Unable to create the snippet.');
 });
 
 it('opens the named snippet from a project in the URL', function (): void {
@@ -55,7 +73,7 @@ it('opens the named snippet from a project in the URL', function (): void {
     });
 
     $this->mock(SnippetRepository::class, function (MockInterface $mock): void {
-        $mock->shouldReceive('ensureExists')->once()->with('my-project', 'my-snippet');
+        $mock->shouldReceive('ensureExists')->once()->with('my-project', 'my-snippet')->andReturn(true);
         $mock->shouldReceive('contents')->once()->with('my-project', 'my-snippet')->andReturn('echo "existing";');
     });
 
@@ -81,7 +99,7 @@ it('uses cached herd data for inertia navigation', function (): void {
     });
 
     $this->mock(SnippetRepository::class, function (MockInterface $mock): void {
-        $mock->shouldReceive('ensureExists')->once()->with('my-project', 'scratch');
+        $mock->shouldReceive('ensureExists')->once()->with('my-project', 'scratch')->andReturn(true);
         $mock->shouldReceive('contents')->once()->with('my-project', 'scratch')->andReturn('');
     });
 
@@ -108,7 +126,7 @@ it('shows the php and laravel version of the current project', function (): void
     });
 
     $this->mock(SnippetRepository::class, function (MockInterface $mock): void {
-        $mock->shouldReceive('ensureExists');
+        $mock->shouldReceive('ensureExists')->andReturn(true);
         $mock->shouldReceive('contents')->andReturn('');
     });
 
@@ -158,7 +176,7 @@ it('opens a single url segment as a project switch when it is a known project', 
     });
 
     $this->mock(SnippetRepository::class, function (MockInterface $mock): void {
-        $mock->shouldReceive('ensureExists')->once()->with('other-project', 'scratch');
+        $mock->shouldReceive('ensureExists')->once()->with('other-project', 'scratch')->andReturn(true);
         $mock->shouldReceive('contents')->once()->with('other-project', 'scratch')->andReturn('');
     });
 

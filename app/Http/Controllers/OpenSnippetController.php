@@ -21,7 +21,7 @@ class OpenSnippetController
 
         $snippetName = $snippet ?? 'scratch';
 
-        $snippets->ensureExists($project, $snippetName);
+        abort_unless($snippets->ensureExists($project, $snippetName), HttpResponse::HTTP_INTERNAL_SERVER_ERROR, 'Unable to create the snippet.');
 
         $phpBinary = $herd->phpBinary($project);
 

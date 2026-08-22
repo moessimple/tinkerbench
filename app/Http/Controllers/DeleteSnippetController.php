@@ -11,7 +11,7 @@ class DeleteSnippetController
 {
     public function __invoke(SnippetRepository $snippets, string $project, string $snippet): Response
     {
-        abort_unless($snippets->delete($project, $snippet), 404, 'Snippet not found');
+        abort_unless($snippets->delete($project, $snippet), Response::HTTP_NOT_FOUND, 'Snippet not found');
 
         return response()->noContent();
     }
