@@ -8,6 +8,8 @@ use App\Http\Middleware\EnsureKnownProject;
 use App\Http\Requests\RunSnippetRequest;
 use App\Support\Herd;
 use App\Support\SnippetRunResult;
+use Illuminate\Process\Exceptions\ProcessFailedException;
+use Illuminate\Process\FakeProcessResult;
 use Mockery\MockInterface;
 
 it('uses the right request', function (): void {
@@ -52,4 +54,14 @@ it('returns the debug data from the result', function (): void {
     $this->postJson('/projects/my-project/snippets/executions', ['code' => 'echo 1;'])
         ->assertOk()
         ->assertExactJson(['output' => 'output', 'debug' => ['queries' => ['count' => 1]]]);
+});
+
+it('reports a friendly message instead of a raw process error when a herd command fails', function (): void {
+    $this->mock(Herd::class)
+        ->shouldReceive('projectPath')
+        ->andThrow(new ProcessFailedException(new FakeProcessResult(exitCode: 127, errorOutput: 'herd: command not found')));
+
+    $this->postJson('/projects/my-project/snippets/executions', ['code' => 'echo 1;'])
+        ->assertServerError()
+        ->assertJsonPath('message', 'Unable to reach Herd. Make sure Herd is running and try again.');
 });

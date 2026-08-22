@@ -8,6 +8,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
+use Illuminate\Process\Exceptions\ProcessFailedException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -25,4 +26,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request): bool => $request->is('api/*') || $request->expectsJson(),
         );
+
+        $exceptions->render(function (ProcessFailedException $e, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json(['message' => 'Unable to reach Herd. Make sure Herd is running and try again.'], 500);
+            }
+        });
     })->create();

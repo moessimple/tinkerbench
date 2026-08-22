@@ -132,6 +132,15 @@ it('throws when the herd bin path is not configured', function (): void {
     new Herd()->projects();
 })->throws(InvalidArgumentException::class);
 
+it('throws instead of treating stderr as data when a herd command fails', function (): void {
+    config(['services.herd.bin' => '/tmp/herd-bin']);
+    Process::fake([
+        "*'sites' '--json'" => Process::result(errorOutput: 'herd: command not found', exitCode: 127),
+    ]);
+
+    new Herd()->projects();
+})->throws(RuntimeException::class);
+
 it('resolves the real filesystem path for a known project', function (): void {
     config(['services.herd.bin' => '/tmp/herd-bin']);
     Process::fake([

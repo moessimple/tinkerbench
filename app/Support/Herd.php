@@ -208,8 +208,6 @@ class Herd
     /** @param list<string> $command */
     private function run(array $command): string
     {
-        $result = Process::run($command);
-
-        return $result->output() !== '' ? $result->output() : $result->errorOutput();
+        return Process::run($command)->throw()->output();
     }
 }
