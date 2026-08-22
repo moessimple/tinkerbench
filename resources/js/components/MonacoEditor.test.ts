@@ -165,3 +165,20 @@ it('disposes the language server immediately if it resolves after the editor alr
 
     expect(languageServerHandle.dispose).toHaveBeenCalledOnce();
 });
+
+it('keeps the editor usable when the language server fails to attach', async () => {
+    vi.mocked(attachLanguageServer)
+        .mockReset()
+        .mockRejectedValue(new Error('boom'));
+
+    const rendered = render(MonacoEditor, {
+        props: { initialValue: '<?php echo "initial";', project: 'my-project' },
+    });
+
+    await vi
+        .mocked(attachLanguageServer)
+        .mock.results[0]?.value.catch(() => undefined);
+    onDidChangeModelContent.mock.calls[0]?.[0]();
+
+    expect(rendered.emitted().change).toEqual([['<?php echo "changed";']]);
+});

@@ -23,8 +23,16 @@ class FakeWebSocket {
     addEventListener(
         type: string,
         callback: (event: { data?: string }) => void,
+        options?: { once?: boolean },
     ): void {
-        (this.listeners[type] ??= []).push(callback);
+        const listener = options?.once
+            ? (event: { data?: string }) => {
+                  this.removeListener(type, listener);
+                  callback(event);
+              }
+            : callback;
+
+        (this.listeners[type] ??= []).push(listener);
     }
 
     send(data: string): void {
@@ -33,6 +41,7 @@ class FakeWebSocket {
 
     close(): void {
         this.readyState = 3;
+        this.listeners.close?.forEach((callback) => callback({}));
     }
 
     open(): void {
@@ -40,9 +49,22 @@ class FakeWebSocket {
         this.listeners.open?.forEach((callback) => callback({}));
     }
 
+    error(): void {
+        this.listeners.error?.forEach((callback) => callback({}));
+    }
+
     receive(message: unknown): void {
         this.listeners.message?.forEach((callback) =>
             callback({ data: JSON.stringify(message) }),
+        );
+    }
+
+    private removeListener(
+        type: string,
+        listener: (event: { data?: string }) => void,
+    ): void {
+        this.listeners[type] = (this.listeners[type] ?? []).filter(
+            (registered) => registered !== listener,
         );
     }
 }
@@ -168,4 +190,102 @@ it('marks the completion list incomplete when intelephense does, so Monaco re-qu
     });
 
     expect(await completing).toMatchObject({ incomplete: true });
+});
+
+it('rejects when the port endpoint responds with an error status', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => new Response('', { status: 500 })),
+    );
+
+    await expect(
+        attachLanguageServer(monaco, 'customer-portal', '<?php'),
+    ).rejects.toThrow('Unable to start the language server (500).');
+});
+
+it('rejects when the port endpoint response has no numeric port', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => new Response(JSON.stringify({}), { status: 200 })),
+    );
+
+    await expect(
+        attachLanguageServer(monaco, 'customer-portal', '<?php'),
+    ).rejects.toThrow('The language server did not report a port.');
+});
+
+it('rejects when the websocket errors before the connection opens', async () => {
+    const attaching = attachLanguageServer(monaco, 'customer-portal', '<?php');
+    await vi.waitFor(() => expect(sockets).toHaveLength(1));
+
+    sockets[0]!.error();
+
+    await expect(attaching).rejects.toThrow(
+        'Unable to connect to the language server.',
+    );
+});
+
+it('rejects a pending request instead of leaving it stuck forever when the connection closes', async () => {
+    const attaching = attachLanguageServer(monaco, 'customer-portal', '<?php');
+    const socket = await connectAndHandshake();
+    const handle = await attaching;
+
+    const provider = vi
+        .mocked(monaco.languages.registerHoverProvider)
+        .mock.calls.at(-1)![1];
+    const hovering = provider.provideHover(
+        { getValue: () => '' } as never,
+        { lineNumber: 1, column: 1 } as never,
+        {} as never,
+    );
+
+    socket.close();
+
+    await expect(hovering).rejects.toThrow(
+        'The language server connection closed.',
+    );
+    expect(handle).toBeDefined();
+});
+
+it('rejects pending requests immediately on dispose instead of waiting for the socket to close', async () => {
+    const attaching = attachLanguageServer(monaco, 'customer-portal', '<?php');
+    const socket = await connectAndHandshake();
+    const handle = await attaching;
+
+    const provider = vi
+        .mocked(monaco.languages.registerHoverProvider)
+        .mock.calls.at(-1)![1];
+    const hovering = provider.provideHover(
+        { getValue: () => '' } as never,
+        { lineNumber: 1, column: 1 } as never,
+        {} as never,
+    );
+
+    handle.dispose();
+
+    await expect(hovering).rejects.toThrow('The language server was disposed.');
+    expect(socket.sent.length).toBeGreaterThan(0);
+});
+
+it('rejects a request that times out waiting for a response', async () => {
+    const attaching = attachLanguageServer(monaco, 'customer-portal', '<?php');
+    await connectAndHandshake();
+    await attaching;
+
+    vi.useFakeTimers();
+    const provider = vi
+        .mocked(monaco.languages.registerHoverProvider)
+        .mock.calls.at(-1)![1];
+    const hovering = provider.provideHover(
+        { getValue: () => '' } as never,
+        { lineNumber: 1, column: 1 } as never,
+        {} as never,
+    );
+    const assertion = expect(hovering).rejects.toThrow(
+        'Timed out waiting for a response to "textDocument/hover".',
+    );
+
+    await vi.advanceTimersByTimeAsync(10_000);
+    await assertion;
+    vi.useRealTimers();
 });

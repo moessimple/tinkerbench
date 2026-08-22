@@ -69,8 +69,8 @@ onMounted(() => {
     });
     editor.focus();
 
-    attachLanguageServer(monaco, props.project, props.initialValue).then(
-        (handle) => {
+    attachLanguageServer(monaco, props.project, props.initialValue)
+        .then((handle) => {
             if (unmounted) {
                 handle.dispose();
 
@@ -78,8 +78,10 @@ onMounted(() => {
             }
 
             languageServer = handle;
-        },
-    );
+        })
+        // The language server is optional: PHP autocompletion/hover/signature help stay off,
+        // but the editor itself remains fully usable without it.
+        .catch(() => undefined);
 });
 
 onBeforeUnmount(() => {

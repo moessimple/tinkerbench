@@ -31,7 +31,7 @@ class LanguageServerBridge
             return true;
         });
 
-        throw_if($port === null, InvalidArgumentException::class, 'The language server bridge did not report a port.');
+        throw_unless(is_int($port) && $port >= 1 && $port <= 65535, InvalidArgumentException::class, 'The language server bridge did not report a valid port.');
 
         return $port;
     }

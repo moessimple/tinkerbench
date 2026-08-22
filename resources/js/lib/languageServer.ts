@@ -3,6 +3,7 @@ import StartLanguageServerController from '@/actions/App/Http/Controllers/StartL
 import { xsrfHeader } from '@/lib/csrf';
 
 const DOCUMENT_URI = 'file:///tinkerbench-snippet.php';
+const REQUEST_TIMEOUT_MS = 10_000;
 
 interface LspPosition {
     character: number;
@@ -81,7 +82,18 @@ async function requestPort(project: string): Promise<number> {
         method: 'POST',
         headers: xsrfHeader(),
     });
-    const body = (await response.json()) as { port: number };
+
+    if (!response.ok) {
+        throw new Error(
+            `Unable to start the language server (${response.status}).`,
+        );
+    }
+
+    const body = (await response.json()) as { port?: unknown };
+
+    if (typeof body.port !== 'number') {
+        throw new Error('The language server did not report a port.');
+    }
 
     return body.port;
 }
@@ -165,7 +177,13 @@ export async function attachLanguageServer(
 
     let nextId = 0;
     let documentVersion = 1;
-    const pending = new Map<number, (result: unknown) => void>();
+    const pending = new Map<
+        number,
+        {
+            reject: (reason: unknown) => void;
+            resolve: (result: unknown) => void;
+        }
+    >();
 
     function send(message: Record<string, unknown>): void {
         socket.send(JSON.stringify({ jsonrpc: '2.0', ...message }));
@@ -175,10 +193,36 @@ export async function attachLanguageServer(
         send({ method, params });
     }
 
+    function rejectPendingRequests(reason: unknown): void {
+        for (const { reject } of pending.values()) {
+            reject(reason);
+        }
+
+        pending.clear();
+    }
+
     function request(method: string, params: unknown): Promise<unknown> {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
             const id = ++nextId;
-            pending.set(id, resolve);
+            const timeout = window.setTimeout(() => {
+                pending.delete(id);
+                reject(
+                    new Error(
+                        `Timed out waiting for a response to "${method}".`,
+                    ),
+                );
+            }, REQUEST_TIMEOUT_MS);
+
+            pending.set(id, {
+                resolve: (result) => {
+                    window.clearTimeout(timeout);
+                    resolve(result);
+                },
+                reject: (reason) => {
+                    window.clearTimeout(timeout);
+                    reject(reason);
+                },
+            });
             send({ id, method, params });
         });
     }
@@ -187,14 +231,43 @@ export async function attachLanguageServer(
         const message = JSON.parse(event.data as string) as JsonRpcMessage;
 
         if (message.id !== undefined && pending.has(message.id)) {
-            pending.get(message.id)?.(message.error ? null : message.result);
+            pending
+                .get(message.id)
+                ?.resolve(message.error ? null : message.result);
             pending.delete(message.id);
         }
     });
 
-    await new Promise<void>((resolve) =>
-        socket.addEventListener('open', () => resolve()),
+    socket.addEventListener('close', () =>
+        rejectPendingRequests(
+            new Error('The language server connection closed.'),
+        ),
     );
+    socket.addEventListener('error', () =>
+        rejectPendingRequests(
+            new Error('The language server connection failed.'),
+        ),
+    );
+
+    await new Promise<void>((resolve, reject) => {
+        socket.addEventListener('open', () => resolve(), { once: true });
+        socket.addEventListener(
+            'error',
+            () =>
+                reject(new Error('Unable to connect to the language server.')),
+            { once: true },
+        );
+        socket.addEventListener(
+            'close',
+            () =>
+                reject(
+                    new Error(
+                        'The language server connection closed before it was ready.',
+                    ),
+                ),
+            { once: true },
+        );
+    });
 
     // Declares roughly what a real editor's LSP client (e.g. vscode-languageclient) already declares, so
     // intelephense behaves the same way here as it does in VS Code: snippet-formatted completions (parameter
@@ -395,6 +468,9 @@ export async function attachLanguageServer(
             completionProvider.dispose();
             hoverProvider.dispose();
             signatureHelpProvider.dispose();
+            rejectPendingRequests(
+                new Error('The language server was disposed.'),
+            );
             socket.close();
         },
         notifyContentChanged(content: string): void {
