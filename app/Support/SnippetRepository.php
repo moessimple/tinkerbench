@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use App\Enums\DeleteSnippetResult;
 use App\Enums\Disk;
 use App\Enums\RenameSnippetResult;
 use Illuminate\Support\Facades\Cache;
@@ -68,13 +69,21 @@ class SnippetRepository
         }
     }
 
-    public function delete(string $project, string $snippet): bool
+    public function delete(string $project, string $snippet): DeleteSnippetResult
     {
         if (! $this->exists($project, $snippet)) {
-            return false;
+            return DeleteSnippetResult::Missing;
         }
 
-        return Storage::disk(Disk::Snippets)->delete($this->relativePath($project, $snippet));
+        $path = $this->relativePath($project, $snippet);
+
+        if (! Storage::disk(Disk::Snippets)->delete($path)) {
+            logger()->error("Unable to delete the snippet at {$path}.");
+
+            return DeleteSnippetResult::Failed;
+        }
+
+        return DeleteSnippetResult::Deleted;
     }
 
     private function renameWhileLocked(string $project, string $from, string $to): RenameSnippetResult

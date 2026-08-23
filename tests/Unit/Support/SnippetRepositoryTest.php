@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enums\DeleteSnippetResult;
 use App\Enums\Disk;
 use App\Enums\RenameSnippetResult;
 use App\Support\SnippetRepository;
@@ -174,10 +175,34 @@ it('does not conflict with a same-named snippet in a different project when rena
 it('deletes an existing snippet', function (): void {
     Storage::disk(Disk::Snippets)->put('my-project/scratch.php', 'echo 1;');
 
-    expect(new SnippetRepository()->delete('my-project', 'scratch'))->toBeTrue();
+    expect(new SnippetRepository()->delete('my-project', 'scratch'))->toBe(DeleteSnippetResult::Deleted);
     Storage::disk(Disk::Snippets)->assertMissing('my-project/scratch.php');
 });
 
-it('reports that a missing snippet was not deleted', function (): void {
-    expect(new SnippetRepository()->delete('my-project', 'missing'))->toBeFalse();
+it('reports a missing snippet when deleting', function (): void {
+    expect(new SnippetRepository()->delete('my-project', 'missing'))->toBe(DeleteSnippetResult::Missing);
+});
+
+it('reports failure instead of success when deleting a snippet fails', function (): void {
+    Storage::shouldReceive('disk')
+        ->with(Disk::Snippets)
+        ->andReturn(Mockery::mock(Filesystem::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('exists')->andReturn(true);
+            $mock->shouldReceive('delete')->once()->andReturn(false);
+        }));
+
+    expect(new SnippetRepository()->delete('my-project', 'scratch'))->toBe(DeleteSnippetResult::Failed);
+});
+
+it('logs the failure when deleting a snippet fails', function (): void {
+    Log::shouldReceive('error')->once()->with('Unable to delete the snippet at my-project/scratch.php.');
+
+    Storage::shouldReceive('disk')
+        ->with(Disk::Snippets)
+        ->andReturn(Mockery::mock(Filesystem::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('exists')->andReturn(true);
+            $mock->shouldReceive('delete')->once()->andReturn(false);
+        }));
+
+    new SnippetRepository()->delete('my-project', 'scratch');
 });
