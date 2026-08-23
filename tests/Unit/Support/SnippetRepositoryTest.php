@@ -6,7 +6,9 @@ use App\Enums\DeleteSnippetResult;
 use App\Enums\Disk;
 use App\Enums\RenameSnippetResult;
 use App\Support\SnippetRepository;
+use Illuminate\Contracts\Cache\Lock;
 use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -116,6 +118,33 @@ it('renames an existing snippet to an unused name', function (): void {
     expect($result)->toBe(RenameSnippetResult::Renamed);
     Storage::disk(Disk::Snippets)->assertMissing('my-project/old.php');
     Storage::disk(Disk::Snippets)->assertExists('my-project/new.php', 'echo "content";');
+});
+
+it('locks the target snippet name for the duration of the rename', function (): void {
+    Storage::disk(Disk::Snippets)->put('my-project/old.php', 'echo "content";');
+
+    $lock = Mockery::mock(Lock::class);
+    $lock->shouldReceive('block')->once()->with(5);
+    $lock->shouldReceive('release')->once();
+
+    Cache::shouldReceive('lock')
+        ->once()
+        ->with('tinkerbench:snippet-rename:my-project:new', 5)
+        ->andReturn($lock);
+
+    $result = new SnippetRepository()->rename('my-project', 'old', 'new');
+
+    expect($result)->toBe(RenameSnippetResult::Renamed);
+});
+
+it('releases the rename lock even when the source snippet is missing', function (): void {
+    $lock = Mockery::mock(Lock::class);
+    $lock->shouldReceive('block')->once()->with(5);
+    $lock->shouldReceive('release')->once();
+
+    Cache::shouldReceive('lock')->once()->andReturn($lock);
+
+    new SnippetRepository()->rename('my-project', 'missing', 'new');
 });
 
 it('reports a missing source snippet when renaming', function (): void {
