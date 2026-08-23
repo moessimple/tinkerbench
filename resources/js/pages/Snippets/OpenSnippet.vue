@@ -13,6 +13,7 @@ import UpdateSnippetContentController from '@/actions/App/Http/Controllers/Updat
 import CommandPalette from '@/components/CommandPalette.vue';
 import DebugPanel from '@/components/DebugPanel.vue';
 import MonacoEditor from '@/components/MonacoEditor.vue';
+import { useTheme } from '@/composables/useTheme';
 import { xsrfHeader } from '@/lib/csrf';
 import { detectOutput, executeScripts, highlightJson } from '@/lib/output';
 import type { OutputResult } from '@/lib/output';
@@ -39,6 +40,8 @@ const errorMessage = ref('');
 const outputMode = ref<'raw' | 'rendered'>('raw');
 const isMaximized = ref(false);
 const outputEl = useTemplateRef('output');
+
+const { theme, toggleTheme } = useTheme();
 
 const outputText = computed(() => lastResult.value?.raw ?? '');
 const renderedJson = computed(() =>
@@ -330,6 +333,44 @@ function toggleMaximize(): void {
                                 <path
                                     v-else
                                     d="M2 6V2h4M14 10v4h-4M10 2h4v4M2 10v4h4"
+                                />
+                            </svg>
+                        </button>
+                        <button
+                            type="button"
+                            :title="
+                                theme === 'dark'
+                                    ? 'Switch to light theme'
+                                    : 'Switch to dark theme'
+                            "
+                            :aria-label="
+                                theme === 'dark'
+                                    ? 'Switch to light theme'
+                                    : 'Switch to dark theme'
+                            "
+                            class="flex h-8 w-8 items-center justify-center rounded text-muted hover:bg-line/30 hover:text-fg"
+                            @click="toggleTheme"
+                        >
+                            <svg
+                                viewBox="0 0 16 16"
+                                width="16"
+                                height="16"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.5"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                aria-hidden="true"
+                            >
+                                <template v-if="theme === 'dark'">
+                                    <circle cx="8" cy="8" r="3" />
+                                    <path
+                                        d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"
+                                    />
+                                </template>
+                                <path
+                                    v-else
+                                    d="M13.5 9.5A6 6 0 1 1 6.5 2.5a5 5 0 0 0 7 7Z"
                                 />
                             </svg>
                         </button>

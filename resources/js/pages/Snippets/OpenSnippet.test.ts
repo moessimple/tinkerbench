@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/vue';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { reactive } from 'vue';
+import { reactive, ref } from 'vue';
 import type * as OutputModule from '@/lib/output';
 import type { SnippetDebugPayload } from '@/types';
 
@@ -93,6 +93,18 @@ vi.mock('@/components/DebugPanel.vue', () => ({
     },
 }));
 
+// useTheme has its own test (useTheme.test.ts) proving system-preference fallback,
+// persistence, and the dark-class toggle; replaced here so this test only proves
+// OpenSnippet.vue's toggle button reads/calls it correctly.
+const mockTheme = ref<'light' | 'dark'>('dark');
+const toggleTheme = vi.fn(() => {
+    mockTheme.value = mockTheme.value === 'dark' ? 'light' : 'dark';
+});
+
+vi.mock('@/composables/useTheme', () => ({
+    useTheme: () => ({ theme: mockTheme, toggleTheme }),
+}));
+
 // detectOutput/highlightJson are cheap, deterministic pure functions and run for real.
 // executeScripts has its own test (output.test.ts) proving it replaces <script> nodes so
 // browsers re-run them; jsdom never executes those scripts regardless, so it's mocked here
@@ -113,6 +125,8 @@ const props = {
 
 beforeEach(() => {
     capturedPost = null;
+    mockTheme.value = 'dark';
+    toggleTheme.mockClear();
 });
 
 afterEach(() => {
@@ -562,6 +576,30 @@ it('hides the header and shows an exit-fullscreen button when maximized', async 
     );
 
     screen.getByText('tinkerbench');
+});
+
+it('shows a button to switch to the light theme when dark is active', () => {
+    render(OpenSnippet, { props });
+
+    screen.getByRole('button', { name: 'Switch to light theme' });
+});
+
+it('shows a button to switch to the dark theme when light is active', () => {
+    mockTheme.value = 'light';
+    render(OpenSnippet, { props });
+
+    screen.getByRole('button', { name: 'Switch to dark theme' });
+});
+
+it('toggles the theme when the theme button is clicked', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Switch to light theme' }),
+    );
+
+    expect(toggleTheme).toHaveBeenCalledOnce();
+    screen.getByRole('button', { name: 'Switch to dark theme' });
 });
 
 it('prevents the native browser save dialog on Ctrl/Cmd+S', () => {
