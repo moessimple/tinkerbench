@@ -14,6 +14,6 @@ Suffix by type: Action, Controller, Query, Request, Resource, Job. Models, Enums
 ## Every Action/Support/Enum class needs a 1:1 mirrored unit test
 Each class in app/Actions, app/Support, app/Enums gets a matching test at the same relative path under tests/Unit/ (app/Actions/RunSnippetAction.php mirrors tests/Unit/Actions/RunSnippetActionTest.php). Mandatory. Enforced by tests/ArchTest.php.
 
-Controllers don't get this mandatory 1:1 mirror: they're proven through tests/Http/ flow tests instead (see tests.md). Requests and Middleware aren't scanned by this arch check either, but each still gets its own tests/Unit/ file in practice (tests/Unit/Requests, tests/Unit/Middleware), just without the automated mirror enforcement Actions/Support/Enums get.
+Controllers don't get this mandatory 1:1 mirror: they're proven through tests/Http/ flow tests instead (see tests.md). Requests and Middleware aren't scanned by this arch check either, but each still gets its own tests/Unit/ file in practice (tests/Unit/Requests, tests/Unit/Middleware), just without the automated mirror enforcement Actions/Support/Enums get, with documented exceptions for pure framework-override glue (see middleware.md).
 
 The mirrored file only guarantees the class isn't forgotten, not that it's fully covered: tests.md's "every public method gets its own isolated test" is what actually closes that gap, follow it once the test file exists.

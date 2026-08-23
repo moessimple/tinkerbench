@@ -15,3 +15,7 @@ This is closed, not just accepted, by trusting `127.0.0.1`/`::1` for `X-Forwarde
 - Expose's edge (fronted by Caddy) sets X-Forwarded-For from the real connection and discards whatever the client sends: verified by curling the share URL with a spoofed `X-Forwarded-For: 127.0.0.1` header and confirming the app still saw the real IP, not the spoofed one.
 
 `headers:` is scoped to `Request::HEADER_X_FORWARDED_FOR` only, not Laravel's broader default (which also trusts X-Forwarded-Host/Port/Proto), to avoid an unrelated request-host change from a tunnel visit affecting anything else in the app.
+
+## HandleInertiaRequests is framework glue, not tested here
+
+HandleInertiaRequests only overrides Inertia\Middleware's `version()` and `share()` hooks with trivial glue (`parent::version()`, `config('app.name')`, `$request->user()`), it carries no business logic of its own, that base class and its contract are the Inertia package's responsibility, not this app's. It's exempt from general.md/app.md's "every Middleware gets its own tests/Unit/ test" rule. If `share()`/`version()` ever grow real branching or app-specific logic beyond passing through framework/config values, give it a test at that point.
