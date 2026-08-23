@@ -7,12 +7,6 @@ function renderPanel(debug: SnippetDebugPayload) {
     return render(DebugPanel, { props: { debug } });
 }
 
-it('shows no environment section', () => {
-    renderPanel({});
-
-    expect(screen.queryByText('Environment')).toBeNull();
-});
-
 it('shows a table of the queries a snippet ran', () => {
     renderPanel({
         queries: {

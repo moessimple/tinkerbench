@@ -267,6 +267,333 @@ it('rejects pending requests immediately on dispose instead of waiting for the s
     expect(socket.sent.length).toBeGreaterThan(0);
 });
 
+it('maps a completion item into the shape Monaco expects, including snippet insertion and an auto-import edit', async () => {
+    const attaching = attachLanguageServer(monaco, 'customer-portal', '<?php');
+    const socket = await connectAndHandshake();
+    await attaching;
+
+    const provider = vi
+        .mocked(monaco.languages.registerCompletionItemProvider)
+        .mock.calls.at(-1)![1];
+    const completing = provider.provideCompletionItems(
+        { getValue: () => '' } as never,
+        { lineNumber: 3, column: 5 } as never,
+        {} as never,
+        {} as never,
+    );
+
+    await vi.waitFor(() =>
+        expect(
+            socket.sent.some(
+                (raw) =>
+                    (JSON.parse(raw) as { method?: string }).method ===
+                    'textDocument/completion',
+            ),
+        ).toBe(true),
+    );
+    const completionRequest = socket.sent
+        .map((raw) => JSON.parse(raw) as { id: number; method?: string })
+        .find((message) => message.method === 'textDocument/completion')!;
+    socket.receive({
+        jsonrpc: '2.0',
+        id: completionRequest.id,
+        result: {
+            items: [
+                {
+                    label: 'strlen',
+                    kind: 3,
+                    insertTextFormat: 2,
+                    textEdit: {
+                        newText: 'strlen(${1:string})',
+                        range: {
+                            start: { line: 2, character: 0 },
+                            end: { line: 2, character: 4 },
+                        },
+                    },
+                    additionalTextEdits: [
+                        {
+                            newText: 'use App\\Str;\n',
+                            range: {
+                                start: { line: 0, character: 0 },
+                                end: { line: 0, character: 0 },
+                            },
+                        },
+                    ],
+                },
+            ],
+        },
+    });
+
+    const { suggestions } = (await completing) as { suggestions: unknown[] };
+    expect(suggestions).toEqual([
+        expect.objectContaining({
+            label: 'strlen',
+            kind: monaco.languages.CompletionItemKind.Function,
+            insertText: 'strlen(${1:string})',
+            insertTextRules:
+                monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            range: {
+                startLineNumber: 3,
+                startColumn: 1,
+                endLineNumber: 3,
+                endColumn: 5,
+            },
+            additionalTextEdits: [
+                {
+                    text: 'use App\\Str;\n',
+                    range: {
+                        startLineNumber: 1,
+                        startColumn: 1,
+                        endLineNumber: 1,
+                        endColumn: 1,
+                    },
+                },
+            ],
+        }),
+    ]);
+});
+
+it('resolves a completion item with the server-provided documentation and import edits', async () => {
+    const attaching = attachLanguageServer(monaco, 'customer-portal', '<?php');
+    const socket = await connectAndHandshake();
+    await attaching;
+
+    const provider = vi
+        .mocked(monaco.languages.registerCompletionItemProvider)
+        .mock.calls.at(-1)![1];
+    const completing = provider.provideCompletionItems(
+        { getValue: () => '' } as never,
+        { lineNumber: 1, column: 1 } as never,
+        {} as never,
+        {} as never,
+    );
+    await vi.waitFor(() =>
+        expect(
+            socket.sent.some(
+                (raw) =>
+                    (JSON.parse(raw) as { method?: string }).method ===
+                    'textDocument/completion',
+            ),
+        ).toBe(true),
+    );
+    const completionRequest = socket.sent
+        .map((raw) => JSON.parse(raw) as { id: number; method?: string })
+        .find((message) => message.method === 'textDocument/completion')!;
+    socket.receive({
+        jsonrpc: '2.0',
+        id: completionRequest.id,
+        result: { items: [{ label: 'strlen' }] },
+    });
+    const { suggestions } = (await completing) as { suggestions: unknown[] };
+
+    const resolving = provider.resolveCompletionItem!(
+        suggestions[0] as never,
+        {} as never,
+    );
+    await vi.waitFor(() =>
+        expect(
+            socket.sent.some(
+                (raw) =>
+                    (JSON.parse(raw) as { method?: string }).method ===
+                    'completionItem/resolve',
+            ),
+        ).toBe(true),
+    );
+    const resolveRequest = socket.sent
+        .map((raw) => JSON.parse(raw) as { id: number; method?: string })
+        .find((message) => message.method === 'completionItem/resolve')!;
+    socket.receive({
+        jsonrpc: '2.0',
+        id: resolveRequest.id,
+        result: {
+            label: 'strlen',
+            documentation: 'Returns the length of a string.',
+            additionalTextEdits: [
+                {
+                    newText: 'use App\\Str;\n',
+                    range: {
+                        start: { line: 0, character: 0 },
+                        end: { line: 0, character: 0 },
+                    },
+                },
+            ],
+        },
+    });
+
+    const resolved = (await resolving) as {
+        additionalTextEdits: unknown[];
+        documentation: string;
+    };
+    expect(resolved.documentation).toBe('Returns the length of a string.');
+    expect(resolved.additionalTextEdits).toEqual([
+        {
+            text: 'use App\\Str;\n',
+            range: {
+                startLineNumber: 1,
+                startColumn: 1,
+                endLineNumber: 1,
+                endColumn: 1,
+            },
+        },
+    ]);
+});
+
+it('returns the hover contents reported by the language server', async () => {
+    const attaching = attachLanguageServer(monaco, 'customer-portal', '<?php');
+    const socket = await connectAndHandshake();
+    await attaching;
+
+    const provider = vi
+        .mocked(monaco.languages.registerHoverProvider)
+        .mock.calls.at(-1)![1];
+    const hovering = provider.provideHover(
+        { getValue: () => '' } as never,
+        { lineNumber: 1, column: 1 } as never,
+        {} as never,
+    );
+    await vi.waitFor(() =>
+        expect(
+            socket.sent.some(
+                (raw) =>
+                    (JSON.parse(raw) as { method?: string }).method ===
+                    'textDocument/hover',
+            ),
+        ).toBe(true),
+    );
+    const hoverRequest = socket.sent
+        .map((raw) => JSON.parse(raw) as { id: number; method?: string })
+        .find((message) => message.method === 'textDocument/hover')!;
+    socket.receive({
+        jsonrpc: '2.0',
+        id: hoverRequest.id,
+        result: { contents: 'function strlen(string $s): int' },
+    });
+
+    expect(await hovering).toEqual({
+        contents: [{ value: 'function strlen(string $s): int' }],
+    });
+});
+
+it('returns no hover when the language server has nothing to show', async () => {
+    const attaching = attachLanguageServer(monaco, 'customer-portal', '<?php');
+    const socket = await connectAndHandshake();
+    await attaching;
+
+    const provider = vi
+        .mocked(monaco.languages.registerHoverProvider)
+        .mock.calls.at(-1)![1];
+    const hovering = provider.provideHover(
+        { getValue: () => '' } as never,
+        { lineNumber: 1, column: 1 } as never,
+        {} as never,
+    );
+    await vi.waitFor(() =>
+        expect(
+            socket.sent.some(
+                (raw) =>
+                    (JSON.parse(raw) as { method?: string }).method ===
+                    'textDocument/hover',
+            ),
+        ).toBe(true),
+    );
+    const hoverRequest = socket.sent
+        .map((raw) => JSON.parse(raw) as { id: number; method?: string })
+        .find((message) => message.method === 'textDocument/hover')!;
+    socket.receive({ jsonrpc: '2.0', id: hoverRequest.id, result: null });
+
+    expect(await hovering).toBeNull();
+});
+
+it('returns the active signature and parameter reported by the language server', async () => {
+    const attaching = attachLanguageServer(monaco, 'customer-portal', '<?php');
+    const socket = await connectAndHandshake();
+    await attaching;
+
+    const provider = vi
+        .mocked(monaco.languages.registerSignatureHelpProvider)
+        .mock.calls.at(-1)![1];
+    const helping = provider.provideSignatureHelp(
+        { getValue: () => '' } as never,
+        { lineNumber: 1, column: 1 } as never,
+        {} as never,
+        {} as never,
+    );
+    await vi.waitFor(() =>
+        expect(
+            socket.sent.some(
+                (raw) =>
+                    (JSON.parse(raw) as { method?: string }).method ===
+                    'textDocument/signatureHelp',
+            ),
+        ).toBe(true),
+    );
+    const signatureRequest = socket.sent
+        .map((raw) => JSON.parse(raw) as { id: number; method?: string })
+        .find((message) => message.method === 'textDocument/signatureHelp')!;
+    socket.receive({
+        jsonrpc: '2.0',
+        id: signatureRequest.id,
+        result: {
+            activeSignature: 0,
+            activeParameter: 1,
+            signatures: [
+                {
+                    label: 'strlen(string $string): int',
+                    documentation: 'Returns the length of a string.',
+                    parameters: [{ label: 'string $string' }],
+                },
+            ],
+        },
+    });
+
+    expect((await helping)?.value).toEqual({
+        activeSignature: 0,
+        activeParameter: 1,
+        signatures: [
+            {
+                label: 'strlen(string $string): int',
+                documentation: 'Returns the length of a string.',
+                parameters: [{ label: 'string $string' }],
+            },
+        ],
+    });
+});
+
+it('returns no signature help when the language server has no matching signature', async () => {
+    const attaching = attachLanguageServer(monaco, 'customer-portal', '<?php');
+    const socket = await connectAndHandshake();
+    await attaching;
+
+    const provider = vi
+        .mocked(monaco.languages.registerSignatureHelpProvider)
+        .mock.calls.at(-1)![1];
+    const helping = provider.provideSignatureHelp(
+        { getValue: () => '' } as never,
+        { lineNumber: 1, column: 1 } as never,
+        {} as never,
+        {} as never,
+    );
+    await vi.waitFor(() =>
+        expect(
+            socket.sent.some(
+                (raw) =>
+                    (JSON.parse(raw) as { method?: string }).method ===
+                    'textDocument/signatureHelp',
+            ),
+        ).toBe(true),
+    );
+    const signatureRequest = socket.sent
+        .map((raw) => JSON.parse(raw) as { id: number; method?: string })
+        .find((message) => message.method === 'textDocument/signatureHelp')!;
+    socket.receive({
+        jsonrpc: '2.0',
+        id: signatureRequest.id,
+        result: { signatures: [] },
+    });
+
+    expect(await helping).toBeNull();
+});
+
 it('rejects a request that times out waiting for a response', async () => {
     const attaching = attachLanguageServer(monaco, 'customer-portal', '<?php');
     await connectAndHandshake();

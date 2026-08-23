@@ -13,6 +13,9 @@ const languageServerHandle = {
     notifyContentChanged: vi.fn(),
 };
 
+// attachLanguageServer has its own test (languageServer.test.ts) proving the LSP handshake
+// and provider behavior; replaced here so this test only proves MonacoEditor.vue calls it
+// with the right arguments and reacts correctly to its resolved handle.
 vi.mock('@/lib/languageServer', () => ({
     attachLanguageServer: vi.fn(),
 }));
