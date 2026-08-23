@@ -73,6 +73,18 @@ it('hides the dumps section when nothing was dumped', () => {
     expect(screen.queryByText('Dumps')).toBeNull();
 });
 
+it('shows the peak memory usage', () => {
+    renderPanel({ memory: { peak_usage: 2097152, peak_usage_str: '2MB' } });
+
+    expect(screen.getByText('2MB')).toBeTruthy();
+});
+
+it('hides the memory section when nothing was measured', () => {
+    renderPanel({});
+
+    expect(screen.queryByText('Memory')).toBeNull();
+});
+
 it('shows a caught exception with its origin', () => {
     renderPanel({
         exceptions: {

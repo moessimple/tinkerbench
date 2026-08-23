@@ -6,6 +6,7 @@ namespace App\Support;
 
 use Closure;
 use DebugBar\DataCollector\ExceptionsCollector;
+use DebugBar\DataCollector\MemoryCollector;
 use DebugBar\DataCollector\MessagesCollector;
 use DebugBar\DataCollector\TimeDataCollector;
 use DebugBar\DataFormatter\DataFormatter;
@@ -36,6 +37,7 @@ class DebugbarCollector
         $debugbar->addCollector($queries = new QueryCollector());
         $debugbar->addCollector($exceptions = new ExceptionsCollector());
         $debugbar->addCollector($messages = new MessagesCollector());
+        $debugbar->addCollector(new MemoryCollector());
         // Debugbar's collectors share one static, process-wide default formatter that renders
         // HTML by default; without this, a non-string dump() value (e.g. dump(42)) would format
         // into MessagesCollector's message_html field instead of the plain message field below.

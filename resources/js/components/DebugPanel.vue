@@ -30,6 +30,15 @@ defineProps<{
             </ul>
         </section>
 
+        <section v-if="debug.memory" class="mt-6 first:mt-0">
+            <h2
+                class="mb-2 text-xs font-semibold tracking-widest text-muted uppercase"
+            >
+                Memory
+            </h2>
+            <p>{{ debug.memory.peak_usage_str }}</p>
+        </section>
+
         <section
             v-if="debug.queries && debug.queries.count > 0"
             class="mt-6 first:mt-0"

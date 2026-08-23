@@ -80,3 +80,12 @@ it('captures a dumped non-string value as readable text, not just for strings', 
 
     expect(data_get($debug, 'messages.messages.0.message'))->toBe('42');
 });
+
+it('collects the peak memory usage of the wrapped closure', function (): void {
+    $debug = new DebugbarCollector()->collect(app(), function (): void {
+        //
+    });
+
+    expect(data_get($debug, 'memory.peak_usage'))->toBeInt()->toBeGreaterThan(0)
+        ->and(data_get($debug, 'memory.peak_usage_str'))->toBeString()->not->toBeEmpty();
+});
