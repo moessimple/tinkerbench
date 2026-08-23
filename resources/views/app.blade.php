@@ -10,6 +10,17 @@
 
         @fonts
 
+        <script>
+            (function () {
+                var stored = localStorage.getItem('theme');
+                var dark = stored
+                    ? stored === 'dark'
+                    : window.matchMedia('(prefers-color-scheme: dark)')
+                          .matches;
+                document.documentElement.classList.toggle('dark', dark);
+            })();
+        </script>
+
         @vite(['resources/css/app.css', 'resources/js/app.ts', "resources/js/pages/{$page['component']}.vue"])
         <x-inertia::head>
             <title>{{ config('app.name', 'Laravel') }}</title>

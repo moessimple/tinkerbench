@@ -9,12 +9,30 @@
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
     --font-mono: 'Fira Code', Menlo, monospace;
-    --color-canvas: #0d1117;
-    --color-surface: #1c2530;
-    --color-line: #3d444d;
-    --color-fg: #f0f6fc;
-    --color-muted: #9198a1;
-    --color-accent: #58a6ff;
+    --color-canvas: var(--canvas);
+    --color-surface: var(--surface);
+    --color-line: var(--line);
+    --color-fg: var(--fg);
+    --color-muted: var(--muted);
+    --color-accent: var(--accent);
+}
+
+:root {
+    --canvas: #ffffff;
+    --surface: #f6f8fa;
+    --line: #d0d7de;
+    --fg: #1f2328;
+    --muted: #59636e;
+    --accent: #0969da;
+}
+
+.dark {
+    --canvas: #0d1117;
+    --surface: #161b22;
+    --line: #30363d;
+    --fg: #e6edf3;
+    --muted: #7d8590;
+    --accent: #4493f8;
 }
 
 /* Inertia's <x-inertia::app /> renders a bare <div id="app"> with no way to attach a Tailwind
