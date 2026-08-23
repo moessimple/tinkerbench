@@ -7,7 +7,7 @@ it('rejects a non-loopback request', function (string $method, string $uri): voi
         ->call($method, $uri)
         ->assertForbidden();
 })->with([
-    'run snippet' => ['POST', 'projects/my-project/snippets/executions'],
+    'run snippet' => ['POST', 'api/projects/my-project/snippets/executions'],
     'list projects' => ['GET', 'api/projects'],
     'start language server' => ['POST', 'api/projects/my-project/language-server'],
     'list snippets' => ['GET', 'api/projects/my-project/snippets'],

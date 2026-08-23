@@ -21,8 +21,8 @@ class RefreshHerdCacheOnFullPageLoad
         }
 
         $projects = $this->herd->refreshProjects();
-        $project = $request->route('project');
-        $project = is_string($project) ? $project : $this->herd->currentProject();
+        $routeProject = $request->route('project');
+        $project = $this->herd->resolveProject(is_string($routeProject) ? $routeProject : null);
 
         if (array_key_exists($project, $projects)) {
             $this->herd->refreshPhpBinary($project);

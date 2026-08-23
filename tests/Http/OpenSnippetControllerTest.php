@@ -17,7 +17,7 @@ it('uses the right middleware', function (): void {
 it('opens the default scratch snippet for the current project', function (): void {
     $this->mock(Herd::class, function (MockInterface $mock): void {
         $mock->shouldReceive('refreshProjects')->once()->andReturn(['my-project' => '/path/to/project']);
-        $mock->shouldReceive('currentProject')->twice()->andReturn('my-project');
+        $mock->shouldReceive('resolveProject')->twice()->with(null)->andReturn('my-project');
         $mock->shouldReceive('projectPath')->with('my-project')->andReturn('/path/to/project');
         $mock->shouldReceive('refreshPhpBinary')->with('my-project')->andReturn('/path/to/php');
         $mock->shouldReceive('phpBinary')->with('my-project')->andReturn('/path/to/php');
@@ -45,7 +45,7 @@ it('opens the default scratch snippet for the current project', function (): voi
 it('reports a server error as JSON when the repository fails to create the default snippet', function (): void {
     $this->mock(Herd::class, function (MockInterface $mock): void {
         $mock->shouldReceive('refreshProjects')->once()->andReturn(['my-project' => '/path/to/project']);
-        $mock->shouldReceive('currentProject')->twice()->andReturn('my-project');
+        $mock->shouldReceive('resolveProject')->twice()->with(null)->andReturn('my-project');
         $mock->shouldReceive('projectPath')->with('my-project')->andReturn('/path/to/project');
         $mock->shouldReceive('refreshPhpBinary')->with('my-project')->andReturn('/path/to/php');
     });
@@ -63,7 +63,7 @@ it('reports a server error as JSON when the repository fails to create the defau
 it('opens the named snippet from a project in the URL', function (): void {
     $this->mock(Herd::class, function (MockInterface $mock): void {
         $mock->shouldReceive('refreshProjects')->once()->andReturn(['my-project' => '/path/to/project']);
-        $mock->shouldReceive('currentProject')->never();
+        $mock->shouldReceive('resolveProject')->twice()->with('my-project')->andReturn('my-project');
         $mock->shouldReceive('projectPath')->with('my-project')->andReturn('/path/to/project');
         $mock->shouldReceive('refreshPhpBinary')->with('my-project')->andReturn('/path/to/php');
         $mock->shouldReceive('phpBinary')->with('my-project')->andReturn('/path/to/php');
@@ -90,7 +90,7 @@ it('uses cached herd data for inertia navigation', function (): void {
     $this->mock(Herd::class, function (MockInterface $mock): void {
         $mock->shouldReceive('refreshProjects')->never();
         $mock->shouldReceive('refreshPhpBinary')->never();
-        $mock->shouldReceive('currentProject')->never();
+        $mock->shouldReceive('resolveProject')->once()->with('my-project')->andReturn('my-project');
         $mock->shouldReceive('projectPath')->with('my-project')->andReturn('/path/to/project');
         $mock->shouldReceive('phpBinary')->with('my-project')->andReturn('/path/to/php');
         $mock->shouldReceive('phpVersion')->andReturn('8.5.0');
@@ -116,7 +116,7 @@ it('uses cached herd data for inertia navigation', function (): void {
 it('shows the php and laravel version of the current project', function (): void {
     $this->mock(Herd::class, function (MockInterface $mock): void {
         $mock->shouldReceive('refreshProjects')->once()->andReturn(['my-project' => '/path/to/project']);
-        $mock->shouldReceive('currentProject')->twice()->andReturn('my-project');
+        $mock->shouldReceive('resolveProject')->twice()->with(null)->andReturn('my-project');
         $mock->shouldReceive('projectPath')->with('my-project')->andReturn('/path/to/project');
         $mock->shouldReceive('refreshPhpBinary')->with('my-project')->andReturn('/path/to/php');
         $mock->shouldReceive('phpBinary')->with('my-project')->andReturn('/path/to/php');
@@ -141,8 +141,8 @@ it('shows the php and laravel version of the current project', function (): void
 it('rejects a two-segment url naming a project unknown to herd with a 404', function (): void {
     $this->mock(Herd::class, function (MockInterface $mock): void {
         $mock->shouldReceive('refreshProjects')->once()->andReturn([]);
+        $mock->shouldReceive('resolveProject')->twice()->with('unknown-project')->andReturn('unknown-project');
         $mock->shouldReceive('projectPath')->with('unknown-project')->once()->andReturn(null);
-        $mock->shouldReceive('currentProject')->never();
     });
 
     $this->mock(SnippetRepository::class)
@@ -154,8 +154,8 @@ it('rejects a two-segment url naming a project unknown to herd with a 404', func
 it('rejects a single unknown url segment with a 404', function (): void {
     $this->mock(Herd::class, function (MockInterface $mock): void {
         $mock->shouldReceive('refreshProjects')->once()->andReturn([]);
+        $mock->shouldReceive('resolveProject')->twice()->with('scratch')->andReturn('scratch');
         $mock->shouldReceive('projectPath')->with('scratch')->once()->andReturn(null);
-        $mock->shouldReceive('currentProject')->never();
     });
 
     $this->mock(SnippetRepository::class)
@@ -167,8 +167,8 @@ it('rejects a single unknown url segment with a 404', function (): void {
 it('opens a single url segment as a project switch when it is a known project', function (): void {
     $this->mock(Herd::class, function (MockInterface $mock): void {
         $mock->shouldReceive('refreshProjects')->once()->andReturn(['other-project' => '/path/to/other-project']);
+        $mock->shouldReceive('resolveProject')->twice()->with('other-project')->andReturn('other-project');
         $mock->shouldReceive('projectPath')->with('other-project')->once()->andReturn('/path/to/other-project');
-        $mock->shouldReceive('currentProject')->never();
         $mock->shouldReceive('refreshPhpBinary')->with('other-project')->andReturn('/path/to/php');
         $mock->shouldReceive('phpBinary')->with('other-project')->andReturn('/path/to/php');
         $mock->shouldReceive('phpVersion')->andReturn('8.5.0');

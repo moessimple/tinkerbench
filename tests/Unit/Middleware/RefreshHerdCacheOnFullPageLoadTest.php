@@ -10,8 +10,8 @@ use Mockery\MockInterface;
 it("refreshes the project cache and the requested project's php binary on a full page load", function (): void {
     $this->mock(Herd::class, function (MockInterface $mock): void {
         $mock->shouldReceive('refreshProjects')->once()->andReturn(['known-project' => '/path/to/known-project']);
+        $mock->shouldReceive('resolveProject')->once()->with('known-project')->andReturn('known-project');
         $mock->shouldReceive('refreshPhpBinary')->once()->with('known-project');
-        $mock->shouldReceive('currentProject')->never();
     });
 
     Route::get('api/testing/project-under-test/{project?}', fn (?string $project = null): string => $project ?? 'none')
@@ -25,7 +25,7 @@ it("refreshes the project cache and the requested project's php binary on a full
 it('resolves and refreshes the current project when the url names none', function (): void {
     $this->mock(Herd::class, function (MockInterface $mock): void {
         $mock->shouldReceive('refreshProjects')->once()->andReturn(['current-project' => '/path/to/current-project']);
-        $mock->shouldReceive('currentProject')->once()->andReturn('current-project');
+        $mock->shouldReceive('resolveProject')->once()->with(null)->andReturn('current-project');
         $mock->shouldReceive('refreshPhpBinary')->once()->with('current-project');
     });
 
@@ -40,8 +40,8 @@ it('resolves and refreshes the current project when the url names none', functio
 it('does not refresh a php binary for a project unknown to herd', function (): void {
     $this->mock(Herd::class, function (MockInterface $mock): void {
         $mock->shouldReceive('refreshProjects')->once()->andReturn([]);
+        $mock->shouldReceive('resolveProject')->once()->with('unknown-project')->andReturn('unknown-project');
         $mock->shouldReceive('refreshPhpBinary')->never();
-        $mock->shouldReceive('currentProject')->never();
     });
 
     Route::get('api/testing/project-under-test/{project?}', fn (?string $project = null): string => $project ?? 'none')
@@ -56,7 +56,7 @@ it('skips the refresh entirely for inertia navigation requests', function (): vo
     $this->mock(Herd::class, function (MockInterface $mock): void {
         $mock->shouldReceive('refreshProjects')->never();
         $mock->shouldReceive('refreshPhpBinary')->never();
-        $mock->shouldReceive('currentProject')->never();
+        $mock->shouldReceive('resolveProject')->never();
     });
 
     Route::get('api/testing/project-under-test/{project?}', fn (?string $project = null): string => $project ?? 'none')

@@ -186,6 +186,22 @@ it('throws when it cannot find its own project among herd projects', function ()
     new Herd()->currentProject();
 })->throws(RuntimeException::class);
 
+it('resolves the given project name as is', function (): void {
+    expect(new Herd()->resolveProject('given-project'))->toBe('given-project');
+});
+
+it('resolves to the current project when none is given', function (): void {
+    config(['services.herd.bin' => '/tmp/herd-bin']);
+    Process::fake([
+        "*'sites' '--json'" => json_encode([
+            ['site' => 'tinkerbench', 'path' => base_path()],
+        ]),
+        "*'parked' '--json'" => json_encode([]),
+    ]);
+
+    expect(new Herd()->resolveProject(null))->toBe('tinkerbench');
+});
+
 it("resolves a project's php binary via herd", function (): void {
     config(['services.herd.bin' => '/tmp/herd-bin']);
     Process::fake([

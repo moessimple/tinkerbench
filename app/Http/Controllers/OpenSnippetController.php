@@ -14,7 +14,7 @@ class OpenSnippetController
 {
     public function __invoke(SnippetRepository $snippets, Herd $herd, ?string $project = null, ?string $snippet = null): Response
     {
-        $project ??= $herd->currentProject();
+        $project = $herd->resolveProject($project);
         $projectPath = $herd->projectPath($project);
 
         abort_if($projectPath === null, HttpResponse::HTTP_NOT_FOUND, "Unknown Herd project: {$project}");

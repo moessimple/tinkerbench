@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Route;
 Route::pattern('project', '[A-Za-z0-9_-]+');
 Route::pattern('snippet', '[A-Za-z0-9_-]+');
 
-Route::post('projects/{project}/snippets/executions', RunSnippetController::class)
+Route::post('api/projects/{project}/snippets/executions', RunSnippetController::class)
     ->middleware(EnsureKnownProject::class);
 
 Route::get('api/projects', ListProjectsController::class);

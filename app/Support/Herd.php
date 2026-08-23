@@ -61,6 +61,11 @@ class Herd
         throw new RuntimeException('tinkerbench is not served by Herd under a known site name.');
     }
 
+    public function resolveProject(?string $project): string
+    {
+        return $project ?? $this->currentProject();
+    }
+
     public function phpBinary(string $project): string
     {
         return Cache::rememberForever("herd:php-binary:{$project}", fn (): string => $this->resolvePhpBinary($project));

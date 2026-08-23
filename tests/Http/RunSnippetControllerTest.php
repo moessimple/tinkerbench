@@ -39,7 +39,7 @@ it('returns the right output', function (): void {
         $mock->shouldReceive('phpBinary')->with('my-project')->andReturn(PHP_BINARY);
     });
 
-    $this->postJson('/projects/my-project/snippets/executions', ['code' => "<?php\n\necho 1 + 1;"])
+    $this->postJson('/api/projects/my-project/snippets/executions', ['code' => "<?php\n\necho 1 + 1;"])
         ->assertOk()
         ->assertJson(['output' => '2']);
 });
@@ -51,7 +51,7 @@ it('returns the debug data from the result', function (): void {
     $this->mock(RunSnippetAction::class)
         ->shouldReceive('execute')->andReturn(new SnippetRunResult('output', ['queries' => ['count' => 1]]));
 
-    $this->postJson('/projects/my-project/snippets/executions', ['code' => 'echo 1;'])
+    $this->postJson('/api/projects/my-project/snippets/executions', ['code' => 'echo 1;'])
         ->assertOk()
         ->assertExactJson(['output' => 'output', 'debug' => ['queries' => ['count' => 1]]]);
 });
@@ -61,7 +61,7 @@ it('reports a friendly message instead of a raw process error when a herd comman
         ->shouldReceive('projectPath')
         ->andThrow(new ProcessFailedException(new FakeProcessResult(exitCode: 127, errorOutput: 'herd: command not found')));
 
-    $this->postJson('/projects/my-project/snippets/executions', ['code' => 'echo 1;'])
+    $this->postJson('/api/projects/my-project/snippets/executions', ['code' => 'echo 1;'])
         ->assertServerError()
         ->assertJsonPath('message', 'Unable to reach Herd. Make sure Herd is running and try again.');
 });
