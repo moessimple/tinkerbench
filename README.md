@@ -18,12 +18,9 @@ A take on Laravel's [`tinker`](https://github.com/laravel/tinker), inspired by [
 * PHP autocompletion, hover documentation, and signature help for the target project's own code, powered by intelephense (the same language server VS Code uses).
 * Raw or rendered output. Rendered mode shows `dump()`/`dd()` calls with Symfony's interactive VarDumper, syntax highlights JSON, and renders HTML output in a sandboxed frame.
 * A debug tab next to the output, showing the queries, timing, and dumps a snippet run touched, and any exception it threw.
+* Light and dark theme, switchable from the sidebar, defaulting to your system preference.
 
 **tinkerbench runs locally on your own machine through Herd. It's a personal dev tool.**
-
-## Roadmap
-
-* A light theme alongside the current dark one, with a way to switch between them.
 
 ## Requirements
 
