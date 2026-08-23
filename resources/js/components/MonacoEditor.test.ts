@@ -1,9 +1,11 @@
-import { cleanup, render } from '@testing-library/vue';
+import { render } from '@testing-library/vue';
 import * as monaco from 'monaco-editor';
-import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { beforeEach, expect, it, vi } from 'vitest';
 import { attachLanguageServer } from '@/lib/languageServer';
 import MonacoEditor from './MonacoEditor.vue';
 
+// createEditorWorker() constructs a real Web Worker (via Vite's `?worker` import), which
+// jsdom can't instantiate; environment-driven, not a "tested elsewhere" mock.
 vi.mock('@/lib/monacoEditorWorker', () => ({
     createEditorWorker: vi.fn(),
 }));
@@ -31,6 +33,8 @@ const editor = {
     onDidChangeModelContent,
 };
 
+// The real monaco-editor needs a full DOM/canvas rendering surface jsdom doesn't provide;
+// environment-driven, not a "tested elsewhere" mock.
 vi.mock('monaco-editor', () => ({
     editor: {
         create: vi.fn(() => editor),
@@ -65,8 +69,6 @@ function actionRun(id: string): () => void {
 
     return action.run;
 }
-
-afterEach(cleanup);
 
 it('creates the editor with PHP syntax highlighting and the github-dark theme', () => {
     render(MonacoEditor, {

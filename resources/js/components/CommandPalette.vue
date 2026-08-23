@@ -36,6 +36,7 @@ const createInputEl = useTemplateRef<HTMLInputElement>('createInput');
 const renaming = ref<string | null>(null);
 const renameValue = ref('');
 const renameError = ref('');
+const renameSubmitting = ref(false);
 const renameInputEl = ref<HTMLInputElement | null>(null);
 
 // A plain `ref="renameInput"` inside v-for would resolve to an array of
@@ -47,6 +48,7 @@ function setRenameInputEl(el: Element | ComponentPublicInstance | null): void {
 
 const deleting = ref<string | null>(null);
 const deleteError = ref('');
+const deleteSubmitting = ref(false);
 const cancelDeleteButtonEl = ref<HTMLButtonElement | null>(null);
 
 function setCancelDeleteButtonEl(
@@ -369,6 +371,14 @@ async function startRename(name: string): Promise<void> {
 }
 
 function cancelRename(): void {
+    // Disabling the rename input mid-submit (see renameSubmitting below) blurs it, since a
+    // browser always blurs an input that becomes disabled while focused; without this guard
+    // that blur would fire this handler and hide the row while its own request is still
+    // in flight.
+    if (renameSubmitting.value) {
+        return;
+    }
+
     renaming.value = null;
     renameError.value = '';
 }
@@ -382,30 +392,36 @@ async function confirmRename(name: string): Promise<void> {
         return;
     }
 
-    const response = await fetch(
-        UpdateSnippetNameController.url([props.currentProject, name]),
-        {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', ...xsrfHeader() },
-            body: JSON.stringify({ name: newSnippetName }),
-        },
-    );
+    renameSubmitting.value = true;
 
-    if (!response.ok) {
-        renameError.value = await errorMessageFrom(response);
+    try {
+        const response = await fetch(
+            UpdateSnippetNameController.url([props.currentProject, name]),
+            {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', ...xsrfHeader() },
+                body: JSON.stringify({ name: newSnippetName }),
+            },
+        );
 
-        return;
+        if (!response.ok) {
+            renameError.value = await errorMessageFrom(response);
+
+            return;
+        }
+
+        renaming.value = null;
+
+        if (props.currentSnippet === name) {
+            openSnippet(newSnippetName);
+
+            return;
+        }
+
+        await loadNames();
+    } finally {
+        renameSubmitting.value = false;
     }
-
-    renaming.value = null;
-
-    if (props.currentSnippet === name) {
-        openSnippet(newSnippetName);
-
-        return;
-    }
-
-    await loadNames();
 }
 
 async function startDelete(name: string): Promise<void> {
@@ -421,31 +437,37 @@ function cancelDelete(): void {
 }
 
 async function confirmDelete(name: string): Promise<void> {
-    const response = await fetch(
-        DeleteSnippetController.url([props.currentProject, name]),
-        {
-            method: 'DELETE',
-            headers: xsrfHeader(),
-        },
-    );
+    deleteSubmitting.value = true;
 
-    if (!response.ok) {
-        deleteError.value = await errorMessageFrom(response);
-
-        return;
-    }
-
-    deleting.value = null;
-
-    if (props.currentSnippet === name) {
-        router.get(
-            OpenSnippetController.url({ project: props.currentProject }),
+    try {
+        const response = await fetch(
+            DeleteSnippetController.url([props.currentProject, name]),
+            {
+                method: 'DELETE',
+                headers: xsrfHeader(),
+            },
         );
 
-        return;
-    }
+        if (!response.ok) {
+            deleteError.value = await errorMessageFrom(response);
 
-    await loadNames();
+            return;
+        }
+
+        deleting.value = null;
+
+        if (props.currentSnippet === name) {
+            router.get(
+                OpenSnippetController.url({ project: props.currentProject }),
+            );
+
+            return;
+        }
+
+        await loadNames();
+    } finally {
+        deleteSubmitting.value = false;
+    }
 }
 </script>
 
@@ -517,6 +539,7 @@ async function confirmDelete(name: string): Promise<void> {
                         :aria-activedescendant="activeOptionId"
                         :aria-label="inputLabel"
                         :placeholder="placeholder"
+                        :disabled="createForm.processing"
                         class="w-full rounded border border-line bg-transparent px-2 py-1 font-mono text-sm text-fg placeholder:text-muted focus:outline-none"
                         @change="createForm.validate('name')"
                         @keydown.down.prevent="moveHighlight(1)"
@@ -599,6 +622,7 @@ async function confirmDelete(name: string): Promise<void> {
                                 v-model="renameValue"
                                 type="text"
                                 :aria-label="`Rename ${name}`"
+                                :disabled="renameSubmitting"
                                 class="w-full rounded border border-line bg-transparent px-2 py-0.5 font-mono text-sm text-fg focus:outline-none"
                                 @keydown.enter.prevent="confirmRename(name)"
                                 @keydown.escape="cancelRename"
@@ -614,6 +638,7 @@ async function confirmDelete(name: string): Promise<void> {
                                 <span class="flex shrink-0 items-center gap-2">
                                     <button
                                         type="button"
+                                        :disabled="deleteSubmitting"
                                         class="rounded px-1.5 py-0.5 text-xs text-red-400 hover:bg-line/50"
                                         @click="confirmDelete(name)"
                                         @keydown.escape="cancelDelete"

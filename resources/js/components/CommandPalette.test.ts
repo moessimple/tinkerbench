@@ -21,6 +21,7 @@ const createFormState = reactive({
     name: '',
     errors: {} as Record<string, string>,
     invalidFields: [] as string[],
+    processing: false,
     validate(field: string) {
         validateSpy(field);
 
@@ -46,6 +47,8 @@ const createFormState = reactive({
     },
 });
 
+// @inertiajs/vue3's router/useHttp don't work in jsdom (no page navigation, no real HTTP
+// client); environment-driven, not a "tested elsewhere" mock.
 vi.mock('@inertiajs/vue3', () => ({
     router: { get: routerGet },
     useHttp: (initial: { name: string }) => {
@@ -64,6 +67,7 @@ beforeEach(() => {
     createFormState.name = '';
     createFormState.errors = {};
     createFormState.invalidFields = [];
+    createFormState.processing = false;
     transformName = (name) => name;
 });
 
@@ -632,6 +636,25 @@ it('strips the # prefix before creating and navigating to a #-scoped new snippet
     expect(routerGet).toHaveBeenCalledWith('/my-project/my-new-snippet');
 });
 
+it('disables the create input while a create request is processing', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo([], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input =
+        await screen.findByLabelText<HTMLInputElement>('Search snippets');
+
+    createFormState.processing = true;
+    await vi.waitFor(() => expect(input.disabled).toBe(true));
+
+    createFormState.processing = false;
+    await vi.waitFor(() => expect(input.disabled).toBe(false));
+});
+
 it('shows a rename input prefilled with the current name when the rename icon is clicked', async () => {
     vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], []));
     render(CommandPalette, {
@@ -805,6 +828,81 @@ it('shows the server validation message inline when renaming fails validation', 
     await screen.findByText('Too long.');
 });
 
+it('disables the rename input while its own request is in flight', async () => {
+    let resolveRename: (response: Response) => void = () => {};
+    const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(jsonResponse(['scratch']))
+        .mockResolvedValueOnce(jsonResponse([]))
+        .mockReturnValueOnce(
+            new Promise<Response>((resolve) => {
+                resolveRename = resolve;
+            }),
+        );
+    vi.stubGlobal('fetch', fetchMock);
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    await screen.findByText('scratch');
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Rename scratch' }),
+    );
+    const input = screen.getByLabelText<HTMLInputElement>('Rename scratch');
+    await fireEvent.update(input, 'renamed');
+    await fireEvent.keyDown(input, { key: 'Enter' });
+
+    await vi.waitFor(() => expect(input.disabled).toBe(true));
+
+    resolveRename(jsonResponse({ ok: true }));
+    await vi.waitFor(() =>
+        expect(routerGet).toHaveBeenCalledWith('/my-project/renamed'),
+    );
+});
+
+it('keeps the rename row open when the input is blurred while its request is in flight', async () => {
+    // A browser blurs a focused input the moment it becomes disabled; the row must stay
+    // in its renaming state despite that blur, otherwise it would flip back to the normal
+    // view while the request is still running (jsdom doesn't emulate the auto-blur itself,
+    // so it's fired manually here to prove the guard, not the browser behavior).
+    let resolveRename: (response: Response) => void = () => {};
+    const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(jsonResponse(['scratch']))
+        .mockResolvedValueOnce(jsonResponse([]))
+        .mockReturnValueOnce(
+            new Promise<Response>((resolve) => {
+                resolveRename = resolve;
+            }),
+        );
+    vi.stubGlobal('fetch', fetchMock);
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    await screen.findByText('scratch');
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Rename scratch' }),
+    );
+    const input = screen.getByLabelText<HTMLInputElement>('Rename scratch');
+    await fireEvent.update(input, 'renamed');
+    await fireEvent.keyDown(input, { key: 'Enter' });
+    await fireEvent.blur(input);
+
+    screen.getByRole('textbox', { name: 'Rename scratch' });
+
+    resolveRename(jsonResponse({ ok: true }));
+    await vi.waitFor(() =>
+        expect(routerGet).toHaveBeenCalledWith('/my-project/renamed'),
+    );
+});
+
 it('shows a delete confirmation when the delete icon is clicked', async () => {
     vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], []));
     render(CommandPalette, {
@@ -933,6 +1031,44 @@ it('shows the error message inline when deleting fails', async () => {
     await fireEvent.click(screen.getByRole('button', { name: 'Yes' }));
 
     await screen.findByText('delete failed');
+});
+
+it('disables the delete confirm button while its own request is in flight', async () => {
+    let resolveDelete: (response: Response) => void = () => {};
+    const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(jsonResponse(['scratch']))
+        .mockResolvedValueOnce(jsonResponse([]))
+        .mockReturnValueOnce(
+            new Promise<Response>((resolve) => {
+                resolveDelete = resolve;
+            }),
+        );
+    vi.stubGlobal('fetch', fetchMock);
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    await screen.findByText('scratch');
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Delete scratch' }),
+    );
+    await fireEvent.click(screen.getByRole('button', { name: 'Yes' }));
+
+    await vi.waitFor(() =>
+        expect(
+            screen.getByRole<HTMLButtonElement>('button', { name: 'Yes' })
+                .disabled,
+        ).toBe(true),
+    );
+
+    resolveDelete(jsonResponse({ ok: true }));
+    await vi.waitFor(() =>
+        expect(routerGet).toHaveBeenCalledWith('/my-project'),
+    );
 });
 
 function fetchRoutedTo(
