@@ -46,6 +46,12 @@ it('shows a timing summary for each measured segment', () => {
     expect(screen.getByText('3ms')).toBeTruthy();
 });
 
+it('hides the timing section when nothing was measured', () => {
+    renderPanel({});
+
+    expect(screen.queryByText('Timing')).toBeNull();
+});
+
 it('shows every dumped value with its label', () => {
     renderPanel({
         messages: {

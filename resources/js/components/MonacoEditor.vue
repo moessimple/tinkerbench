@@ -5,10 +5,6 @@ import { attachLanguageServer } from '@/lib/languageServer';
 import type { LanguageServerHandle } from '@/lib/languageServer';
 import { createEditorWorker } from '@/lib/monacoEditorWorker';
 
-self.MonacoEnvironment = {
-    getWorker: createEditorWorker,
-};
-
 const props = defineProps<{ initialValue: string; project: string }>();
 const emit = defineEmits<{
     change: [content: string];
@@ -21,6 +17,12 @@ let languageServer: LanguageServerHandle | null = null;
 let unmounted = false;
 
 onMounted(() => {
+    // Monaco resolves language-service workers through this global lookup at the moment
+    // it first needs one, so it has to be set before monaco.editor.create() runs below.
+    self.MonacoEnvironment = {
+        getWorker: createEditorWorker,
+    };
+
     monaco.editor.defineTheme('github-dark', {
         base: 'vs-dark',
         inherit: true,

@@ -332,6 +332,22 @@ function openSnippet(name: string): void {
     router.get(OpenSnippetController.url([props.currentProject, name]));
 }
 
+// Both rename and delete need the list to reflect their outcome: navigate away if the
+// mutated snippet was the one currently open (its name/URL no longer applies), otherwise
+// just refresh the list in place.
+async function afterMutatingSnippet(
+    name: string,
+    whenCurrent: () => void,
+): Promise<void> {
+    if (props.currentSnippet === name) {
+        whenCurrent();
+
+        return;
+    }
+
+    await loadNames();
+}
+
 function switchProject(name: string): void {
     isOpen.value = false;
     router.get(OpenSnippetController.url({ project: name }));
@@ -412,13 +428,7 @@ async function confirmRename(name: string): Promise<void> {
 
         renaming.value = null;
 
-        if (props.currentSnippet === name) {
-            openSnippet(newSnippetName);
-
-            return;
-        }
-
-        await loadNames();
+        await afterMutatingSnippet(name, () => openSnippet(newSnippetName));
     } finally {
         renameSubmitting.value = false;
     }
@@ -456,15 +466,11 @@ async function confirmDelete(name: string): Promise<void> {
 
         deleting.value = null;
 
-        if (props.currentSnippet === name) {
+        await afterMutatingSnippet(name, () =>
             router.get(
                 OpenSnippetController.url({ project: props.currentProject }),
-            );
-
-            return;
-        }
-
-        await loadNames();
+            ),
+        );
     } finally {
         deleteSubmitting.value = false;
     }
