@@ -9,9 +9,18 @@ use InvalidArgumentException;
 
 class LanguageServerBridge
 {
+    private const int START_TIMEOUT_SECONDS = 60;
+
     public function start(string $projectPath, string $phpVersion): int
     {
-        $invoked = Process::options(['create_new_console' => true])->start([
+        // This request blocks waiting on the bridge process below, bounded by Process's own
+        // timeout, so PHP's own max_execution_time is lifted past that same bound, with headroom
+        // for the process to actually be killed, otherwise the request would fatally time out
+        // from under a bridge that Process::timeout() is still waiting to terminate. Mirrors
+        // Herd::runSnippet()'s reasoning.
+        set_time_limit(self::START_TIMEOUT_SECONDS + 30);
+
+        $invoked = Process::options(['create_new_console' => true])->timeout(self::START_TIMEOUT_SECONDS)->start([
             $this->nvmExec(),
             'node',
             base_path('app/Support/bin/intelephense-bridge.mjs'),
