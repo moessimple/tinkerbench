@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Support\DebugbarCollector;
 use DebugBar\DataCollector\ExceptionsCollector;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 it('collects the queries and timing of the wrapped closure', function (): void {
     $debug = new DebugbarCollector()->collect(app(), function (): void {
@@ -88,4 +89,24 @@ it('collects the peak memory usage of the wrapped closure', function (): void {
 
     expect(data_get($debug, 'memory.peak_usage'))->toBeInt()->toBeGreaterThan(0)
         ->and(data_get($debug, 'memory.peak_usage_str'))->toBeString()->not->toBeEmpty();
+});
+
+it('captures a log message written during the wrapped closure, labelled by level', function (): void {
+    $debug = new DebugbarCollector()->collect(app(), function (): void {
+        Log::warning('boom');
+    });
+
+    expect(data_get($debug, 'logs.count'))->toBe(1)
+        ->and(data_get($debug, 'logs.messages.0.message'))->toBe('boom')
+        ->and(data_get($debug, 'logs.messages.0.label'))->toBe('warning');
+});
+
+it('does not capture a log message written before the wrapped closure starts', function (): void {
+    Log::info('before');
+
+    $debug = new DebugbarCollector()->collect(app(), function (): void {
+        //
+    });
+
+    expect(data_get($debug, 'logs.count'))->toBe(0);
 });

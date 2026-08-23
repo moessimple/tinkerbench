@@ -95,6 +95,27 @@ defineProps<{
         </section>
 
         <section
+            v-if="debug.logs && debug.logs.count > 0"
+            class="mt-6 first:mt-0"
+        >
+            <h2
+                class="mb-2 text-xs font-semibold tracking-widest text-muted uppercase"
+            >
+                Logs ({{ debug.logs.count }})
+            </h2>
+            <ul class="flex flex-col gap-2">
+                <li
+                    v-for="(log, index) in debug.logs.messages"
+                    :key="index"
+                    class="flex gap-3"
+                >
+                    <span class="text-muted uppercase">{{ log.label }}</span>
+                    <span class="whitespace-pre-wrap">{{ log.message }}</span>
+                </li>
+            </ul>
+        </section>
+
+        <section
             v-if="debug.exceptions && debug.exceptions.count > 0"
             class="mt-6 first:mt-0"
         >

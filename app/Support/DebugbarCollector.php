@@ -12,9 +12,11 @@ use DebugBar\DataCollector\TimeDataCollector;
 use DebugBar\DataFormatter\DataFormatter;
 use DebugBar\DebugBar;
 use Fruitcake\LaravelDebugbar\DataCollector\QueryCollector;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Log\Events\MessageLogged;
 use Symfony\Component\VarDumper\Cloner\VarCloner;
 use Symfony\Component\VarDumper\Dumper\ContextProvider\SourceContextProvider;
 use Symfony\Component\VarDumper\Dumper\ContextualizedDumper;
@@ -37,6 +39,7 @@ class DebugbarCollector
         $debugbar->addCollector($queries = new QueryCollector());
         $debugbar->addCollector($exceptions = new ExceptionsCollector());
         $debugbar->addCollector($messages = new MessagesCollector());
+        $debugbar->addCollector($logs = new MessagesCollector('logs'));
         $debugbar->addCollector(new MemoryCollector());
         // Debugbar's collectors share one static, process-wide default formatter that renders
         // HTML by default; without this, a non-string dump() value (e.g. dump(42)) would format
@@ -45,6 +48,10 @@ class DebugbarCollector
 
         $app->make(DatabaseManager::class)->connection()->listen(function (QueryExecuted $query) use ($queries): void {
             $queries->addQuery($query);
+        });
+
+        $app->make(Dispatcher::class)->listen(MessageLogged::class, function (MessageLogged $event) use ($logs): void {
+            $logs->addMessage($event->message, $event->level, $event->context);
         });
 
         $this->captureDumps($messages);

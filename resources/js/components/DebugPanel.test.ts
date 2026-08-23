@@ -85,6 +85,29 @@ it('hides the memory section when nothing was measured', () => {
     expect(screen.queryByText('Memory')).toBeNull();
 });
 
+it('shows every logged entry with its level', () => {
+    renderPanel({
+        logs: {
+            count: 2,
+            messages: [
+                { label: 'warning', message: 'boom' },
+                { label: 'info', message: 'all good' },
+            ],
+        },
+    });
+
+    expect(screen.getByText('warning')).toBeTruthy();
+    expect(screen.getByText('boom')).toBeTruthy();
+    expect(screen.getByText('info')).toBeTruthy();
+    expect(screen.getByText('all good')).toBeTruthy();
+});
+
+it('hides the logs section when nothing was logged', () => {
+    renderPanel({ logs: { count: 0, messages: [] } });
+
+    expect(screen.queryByText('Logs')).toBeNull();
+});
+
 it('shows a caught exception with its origin', () => {
     renderPanel({
         exceptions: {

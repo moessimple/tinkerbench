@@ -29,6 +29,10 @@ export interface SnippetDebugPayload {
         count: number;
         exceptions: DebugException[];
     };
+    logs?: {
+        count: number;
+        messages: DebugMessage[];
+    };
     memory?: {
         peak_usage: number;
         peak_usage_str: string;
