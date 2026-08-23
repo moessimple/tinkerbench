@@ -415,7 +415,10 @@ async function confirmRename(name: string): Promise<void> {
             UpdateSnippetNameController.url([props.currentProject, name]),
             {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json', ...xsrfHeader() },
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...xsrfHeader(),
+                },
                 body: JSON.stringify({ name: newSnippetName }),
             },
         );
