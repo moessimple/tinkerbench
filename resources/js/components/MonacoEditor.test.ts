@@ -1,8 +1,18 @@
 import { render } from '@testing-library/vue';
 import * as monaco from 'monaco-editor';
 import { beforeEach, expect, it, vi } from 'vitest';
+import { ref } from 'vue';
 import { attachLanguageServer } from '@/lib/languageServer';
 import MonacoEditor from './MonacoEditor.vue';
+
+// useTheme has its own test (useTheme.test.ts) proving system-preference fallback,
+// persistence, and the dark-class toggle; replaced here so this test only proves
+// MonacoEditor.vue reads/reacts to its theme value correctly.
+const mockTheme = ref<'light' | 'dark'>('dark');
+
+vi.mock('@/composables/useTheme', () => ({
+    useTheme: () => ({ theme: mockTheme }),
+}));
 
 // createEditorWorker() constructs a real Web Worker (via Vite's `?worker` import), which
 // jsdom can't instantiate; environment-driven, not a "tested elsewhere" mock.
@@ -39,12 +49,14 @@ vi.mock('monaco-editor', () => ({
     editor: {
         create: vi.fn(() => editor),
         defineTheme: vi.fn(),
+        setTheme: vi.fn(),
     },
     KeyCode: { Enter: 3 },
     KeyMod: { CtrlCmd: 2048 },
 }));
 
 beforeEach(() => {
+    mockTheme.value = 'dark';
     addAction.mockClear();
     editor.dispose.mockClear();
     editor.focus.mockClear();
@@ -55,6 +67,7 @@ beforeEach(() => {
     languageServerHandle.notifyContentChanged.mockClear();
     vi.mocked(monaco.editor.create).mockClear();
     vi.mocked(monaco.editor.defineTheme).mockClear();
+    vi.mocked(monaco.editor.setTheme).mockClear();
     vi.mocked(attachLanguageServer)
         .mockReset()
         .mockResolvedValue(languageServerHandle);
@@ -86,6 +99,41 @@ it('creates the editor with PHP syntax highlighting and the github-dark theme', 
             language: 'php',
             theme: 'github-dark',
         }),
+    );
+});
+
+it('defines a github-light theme alongside github-dark', () => {
+    render(MonacoEditor, {
+        props: { initialValue: '<?php echo "initial";', project: 'my-project' },
+    });
+
+    expect(monaco.editor.defineTheme).toHaveBeenCalledWith(
+        'github-light',
+        expect.any(Object),
+    );
+});
+
+it('creates the editor with the github-light theme when the light theme is active', () => {
+    mockTheme.value = 'light';
+
+    render(MonacoEditor, {
+        props: { initialValue: '<?php echo "initial";', project: 'my-project' },
+    });
+
+    expect(monaco.editor.create).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ theme: 'github-light' }),
+    );
+});
+
+it('switches the editor theme when the app theme changes', async () => {
+    render(MonacoEditor, {
+        props: { initialValue: '<?php echo "initial";', project: 'my-project' },
+    });
+
+    mockTheme.value = 'light';
+    await vi.waitFor(() =>
+        expect(monaco.editor.setTheme).toHaveBeenCalledWith('github-light'),
     );
 });
 

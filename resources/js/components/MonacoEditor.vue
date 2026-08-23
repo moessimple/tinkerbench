@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import * as monaco from 'monaco-editor';
-import { onBeforeUnmount, onMounted, useTemplateRef } from 'vue';
+import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue';
+import { useTheme } from '@/composables/useTheme';
 import { attachLanguageServer } from '@/lib/languageServer';
 import type { LanguageServerHandle } from '@/lib/languageServer';
 import { createEditorWorker } from '@/lib/monacoEditorWorker';
@@ -12,9 +13,14 @@ const emit = defineEmits<{
 }>();
 
 const editorElement = useTemplateRef('editorElement');
+const { theme } = useTheme();
 let editor: monaco.editor.IStandaloneCodeEditor | null = null;
 let languageServer: LanguageServerHandle | null = null;
 let unmounted = false;
+
+function monacoThemeName(): string {
+    return theme.value === 'dark' ? 'github-dark' : 'github-light';
+}
 
 onMounted(() => {
     // Monaco resolves language-service workers through this global lookup at the moment
@@ -28,14 +34,29 @@ onMounted(() => {
         inherit: true,
         rules: [],
         colors: {
-            'editor.background': '#1C2530',
-            'editorGutter.background': '#1C2530',
-            'editor.foreground': '#F0F6FC',
-            'editorLineNumber.foreground': '#9198A1',
-            'editorLineNumber.activeForeground': '#F0F6FC',
+            'editor.background': '#161B22',
+            'editorGutter.background': '#161B22',
+            'editor.foreground': '#E6EDF3',
+            'editorLineNumber.foreground': '#7D8590',
+            'editorLineNumber.activeForeground': '#E6EDF3',
             'editor.lineHighlightBackground': '#242E3A',
-            'editorCursor.foreground': '#58A6FF',
-            'editor.selectionBackground': '#58A6FF26',
+            'editorCursor.foreground': '#4493F8',
+            'editor.selectionBackground': '#4493F826',
+        },
+    });
+    monaco.editor.defineTheme('github-light', {
+        base: 'vs',
+        inherit: true,
+        rules: [],
+        colors: {
+            'editor.background': '#F6F8FA',
+            'editorGutter.background': '#F6F8FA',
+            'editor.foreground': '#1F2328',
+            'editorLineNumber.foreground': '#59636E',
+            'editorLineNumber.activeForeground': '#1F2328',
+            'editor.lineHighlightBackground': '#EAEEF2',
+            'editorCursor.foreground': '#0969DA',
+            'editor.selectionBackground': '#0969DA26',
         },
     });
 
@@ -46,7 +67,7 @@ onMounted(() => {
     editor = monaco.editor.create(editorElement.value, {
         value: props.initialValue,
         language: 'php',
-        theme: 'github-dark',
+        theme: monacoThemeName(),
         automaticLayout: true,
         fontFamily: "'Fira Code', Menlo, monospace",
         fontLigatures: true,
@@ -70,6 +91,8 @@ onMounted(() => {
         run: () => emit('run'),
     });
     editor.focus();
+
+    watch(theme, () => monaco.editor.setTheme(monacoThemeName()));
 
     attachLanguageServer(monaco, props.project, props.initialValue)
         .then((handle) => {
