@@ -361,6 +361,7 @@ export async function attachLanguageServer(
     })) as {
         capabilities?: {
             completionProvider?: { triggerCharacters?: string[] };
+            signatureHelpProvider?: { triggerCharacters?: string[] };
         };
     } | null;
     notify('initialized', {});
@@ -503,7 +504,12 @@ export async function attachLanguageServer(
 
     const signatureHelpProvider =
         monaco.languages.registerSignatureHelpProvider('php', {
-            signatureHelpTriggerCharacters: ['(', ','],
+            // Same reasoning as the completion provider's triggerCharacters above: laravel-lsp
+            // doesn't declare signatureHelpProvider at all (no signature help support), so this
+            // ends up empty for it rather than wastefully triggering a request it can't answer.
+            signatureHelpTriggerCharacters:
+                initializeResult?.capabilities?.signatureHelpProvider
+                    ?.triggerCharacters ?? [],
             async provideSignatureHelp(model, position) {
                 const result = (await request('textDocument/signatureHelp', {
                     textDocument: { uri: DOCUMENT_URI },

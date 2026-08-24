@@ -869,6 +869,46 @@ it('registers the completion provider with no trigger characters when the server
     );
 });
 
+it("registers the signature help provider with the server's own declared trigger characters", async () => {
+    const attaching = attachLanguageServer(
+        monaco,
+        intelephenseConfig,
+        '<?php',
+        model,
+    );
+    await connectAndHandshake({
+        capabilities: {
+            signatureHelpProvider: { triggerCharacters: ['(', ','] },
+        },
+    });
+    await attaching;
+
+    expect(monaco.languages.registerSignatureHelpProvider).toHaveBeenCalledWith(
+        'php',
+        expect.objectContaining({
+            signatureHelpTriggerCharacters: ['(', ','],
+        }),
+    );
+});
+
+it('registers the signature help provider with no trigger characters when the server declares none', async () => {
+    // laravel-lsp doesn't declare signatureHelpProvider at all (it has no signature help
+    // support), so this must not fall back to a hardcoded default meant for intelephense.
+    const attaching = attachLanguageServer(
+        monaco,
+        intelephenseConfig,
+        '<?php',
+        model,
+    );
+    await connectAndHandshake({});
+    await attaching;
+
+    expect(monaco.languages.registerSignatureHelpProvider).toHaveBeenCalledWith(
+        'php',
+        expect.objectContaining({ signatureHelpTriggerCharacters: [] }),
+    );
+});
+
 it('requests a port from the configured URL and applies diagnostics under the configured owner key', async () => {
     const attaching = attachLanguageServer(
         monaco,
