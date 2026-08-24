@@ -130,6 +130,21 @@ function toPlainText(
     return content.value;
 }
 
+// Both LSP servers send markdown-formatted documentation (backtick code spans, links) regardless
+// of the plaintext-only documentationFormat this client declares in its capabilities - unlike
+// Hover.contents, which Monaco always renders as markdown by construction, CompletionItem and
+// SignatureInformation's `documentation` field is `string | IMarkdownString`: a bare string
+// renders as literal, unrendered text, so the markdown syntax those servers send would otherwise
+// show up as-is (backticks, brackets) instead of being rendered.
+function toMarkdown(
+    content:
+        LspMarkupContent | LspMarkupContent[] | string | string[] | undefined,
+): { value: string } | undefined {
+    const text = toPlainText(content);
+
+    return text === '' ? undefined : { value: text };
+}
+
 function toAdditionalTextEdits(
     edits: LspTextEdit[] | undefined,
 ): { range: MonacoRange; text: string }[] | undefined {
@@ -312,8 +327,9 @@ export async function attachLanguageServer(
 
     // Declares roughly what a real editor's LSP client (e.g. vscode-languageclient) already declares, so
     // intelephense behaves the same way here as it does in VS Code: snippet-formatted completions (parameter
-    // placeholders), resolve() for auto-import edits it otherwise omits from the bulk list, plaintext docs
-    // (no markdown support wired up here, so asking for markdown would just leak raw ** and ` syntax).
+    // placeholders), resolve() for auto-import edits it otherwise omits from the bulk list, and markdown docs
+    // (toMarkdown() renders them as such - both servers send markdown regardless of what's declared here, so
+    // this declares what's actually supported rather than what would just be a preference either server honors).
     const initializeResult = (await request('initialize', {
         processId: null,
         rootUri: null,
@@ -323,7 +339,7 @@ export async function attachLanguageServer(
                 completion: {
                     completionItem: {
                         snippetSupport: true,
-                        documentationFormat: ['plaintext'],
+                        documentationFormat: ['markdown', 'plaintext'],
                         resolveSupport: {
                             properties: [
                                 'documentation',
@@ -333,10 +349,10 @@ export async function attachLanguageServer(
                         },
                     },
                 },
-                hover: { contentFormat: ['plaintext'] },
+                hover: { contentFormat: ['markdown', 'plaintext'] },
                 signatureHelp: {
                     signatureInformation: {
-                        documentationFormat: ['plaintext'],
+                        documentationFormat: ['markdown', 'plaintext'],
                     },
                 },
                 publishDiagnostics: {},
@@ -402,8 +418,7 @@ export async function attachLanguageServer(
                             kind:
                                 completionKindByLspKind[item.kind ?? 0] ??
                                 monaco.languages.CompletionItemKind.Text,
-                            documentation:
-                                toPlainText(item.documentation) || undefined,
+                            documentation: toMarkdown(item.documentation),
                             insertText:
                                 item.textEdit?.newText ??
                                 item.insertText ??
@@ -452,7 +467,7 @@ export async function attachLanguageServer(
                 return {
                     ...item,
                     documentation:
-                        toPlainText(resolved.documentation) ||
+                        toMarkdown(resolved.documentation) ??
                         item.documentation,
                     // additionalTextEdits is how intelephense inserts the matching `use` statement when you
                     // accept a completion for a class that isn't imported yet, same as it does in VS Code.
@@ -509,9 +524,7 @@ export async function attachLanguageServer(
                         activeParameter: result.activeParameter ?? 0,
                         signatures: result.signatures.map((signature) => ({
                             label: signature.label,
-                            documentation:
-                                toPlainText(signature.documentation) ||
-                                undefined,
+                            documentation: toMarkdown(signature.documentation),
                             parameters: signature.parameters ?? [],
                         })),
                     },

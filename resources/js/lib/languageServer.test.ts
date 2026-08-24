@@ -481,9 +481,11 @@ it('resolves a completion item with the server-provided documentation and import
 
     const resolved = (await resolving) as {
         additionalTextEdits: unknown[];
-        documentation: string;
+        documentation: { value: string };
     };
-    expect(resolved.documentation).toBe('Returns the length of a string.');
+    expect(resolved.documentation).toEqual({
+        value: 'Returns the length of a string.',
+    });
     expect(resolved.additionalTextEdits).toEqual([
         {
             text: 'use App\\Str;\n',
@@ -626,7 +628,7 @@ it('returns the active signature and parameter reported by the language server',
         signatures: [
             {
                 label: 'strlen(string $string): int',
-                documentation: 'Returns the length of a string.',
+                documentation: { value: 'Returns the length of a string.' },
                 parameters: [{ label: 'string $string' }],
             },
         ],
