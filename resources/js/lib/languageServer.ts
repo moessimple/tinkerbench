@@ -78,7 +78,6 @@ interface MonacoRange {
 }
 
 export interface LanguageServerConfig {
-    initializationOptions?: Record<string, unknown>;
     ownerKey: string;
     requestPortUrl: string;
 }
@@ -333,7 +332,6 @@ export async function attachLanguageServer(
     const initializeResult = (await request('initialize', {
         processId: null,
         rootUri: null,
-        initializationOptions: config.initializationOptions,
         capabilities: {
             textDocument: {
                 completion: {

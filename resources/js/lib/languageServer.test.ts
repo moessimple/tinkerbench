@@ -955,31 +955,3 @@ it('requests a port from the configured URL and applies diagnostics under the co
         ],
     );
 });
-
-it('merges the configured initializationOptions into the initialize request', async () => {
-    const attaching = attachLanguageServer(
-        monaco,
-        {
-            requestPortUrl:
-                '/api/projects/customer-portal/laravel-language-server',
-            ownerKey: 'laravel-lsp',
-            initializationOptions: {
-                phpEnvironment: 'herd',
-                pestGenerateDocBlocks: false,
-            },
-        },
-        '<?php',
-        model,
-    );
-    const socket = await connectAndHandshake();
-    await attaching;
-
-    const initialize = JSON.parse(socket.sent[0]!) as {
-        params: { initializationOptions?: unknown };
-    };
-
-    expect(initialize.params.initializationOptions).toEqual({
-        phpEnvironment: 'herd',
-        pestGenerateDocBlocks: false,
-    });
-});

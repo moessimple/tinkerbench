@@ -219,10 +219,6 @@ it('attaches laravel-lsp for the current project', () => {
         {
             requestPortUrl: '/api/projects/my-project/laravel-language-server',
             ownerKey: 'laravel-lsp',
-            initializationOptions: {
-                phpEnvironment: 'herd',
-                pestGenerateDocBlocks: false,
-            },
         },
         '<?php echo "initial";',
         model,

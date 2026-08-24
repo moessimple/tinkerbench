@@ -128,10 +128,6 @@ onMounted(() => {
                 props.project,
             ),
             ownerKey: 'laravel-lsp',
-            initializationOptions: {
-                phpEnvironment: 'herd',
-                pestGenerateDocBlocks: false,
-            },
         },
         props.initialValue,
         editor.getModel()!,

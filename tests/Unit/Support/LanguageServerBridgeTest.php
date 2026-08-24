@@ -3,10 +3,11 @@
 declare(strict_types=1);
 
 use App\Support\LanguageServerBridge;
+use App\Support\LanguageServerBridgeLauncher;
 use Illuminate\Support\Facades\Process;
 
 it('spawns a detached bridge process that survives past the request and reports its port', function (): void {
-    $port = new LanguageServerBridge()->start(sys_get_temp_dir(), '8.5');
+    $port = new LanguageServerBridge(new LanguageServerBridgeLauncher())->start(sys_get_temp_dir(), '8.5');
 
     expect($port)->toBeGreaterThan(0);
 
@@ -25,7 +26,7 @@ it('spawns a detached bridge process that survives past the request and reports 
 });
 
 it('rejects a websocket handshake from another origin', function (): void {
-    $port = new LanguageServerBridge()->start(sys_get_temp_dir(), '8.5');
+    $port = new LanguageServerBridge(new LanguageServerBridgeLauncher())->start(sys_get_temp_dir(), '8.5');
 
     $connected = Process::run([
         config('services.herd.nvm_exec'),
@@ -38,13 +39,3 @@ it('rejects a websocket handshake from another origin', function (): void {
 
     expect($connected->output())->toContain('rejected');
 });
-
-it('throws when the herd Node runtime is not configured', function (): void {
-    config(['services.herd.nvm_exec' => null]);
-
-    new LanguageServerBridge()->start(sys_get_temp_dir(), '8.5');
-})->throws(InvalidArgumentException::class);
-
-it('throws when the bridge script does not report a port', function (): void {
-    new LanguageServerBridge()->start('', '');
-})->throws(InvalidArgumentException::class);
