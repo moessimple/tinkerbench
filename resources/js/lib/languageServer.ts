@@ -52,6 +52,12 @@ interface LspSignatureHelp {
     signatures: LspSignatureInformation[];
 }
 
+interface LspDiagnostic {
+    message: string;
+    range: LspRange;
+    severity?: number;
+}
+
 interface JsonRpcMessage {
     error?: { message: string };
     id?: number;
@@ -153,6 +159,7 @@ export async function attachLanguageServer(
     monaco: typeof Monaco,
     project: string,
     initialContent: string,
+    model: Monaco.editor.ITextModel,
 ): Promise<LanguageServerHandle> {
     const port = await requestPort(project);
     // Safari (macOS 15+) blocks a plain ws:// connection from an https:// page as mixed content, even to
@@ -173,6 +180,14 @@ export async function attachLanguageServer(
         9: monaco.languages.CompletionItemKind.Module,
         10: monaco.languages.CompletionItemKind.Property,
         14: monaco.languages.CompletionItemKind.Keyword,
+    };
+
+    // LSP DiagnosticSeverity numbers (per the LSP spec) mapped to Monaco's own MarkerSeverity enum.
+    const markerSeverityByLspSeverity: Record<number, number> = {
+        1: monaco.MarkerSeverity.Error,
+        2: monaco.MarkerSeverity.Warning,
+        3: monaco.MarkerSeverity.Info,
+        4: monaco.MarkerSeverity.Hint,
     };
 
     let nextId = 0;
@@ -236,6 +251,27 @@ export async function attachLanguageServer(
                 ?.resolve(message.error ? null : message.result);
             pending.delete(message.id);
         }
+
+        if (message.method === 'textDocument/publishDiagnostics') {
+            const { diagnostics } = message.params as {
+                diagnostics: LspDiagnostic[];
+            };
+
+            monaco.editor.setModelMarkers(
+                model,
+                'intelephense',
+                diagnostics.map((diagnostic) => ({
+                    ...toMonacoRange(diagnostic.range, {
+                        lineNumber: 1,
+                        column: 1,
+                    }),
+                    severity:
+                        markerSeverityByLspSeverity[diagnostic.severity ?? 1] ??
+                        monaco.MarkerSeverity.Error,
+                    message: diagnostic.message,
+                })),
+            );
+        }
     });
 
     socket.addEventListener('close', () =>
@@ -297,6 +333,7 @@ export async function attachLanguageServer(
                         documentationFormat: ['plaintext'],
                     },
                 },
+                publishDiagnostics: {},
             },
         },
     });
@@ -468,6 +505,7 @@ export async function attachLanguageServer(
             completionProvider.dispose();
             hoverProvider.dispose();
             signatureHelpProvider.dispose();
+            monaco.editor.setModelMarkers(model, 'intelephense', []);
             rejectPendingRequests(
                 new Error('The language server was disposed.'),
             );

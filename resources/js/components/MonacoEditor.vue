@@ -94,7 +94,12 @@ onMounted(() => {
 
     watch(theme, () => monaco.editor.setTheme(monacoThemeName()));
 
-    attachLanguageServer(monaco, props.project, props.initialValue)
+    attachLanguageServer(
+        monaco,
+        props.project,
+        props.initialValue,
+        editor.getModel()!,
+    )
         .then((handle) => {
             if (unmounted) {
                 handle.dispose();

@@ -69,7 +69,13 @@ class FakeWebSocket {
     }
 }
 
+const model = {} as Monaco.editor.ITextModel;
+
 const monaco = {
+    editor: {
+        setModelMarkers: vi.fn(),
+    },
+    MarkerSeverity: { Hint: 1, Info: 2, Warning: 4, Error: 8 },
     languages: {
         CompletionItemKind: {
             Text: 18,
@@ -91,6 +97,7 @@ const monaco = {
 
 beforeEach(() => {
     sockets.length = 0;
+    vi.mocked(monaco.editor.setModelMarkers).mockClear();
     vi.stubGlobal('WebSocket', FakeWebSocket);
     vi.stubGlobal(
         'fetch',
@@ -116,7 +123,12 @@ async function connectAndHandshake(): Promise<FakeWebSocket> {
 }
 
 it('requests a port for the project and opens a WebSocket to it', async () => {
-    const attaching = attachLanguageServer(monaco, 'customer-portal', '<?php');
+    const attaching = attachLanguageServer(
+        monaco,
+        'customer-portal',
+        '<?php',
+        model,
+    );
     const socket = await connectAndHandshake();
 
     await attaching;
@@ -133,6 +145,7 @@ it('sends the initial document content once the connection is ready', async () =
         monaco,
         'customer-portal',
         '<?php echo 1;',
+        model,
     );
     const socket = await connectAndHandshake();
     await attaching;
@@ -147,7 +160,12 @@ it('sends the initial document content once the connection is ready', async () =
 });
 
 it('closes the socket and disposes the registered providers on dispose', async () => {
-    const attaching = attachLanguageServer(monaco, 'customer-portal', '<?php');
+    const attaching = attachLanguageServer(
+        monaco,
+        'customer-portal',
+        '<?php',
+        model,
+    );
     const socket = await connectAndHandshake();
     const handle = await attaching;
 
@@ -157,7 +175,12 @@ it('closes the socket and disposes the registered providers on dispose', async (
 });
 
 it('marks the completion list incomplete when intelephense does, so Monaco re-queries on the next keystroke', async () => {
-    const attaching = attachLanguageServer(monaco, 'customer-portal', '<?php');
+    const attaching = attachLanguageServer(
+        monaco,
+        'customer-portal',
+        '<?php',
+        model,
+    );
     const socket = await connectAndHandshake();
     await attaching;
 
@@ -199,7 +222,7 @@ it('rejects when the port endpoint responds with an error status', async () => {
     );
 
     await expect(
-        attachLanguageServer(monaco, 'customer-portal', '<?php'),
+        attachLanguageServer(monaco, 'customer-portal', '<?php', model),
     ).rejects.toThrow('Unable to start the language server (500).');
 });
 
@@ -210,12 +233,17 @@ it('rejects when the port endpoint response has no numeric port', async () => {
     );
 
     await expect(
-        attachLanguageServer(monaco, 'customer-portal', '<?php'),
+        attachLanguageServer(monaco, 'customer-portal', '<?php', model),
     ).rejects.toThrow('The language server did not report a port.');
 });
 
 it('rejects when the websocket errors before the connection opens', async () => {
-    const attaching = attachLanguageServer(monaco, 'customer-portal', '<?php');
+    const attaching = attachLanguageServer(
+        monaco,
+        'customer-portal',
+        '<?php',
+        model,
+    );
     await vi.waitFor(() => expect(sockets).toHaveLength(1));
 
     sockets[0]!.error();
@@ -226,7 +254,12 @@ it('rejects when the websocket errors before the connection opens', async () => 
 });
 
 it('rejects a pending request instead of leaving it stuck forever when the connection closes', async () => {
-    const attaching = attachLanguageServer(monaco, 'customer-portal', '<?php');
+    const attaching = attachLanguageServer(
+        monaco,
+        'customer-portal',
+        '<?php',
+        model,
+    );
     const socket = await connectAndHandshake();
     const handle = await attaching;
 
@@ -248,7 +281,12 @@ it('rejects a pending request instead of leaving it stuck forever when the conne
 });
 
 it('rejects pending requests immediately on dispose instead of waiting for the socket to close', async () => {
-    const attaching = attachLanguageServer(monaco, 'customer-portal', '<?php');
+    const attaching = attachLanguageServer(
+        monaco,
+        'customer-portal',
+        '<?php',
+        model,
+    );
     const socket = await connectAndHandshake();
     const handle = await attaching;
 
@@ -268,7 +306,12 @@ it('rejects pending requests immediately on dispose instead of waiting for the s
 });
 
 it('maps a completion item into the shape Monaco expects, including snippet insertion and an auto-import edit', async () => {
-    const attaching = attachLanguageServer(monaco, 'customer-portal', '<?php');
+    const attaching = attachLanguageServer(
+        monaco,
+        'customer-portal',
+        '<?php',
+        model,
+    );
     const socket = await connectAndHandshake();
     await attaching;
 
@@ -354,7 +397,12 @@ it('maps a completion item into the shape Monaco expects, including snippet inse
 });
 
 it('resolves a completion item with the server-provided documentation and import edits', async () => {
-    const attaching = attachLanguageServer(monaco, 'customer-portal', '<?php');
+    const attaching = attachLanguageServer(
+        monaco,
+        'customer-portal',
+        '<?php',
+        model,
+    );
     const socket = await connectAndHandshake();
     await attaching;
 
@@ -439,7 +487,12 @@ it('resolves a completion item with the server-provided documentation and import
 });
 
 it('returns the hover contents reported by the language server', async () => {
-    const attaching = attachLanguageServer(monaco, 'customer-portal', '<?php');
+    const attaching = attachLanguageServer(
+        monaco,
+        'customer-portal',
+        '<?php',
+        model,
+    );
     const socket = await connectAndHandshake();
     await attaching;
 
@@ -475,7 +528,12 @@ it('returns the hover contents reported by the language server', async () => {
 });
 
 it('returns no hover when the language server has nothing to show', async () => {
-    const attaching = attachLanguageServer(monaco, 'customer-portal', '<?php');
+    const attaching = attachLanguageServer(
+        monaco,
+        'customer-portal',
+        '<?php',
+        model,
+    );
     const socket = await connectAndHandshake();
     await attaching;
 
@@ -505,7 +563,12 @@ it('returns no hover when the language server has nothing to show', async () => 
 });
 
 it('returns the active signature and parameter reported by the language server', async () => {
-    const attaching = attachLanguageServer(monaco, 'customer-portal', '<?php');
+    const attaching = attachLanguageServer(
+        monaco,
+        'customer-portal',
+        '<?php',
+        model,
+    );
     const socket = await connectAndHandshake();
     await attaching;
 
@@ -560,7 +623,12 @@ it('returns the active signature and parameter reported by the language server',
 });
 
 it('returns no signature help when the language server has no matching signature', async () => {
-    const attaching = attachLanguageServer(monaco, 'customer-portal', '<?php');
+    const attaching = attachLanguageServer(
+        monaco,
+        'customer-portal',
+        '<?php',
+        model,
+    );
     const socket = await connectAndHandshake();
     await attaching;
 
@@ -595,7 +663,12 @@ it('returns no signature help when the language server has no matching signature
 });
 
 it('rejects a request that times out waiting for a response', async () => {
-    const attaching = attachLanguageServer(monaco, 'customer-portal', '<?php');
+    const attaching = attachLanguageServer(
+        monaco,
+        'customer-portal',
+        '<?php',
+        model,
+    );
     await connectAndHandshake();
     await attaching;
 
@@ -615,4 +688,124 @@ it('rejects a request that times out waiting for a response', async () => {
     await vi.advanceTimersByTimeAsync(10_000);
     await assertion;
     vi.useRealTimers();
+});
+
+it('declares support for diagnostics when initializing', async () => {
+    const attaching = attachLanguageServer(
+        monaco,
+        'customer-portal',
+        '<?php',
+        model,
+    );
+    const socket = await connectAndHandshake();
+    await attaching;
+
+    const initialize = JSON.parse(socket.sent[0]!) as {
+        params: {
+            capabilities: {
+                textDocument: { publishDiagnostics?: unknown };
+            };
+        };
+    };
+
+    expect(
+        initialize.params.capabilities.textDocument.publishDiagnostics,
+    ).toEqual({});
+});
+
+it('applies diagnostics from the language server as Monaco markers', async () => {
+    const attaching = attachLanguageServer(
+        monaco,
+        'customer-portal',
+        '<?php',
+        model,
+    );
+    const socket = await connectAndHandshake();
+    await attaching;
+
+    socket.receive({
+        jsonrpc: '2.0',
+        method: 'textDocument/publishDiagnostics',
+        params: {
+            uri: 'file:///tinkerbench-snippet.php',
+            diagnostics: [
+                {
+                    range: {
+                        start: { line: 0, character: 5 },
+                        end: { line: 0, character: 10 },
+                    },
+                    severity: 2,
+                    message: "Undefined method 'wehre'.",
+                },
+            ],
+        },
+    });
+
+    expect(monaco.editor.setModelMarkers).toHaveBeenCalledWith(
+        model,
+        'intelephense',
+        [
+            {
+                startLineNumber: 1,
+                startColumn: 6,
+                endLineNumber: 1,
+                endColumn: 11,
+                severity: monaco.MarkerSeverity.Warning,
+                message: "Undefined method 'wehre'.",
+            },
+        ],
+    );
+});
+
+it('defaults a diagnostic with no reported severity to an error marker', async () => {
+    const attaching = attachLanguageServer(
+        monaco,
+        'customer-portal',
+        '<?php',
+        model,
+    );
+    const socket = await connectAndHandshake();
+    await attaching;
+
+    socket.receive({
+        jsonrpc: '2.0',
+        method: 'textDocument/publishDiagnostics',
+        params: {
+            uri: 'file:///tinkerbench-snippet.php',
+            diagnostics: [
+                {
+                    range: {
+                        start: { line: 0, character: 0 },
+                        end: { line: 0, character: 1 },
+                    },
+                    message: 'Syntax error.',
+                },
+            ],
+        },
+    });
+
+    expect(monaco.editor.setModelMarkers).toHaveBeenCalledWith(
+        model,
+        'intelephense',
+        [expect.objectContaining({ severity: monaco.MarkerSeverity.Error })],
+    );
+});
+
+it('clears markers when disposed', async () => {
+    const attaching = attachLanguageServer(
+        monaco,
+        'customer-portal',
+        '<?php',
+        model,
+    );
+    await connectAndHandshake();
+    const handle = await attaching;
+
+    handle.dispose();
+
+    expect(monaco.editor.setModelMarkers).toHaveBeenCalledWith(
+        model,
+        'intelephense',
+        [],
+    );
 });

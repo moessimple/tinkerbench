@@ -34,10 +34,12 @@ vi.mock('@/lib/languageServer', () => ({
 
 const onDidChangeModelContent = vi.fn();
 const addAction = vi.fn();
+const model = {};
 const editor = {
     addAction,
     dispose: vi.fn(),
     focus: vi.fn(),
+    getModel: vi.fn(() => model),
     getValue: vi.fn(() => '<?php echo "changed";'),
     layout: vi.fn(),
     onDidChangeModelContent,
@@ -181,6 +183,7 @@ it('attaches the language server for the current project', () => {
         monaco,
         'my-project',
         '<?php echo "initial";',
+        model,
     );
 });
 
