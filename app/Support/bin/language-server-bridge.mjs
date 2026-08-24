@@ -6,6 +6,15 @@ import { toSocket } from 'vscode-ws-jsonrpc';
 import { createServerProcess, createWebSocketConnection, forward } from 'vscode-ws-jsonrpc/server';
 import { WebSocketServer } from 'ws';
 
+// The parent PHP process (Process::options(['create_new_console' => true])) stops reading this
+// process's own stdout/stderr once it has the reported port, and closes its read end of those
+// pipes once its Process object is garbage collected shortly after. From that point on, this is
+// a detached process with nothing left reading its stdio at all, so a write to either (e.g.
+// createServerProcess()'s own `${serverName} Server: ...` stderr relay, further down) hits a
+// closed pipe (EPIPE) and would otherwise crash the whole bridge as an uncaught exception.
+process.stdout.on('error', () => {});
+process.stderr.on('error', () => {});
+
 const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 
 // Safari (macOS 15+) blocks a plain ws:// connection from an https:// page as mixed content, even to
