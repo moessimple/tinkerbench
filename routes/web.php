@@ -9,6 +9,7 @@ use App\Http\Controllers\ListSnippetsController;
 use App\Http\Controllers\OpenSnippetController;
 use App\Http\Controllers\RunSnippetController;
 use App\Http\Controllers\StartLanguageServerController;
+use App\Http\Controllers\StartLaravelLanguageServerController;
 use App\Http\Controllers\UpdateSnippetContentController;
 use App\Http\Controllers\UpdateSnippetNameController;
 use App\Http\Middleware\EnsureKnownProject;
@@ -25,6 +26,9 @@ Route::post('api/projects/{project}/snippets/executions', RunSnippetController::
 Route::get('api/projects', ListProjectsController::class);
 
 Route::post('api/projects/{project}/language-server', StartLanguageServerController::class)
+    ->middleware(EnsureKnownProject::class);
+
+Route::post('api/projects/{project}/laravel-language-server', StartLaravelLanguageServerController::class)
     ->middleware(EnsureKnownProject::class);
 
 Route::prefix('api/projects/{project}/snippets')->middleware(EnsureKnownProject::class)->group(function (): void {
