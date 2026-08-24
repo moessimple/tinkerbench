@@ -25,6 +25,12 @@ class StartLaravelLanguageServerAction
         // binary is required.
         $phpBinary = $this->herd->phpBinary($this->herd->currentProject());
 
-        return $this->bridge->start($projectPath, $phpBinary);
+        // Separately, laravel-lsp needs the *target* project's own PHP to run artisan commands
+        // against it (e.g. resolving real config values) - resolved explicitly here rather than
+        // left to laravel-lsp's own `herd which-php` auto-detection, which fails the same way
+        // under this nested spawn chain.
+        $targetPhpBinary = $this->herd->phpBinary($project);
+
+        return $this->bridge->start($projectPath, $phpBinary, $targetPhpBinary);
     }
 }

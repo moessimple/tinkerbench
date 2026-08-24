@@ -12,9 +12,10 @@ it('starts the laravel lsp bridge for the given project', function (): void {
         $mock->shouldReceive('projectPath')->once()->with('other-project')->andReturn('/path/to/other-project');
         $mock->shouldReceive('currentProject')->once()->andReturn('tinkerbench');
         $mock->shouldReceive('phpBinary')->once()->with('tinkerbench')->andReturn('/path/to/tinkerbench/php');
+        $mock->shouldReceive('phpBinary')->once()->with('other-project')->andReturn('/path/to/other-project/php');
     });
     $this->mock(LaravelLspBridge::class, function (MockInterface $mock): void {
-        $mock->shouldReceive('start')->once()->with('/path/to/other-project', '/path/to/tinkerbench/php')->andReturn(54213);
+        $mock->shouldReceive('start')->once()->with('/path/to/other-project', '/path/to/tinkerbench/php', '/path/to/other-project/php')->andReturn(54213);
     });
 
     $port = resolve(StartLaravelLanguageServerAction::class)->execute('other-project');
