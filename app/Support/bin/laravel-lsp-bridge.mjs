@@ -3,12 +3,12 @@ import { fileURLToPath } from 'node:url';
 import { runBridge } from './language-server-bridge.mjs';
 
 const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
-const LARAVEL_LSP_BIN = path.join(PROJECT_ROOT, 'vendor/bin/laravel-lsp');
+const LARAVEL_LSP_SCRIPT = path.join(PROJECT_ROOT, 'vendor/bin/laravel-lsp');
 
-const [, , projectPath] = process.argv;
+const [, , projectPath, phpBinary] = process.argv;
 
-if (!projectPath) {
-    console.error('Usage: laravel-lsp-bridge.mjs <projectPath>');
+if (!projectPath || !phpBinary) {
+    console.error('Usage: laravel-lsp-bridge.mjs <projectPath> <phpBinary>');
     process.exit(1);
 }
 
@@ -27,7 +27,7 @@ function rewriteToTargetProject(message) {
 
 runBridge({
     serverName: 'laravel-lsp',
-    spawnBin: LARAVEL_LSP_BIN,
-    spawnArgs: [],
+    spawnBin: phpBinary,
+    spawnArgs: [LARAVEL_LSP_SCRIPT],
     rewriteMessage: rewriteToTargetProject,
 });

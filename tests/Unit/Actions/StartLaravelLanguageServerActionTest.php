@@ -10,9 +10,11 @@ use Mockery\MockInterface;
 it('starts the laravel lsp bridge for the given project', function (): void {
     $this->mock(Herd::class, function (MockInterface $mock): void {
         $mock->shouldReceive('projectPath')->once()->with('other-project')->andReturn('/path/to/other-project');
+        $mock->shouldReceive('currentProject')->once()->andReturn('tinkerbench');
+        $mock->shouldReceive('phpBinary')->once()->with('tinkerbench')->andReturn('/path/to/tinkerbench/php');
     });
     $this->mock(LaravelLspBridge::class, function (MockInterface $mock): void {
-        $mock->shouldReceive('start')->once()->with('/path/to/other-project')->andReturn(54213);
+        $mock->shouldReceive('start')->once()->with('/path/to/other-project', '/path/to/tinkerbench/php')->andReturn(54213);
     });
 
     $port = resolve(StartLaravelLanguageServerAction::class)->execute('other-project');

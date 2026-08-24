@@ -11,7 +11,7 @@ class LaravelLspBridge
 {
     private const int START_TIMEOUT_SECONDS = 60;
 
-    public function start(string $projectPath): int
+    public function start(string $projectPath, string $phpBinary): int
     {
         // This request blocks waiting on the bridge process below, bounded by Process's own
         // timeout, so PHP's own max_execution_time is lifted past that same bound, with headroom
@@ -25,6 +25,7 @@ class LaravelLspBridge
             'node',
             base_path('app/Support/bin/laravel-lsp-bridge.mjs'),
             $projectPath,
+            $phpBinary,
         ]);
 
         $port = null;
