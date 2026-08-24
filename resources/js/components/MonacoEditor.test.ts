@@ -20,14 +20,19 @@ vi.mock('@/lib/monacoEditorWorker', () => ({
     createEditorWorker: vi.fn(),
 }));
 
-const languageServerHandle = {
+const intelephenseHandle = {
+    dispose: vi.fn(),
+    notifyContentChanged: vi.fn(),
+};
+const laravelLspHandle = {
     dispose: vi.fn(),
     notifyContentChanged: vi.fn(),
 };
 
 // attachLanguageServer has its own test (languageServer.test.ts) proving the LSP handshake
 // and provider behavior; replaced here so this test only proves MonacoEditor.vue calls it
-// with the right arguments and reacts correctly to its resolved handle.
+// with the right arguments and reacts correctly to its resolved handle. Resolves per call
+// based on the config's ownerKey, since MonacoEditor.vue now calls it once per server.
 vi.mock('@/lib/languageServer', () => ({
     attachLanguageServer: vi.fn(),
 }));
@@ -65,14 +70,20 @@ beforeEach(() => {
     editor.getValue.mockClear();
     editor.layout.mockClear();
     onDidChangeModelContent.mockClear();
-    languageServerHandle.dispose.mockClear();
-    languageServerHandle.notifyContentChanged.mockClear();
+    intelephenseHandle.dispose.mockClear();
+    intelephenseHandle.notifyContentChanged.mockClear();
+    laravelLspHandle.dispose.mockClear();
+    laravelLspHandle.notifyContentChanged.mockClear();
     vi.mocked(monaco.editor.create).mockClear();
     vi.mocked(monaco.editor.defineTheme).mockClear();
     vi.mocked(monaco.editor.setTheme).mockClear();
     vi.mocked(attachLanguageServer)
         .mockReset()
-        .mockResolvedValue(languageServerHandle);
+        .mockImplementation(async (_monaco, config) =>
+            config.ownerKey === 'laravel-lsp'
+                ? laravelLspHandle
+                : intelephenseHandle,
+        );
 });
 
 function actionRun(id: string): () => void {
@@ -174,55 +185,87 @@ it('emits run when the Ctrl/Cmd+Enter action runs', () => {
     );
 });
 
-it('attaches the language server for the current project', () => {
+async function attachedHandles(): Promise<void> {
+    await Promise.all(
+        vi
+            .mocked(attachLanguageServer)
+            .mock.results.map((result) => result.value.catch(() => undefined)),
+    );
+}
+
+it('attaches intelephense for the current project', () => {
     render(MonacoEditor, {
         props: { initialValue: '<?php echo "initial";', project: 'my-project' },
     });
 
     expect(attachLanguageServer).toHaveBeenCalledWith(
         monaco,
-        'my-project',
+        {
+            requestPortUrl: '/api/projects/my-project/language-server',
+            ownerKey: 'intelephense',
+        },
         '<?php echo "initial";',
         model,
     );
 });
 
-it('forwards content changes to the language server once attached', async () => {
+it('attaches laravel-lsp for the current project', () => {
     render(MonacoEditor, {
         props: { initialValue: '<?php echo "initial";', project: 'my-project' },
     });
 
-    await vi.mocked(attachLanguageServer).mock.results[0]?.value;
+    expect(attachLanguageServer).toHaveBeenCalledWith(
+        monaco,
+        {
+            requestPortUrl: '/api/projects/my-project/laravel-language-server',
+            ownerKey: 'laravel-lsp',
+        },
+        '<?php echo "initial";',
+        model,
+    );
+});
+
+it('forwards content changes to both language servers once attached', async () => {
+    render(MonacoEditor, {
+        props: { initialValue: '<?php echo "initial";', project: 'my-project' },
+    });
+
+    await attachedHandles();
     onDidChangeModelContent.mock.calls[0]?.[0]();
 
-    expect(languageServerHandle.notifyContentChanged).toHaveBeenCalledWith(
+    expect(intelephenseHandle.notifyContentChanged).toHaveBeenCalledWith(
+        '<?php echo "changed";',
+    );
+    expect(laravelLspHandle.notifyContentChanged).toHaveBeenCalledWith(
         '<?php echo "changed";',
     );
 });
 
-it('disposes the language server once attached and the editor unmounts', async () => {
+it('disposes both language servers once attached and the editor unmounts', async () => {
     const rendered = render(MonacoEditor, {
         props: { initialValue: '<?php echo "initial";', project: 'my-project' },
     });
 
-    await vi.mocked(attachLanguageServer).mock.results[0]?.value;
+    await attachedHandles();
     rendered.unmount();
 
-    expect(languageServerHandle.dispose).toHaveBeenCalledOnce();
+    expect(intelephenseHandle.dispose).toHaveBeenCalledOnce();
+    expect(laravelLspHandle.dispose).toHaveBeenCalledOnce();
 });
 
-it('disposes the language server immediately if it resolves after the editor already unmounted', async () => {
+it('disposes a language server immediately if it resolves after the editor already unmounted', async () => {
     const rendered = render(MonacoEditor, {
         props: { initialValue: '<?php echo "initial";', project: 'my-project' },
     });
 
     rendered.unmount();
-    await vi.mocked(attachLanguageServer).mock.results[0]?.value;
+    await attachedHandles();
 
-    expect(languageServerHandle.dispose).toHaveBeenCalledOnce();
+    expect(intelephenseHandle.dispose).toHaveBeenCalledOnce();
+    expect(laravelLspHandle.dispose).toHaveBeenCalledOnce();
 });
 
-it('keeps the editor usable when the language server fails to attach', async () => {
+it('keeps the editor usable when both language servers fail to attach', async () => {
     vi.mocked(attachLanguageServer)
         .mockReset()
         .mockRejectedValue(new Error('boom'));
@@ -231,10 +274,31 @@ it('keeps the editor usable when the language server fails to attach', async () 
         props: { initialValue: '<?php echo "initial";', project: 'my-project' },
     });
 
-    await vi
-        .mocked(attachLanguageServer)
-        .mock.results[0]?.value.catch(() => undefined);
+    await attachedHandles();
     onDidChangeModelContent.mock.calls[0]?.[0]();
 
     expect(rendered.emitted().change).toEqual([['<?php echo "changed";']]);
+});
+
+it('still attaches intelephense when laravel-lsp fails to attach', async () => {
+    vi.mocked(attachLanguageServer)
+        .mockReset()
+        .mockImplementation(async (_monaco, config) => {
+            if (config.ownerKey === 'laravel-lsp') {
+                throw new Error('laravel-lsp unavailable');
+            }
+
+            return intelephenseHandle;
+        });
+
+    render(MonacoEditor, {
+        props: { initialValue: '<?php echo "initial";', project: 'my-project' },
+    });
+
+    await attachedHandles();
+    onDidChangeModelContent.mock.calls[0]?.[0]();
+
+    expect(intelephenseHandle.notifyContentChanged).toHaveBeenCalledWith(
+        '<?php echo "changed";',
+    );
 });

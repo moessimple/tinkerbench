@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import * as monaco from 'monaco-editor';
 import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue';
+import StartLanguageServerController from '@/actions/App/Http/Controllers/StartLanguageServerController';
+import StartLaravelLanguageServerController from '@/actions/App/Http/Controllers/StartLaravelLanguageServerController';
 import { useTheme } from '@/composables/useTheme';
 import { attachLanguageServer } from '@/lib/languageServer';
 import type { LanguageServerHandle } from '@/lib/languageServer';
@@ -15,7 +17,8 @@ const emit = defineEmits<{
 const editorElement = useTemplateRef('editorElement');
 const { theme } = useTheme();
 let editor: monaco.editor.IStandaloneCodeEditor | null = null;
-let languageServer: LanguageServerHandle | null = null;
+let intelephenseServer: LanguageServerHandle | null = null;
+let laravelLspServer: LanguageServerHandle | null = null;
 let unmounted = false;
 
 function monacoThemeName(): string {
@@ -82,7 +85,8 @@ onMounted(() => {
         const value = editor?.getValue() ?? '';
 
         emit('change', value);
-        languageServer?.notifyContentChanged(value);
+        intelephenseServer?.notifyContentChanged(value);
+        laravelLspServer?.notifyContentChanged(value);
     });
     editor.addAction({
         id: 'tinkerbench.run',
@@ -94,9 +98,15 @@ onMounted(() => {
 
     watch(theme, () => monaco.editor.setTheme(monacoThemeName()));
 
+    // Each language server attaches independently: one failing to start (e.g. a machine
+    // without laravel-lsp's binary in a broken vendor/ install) doesn't stop the other from
+    // attaching, and the editor itself remains fully usable even if both fail.
     attachLanguageServer(
         monaco,
-        props.project,
+        {
+            requestPortUrl: StartLanguageServerController.url(props.project),
+            ownerKey: 'intelephense',
+        },
         props.initialValue,
         editor.getModel()!,
     )
@@ -107,17 +117,38 @@ onMounted(() => {
                 return;
             }
 
-            languageServer = handle;
+            intelephenseServer = handle;
         })
-        // The language server is optional: PHP autocompletion/hover/signature help stay off,
-        // but the editor itself remains fully usable without it.
+        .catch(() => undefined);
+
+    attachLanguageServer(
+        monaco,
+        {
+            requestPortUrl: StartLaravelLanguageServerController.url(
+                props.project,
+            ),
+            ownerKey: 'laravel-lsp',
+        },
+        props.initialValue,
+        editor.getModel()!,
+    )
+        .then((handle) => {
+            if (unmounted) {
+                handle.dispose();
+
+                return;
+            }
+
+            laravelLspServer = handle;
+        })
         .catch(() => undefined);
 });
 
 onBeforeUnmount(() => {
     unmounted = true;
     editor?.dispose();
-    languageServer?.dispose();
+    intelephenseServer?.dispose();
+    laravelLspServer?.dispose();
 });
 </script>
 

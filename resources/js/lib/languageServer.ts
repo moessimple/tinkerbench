@@ -1,5 +1,4 @@
 import type * as Monaco from 'monaco-editor';
-import StartLanguageServerController from '@/actions/App/Http/Controllers/StartLanguageServerController';
 import { xsrfHeader } from '@/lib/csrf';
 
 const DOCUMENT_URI = 'file:///tinkerbench-snippet.php';
@@ -78,13 +77,18 @@ interface MonacoRange {
     startLineNumber: number;
 }
 
+export interface LanguageServerConfig {
+    ownerKey: string;
+    requestPortUrl: string;
+}
+
 export interface LanguageServerHandle {
     dispose(): void;
     notifyContentChanged(content: string): void;
 }
 
-async function requestPort(project: string): Promise<number> {
-    const response = await fetch(StartLanguageServerController.url(project), {
+async function requestPort(requestPortUrl: string): Promise<number> {
+    const response = await fetch(requestPortUrl, {
         method: 'POST',
         headers: xsrfHeader(),
     });
@@ -125,6 +129,21 @@ function toPlainText(
     return content.value;
 }
 
+// Both LSP servers send markdown-formatted documentation (backtick code spans, links) regardless
+// of the plaintext-only documentationFormat this client declares in its capabilities - unlike
+// Hover.contents, which Monaco always renders as markdown by construction, CompletionItem and
+// SignatureInformation's `documentation` field is `string | IMarkdownString`: a bare string
+// renders as literal, unrendered text, so the markdown syntax those servers send would otherwise
+// show up as-is (backticks, brackets) instead of being rendered.
+function toMarkdown(
+    content:
+        LspMarkupContent | LspMarkupContent[] | string | string[] | undefined,
+): { value: string } | undefined {
+    const text = toPlainText(content);
+
+    return text === '' ? undefined : { value: text };
+}
+
 function toAdditionalTextEdits(
     edits: LspTextEdit[] | undefined,
 ): { range: MonacoRange; text: string }[] | undefined {
@@ -157,11 +176,11 @@ function toMonacoRange(
 
 export async function attachLanguageServer(
     monaco: typeof Monaco,
-    project: string,
+    config: LanguageServerConfig,
     initialContent: string,
     model: Monaco.editor.ITextModel,
 ): Promise<LanguageServerHandle> {
-    const port = await requestPort(project);
+    const port = await requestPort(config.requestPortUrl);
     // Safari (macOS 15+) blocks a plain ws:// connection from an https:// page as mixed content, even to
     // 127.0.0.1, unlike Chrome/Firefox. wss:// against tinkerbench.test itself (not window.location.hostname,
     // browser tests may serve the page from a plain http://127.0.0.1 test server) matches the certificate the
@@ -259,7 +278,7 @@ export async function attachLanguageServer(
 
             monaco.editor.setModelMarkers(
                 model,
-                'intelephense',
+                config.ownerKey,
                 diagnostics.map((diagnostic) => ({
                     ...toMonacoRange(diagnostic.range, {
                         lineNumber: 1,
@@ -307,9 +326,10 @@ export async function attachLanguageServer(
 
     // Declares roughly what a real editor's LSP client (e.g. vscode-languageclient) already declares, so
     // intelephense behaves the same way here as it does in VS Code: snippet-formatted completions (parameter
-    // placeholders), resolve() for auto-import edits it otherwise omits from the bulk list, plaintext docs
-    // (no markdown support wired up here, so asking for markdown would just leak raw ** and ` syntax).
-    await request('initialize', {
+    // placeholders), resolve() for auto-import edits it otherwise omits from the bulk list, and markdown docs
+    // (toMarkdown() renders them as such - both servers send markdown regardless of what's declared here, so
+    // this declares what's actually supported rather than what would just be a preference either server honors).
+    const initializeResult = (await request('initialize', {
         processId: null,
         rootUri: null,
         capabilities: {
@@ -317,7 +337,7 @@ export async function attachLanguageServer(
                 completion: {
                     completionItem: {
                         snippetSupport: true,
-                        documentationFormat: ['plaintext'],
+                        documentationFormat: ['markdown', 'plaintext'],
                         resolveSupport: {
                             properties: [
                                 'documentation',
@@ -327,16 +347,21 @@ export async function attachLanguageServer(
                         },
                     },
                 },
-                hover: { contentFormat: ['plaintext'] },
+                hover: { contentFormat: ['markdown', 'plaintext'] },
                 signatureHelp: {
                     signatureInformation: {
-                        documentationFormat: ['plaintext'],
+                        documentationFormat: ['markdown', 'plaintext'],
                     },
                 },
                 publishDiagnostics: {},
             },
         },
-    });
+    })) as {
+        capabilities?: {
+            completionProvider?: { triggerCharacters?: string[] };
+            signatureHelpProvider?: { triggerCharacters?: string[] };
+        };
+    } | null;
     notify('initialized', {});
     notify('textDocument/didOpen', {
         textDocument: {
@@ -353,7 +378,16 @@ export async function attachLanguageServer(
     const completionProvider = monaco.languages.registerCompletionItemProvider(
         'php',
         {
-            triggerCharacters: ['$', '>', ':'],
+            // Using the server's own declared trigger characters (rather than a value hardcoded
+            // for one server) matters once two servers share this document: intelephense and
+            // laravel-lsp trigger on different characters (e.g. laravel-lsp on the quote and the
+            // "." that separate config('app.name' into narrower and narrower keys), and Monaco
+            // only re-queries providers when the typed character is in this list - anything typed
+            // outside a provider's own list just keeps client-side-filtering an increasingly stale
+            // response instead of asking that provider again.
+            triggerCharacters:
+                initializeResult?.capabilities?.completionProvider
+                    ?.triggerCharacters ?? [],
             async provideCompletionItems(model, position) {
                 const result = (await request('textDocument/completion', {
                     textDocument: { uri: DOCUMENT_URI },
@@ -383,8 +417,7 @@ export async function attachLanguageServer(
                             kind:
                                 completionKindByLspKind[item.kind ?? 0] ??
                                 monaco.languages.CompletionItemKind.Text,
-                            documentation:
-                                toPlainText(item.documentation) || undefined,
+                            documentation: toMarkdown(item.documentation),
                             insertText:
                                 item.textEdit?.newText ??
                                 item.insertText ??
@@ -433,7 +466,7 @@ export async function attachLanguageServer(
                 return {
                     ...item,
                     documentation:
-                        toPlainText(resolved.documentation) ||
+                        toMarkdown(resolved.documentation) ??
                         item.documentation,
                     // additionalTextEdits is how intelephense inserts the matching `use` statement when you
                     // accept a completion for a class that isn't imported yet, same as it does in VS Code.
@@ -469,7 +502,12 @@ export async function attachLanguageServer(
 
     const signatureHelpProvider =
         monaco.languages.registerSignatureHelpProvider('php', {
-            signatureHelpTriggerCharacters: ['(', ','],
+            // Same reasoning as the completion provider's triggerCharacters above: laravel-lsp
+            // doesn't declare signatureHelpProvider at all (no signature help support), so this
+            // ends up empty for it rather than wastefully triggering a request it can't answer.
+            signatureHelpTriggerCharacters:
+                initializeResult?.capabilities?.signatureHelpProvider
+                    ?.triggerCharacters ?? [],
             async provideSignatureHelp(model, position) {
                 const result = (await request('textDocument/signatureHelp', {
                     textDocument: { uri: DOCUMENT_URI },
@@ -490,9 +528,7 @@ export async function attachLanguageServer(
                         activeParameter: result.activeParameter ?? 0,
                         signatures: result.signatures.map((signature) => ({
                             label: signature.label,
-                            documentation:
-                                toPlainText(signature.documentation) ||
-                                undefined,
+                            documentation: toMarkdown(signature.documentation),
                             parameters: signature.parameters ?? [],
                         })),
                     },
@@ -505,7 +541,7 @@ export async function attachLanguageServer(
             completionProvider.dispose();
             hoverProvider.dispose();
             signatureHelpProvider.dispose();
-            monaco.editor.setModelMarkers(model, 'intelephense', []);
+            monaco.editor.setModelMarkers(model, config.ownerKey, []);
             rejectPendingRequests(
                 new Error('The language server was disposed.'),
             );
