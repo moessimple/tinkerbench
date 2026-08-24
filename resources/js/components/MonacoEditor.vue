@@ -79,6 +79,7 @@ onMounted(() => {
         minimap: { enabled: false },
         wordWrap: 'on',
         padding: { top: 16, bottom: 16 },
+        fixedOverflowWidgets: true,
     });
 
     editor.onDidChangeModelContent(() => {
