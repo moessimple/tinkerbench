@@ -181,7 +181,10 @@ it('attaches the language server for the current project', () => {
 
     expect(attachLanguageServer).toHaveBeenCalledWith(
         monaco,
-        'my-project',
+        {
+            requestPortUrl: '/api/projects/my-project/language-server',
+            ownerKey: 'intelephense',
+        },
         '<?php echo "initial";',
         model,
     );

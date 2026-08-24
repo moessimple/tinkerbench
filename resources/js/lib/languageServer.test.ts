@@ -71,6 +71,11 @@ class FakeWebSocket {
 
 const model = {} as Monaco.editor.ITextModel;
 
+const intelephenseConfig = {
+    requestPortUrl: '/api/projects/customer-portal/language-server',
+    ownerKey: 'intelephense',
+};
+
 const monaco = {
     editor: {
         setModelMarkers: vi.fn(),
@@ -125,7 +130,7 @@ async function connectAndHandshake(): Promise<FakeWebSocket> {
 it('requests a port for the project and opens a WebSocket to it', async () => {
     const attaching = attachLanguageServer(
         monaco,
-        'customer-portal',
+        intelephenseConfig,
         '<?php',
         model,
     );
@@ -143,7 +148,7 @@ it('requests a port for the project and opens a WebSocket to it', async () => {
 it('sends the initial document content once the connection is ready', async () => {
     const attaching = attachLanguageServer(
         monaco,
-        'customer-portal',
+        intelephenseConfig,
         '<?php echo 1;',
         model,
     );
@@ -162,7 +167,7 @@ it('sends the initial document content once the connection is ready', async () =
 it('closes the socket and disposes the registered providers on dispose', async () => {
     const attaching = attachLanguageServer(
         monaco,
-        'customer-portal',
+        intelephenseConfig,
         '<?php',
         model,
     );
@@ -177,7 +182,7 @@ it('closes the socket and disposes the registered providers on dispose', async (
 it('marks the completion list incomplete when intelephense does, so Monaco re-queries on the next keystroke', async () => {
     const attaching = attachLanguageServer(
         monaco,
-        'customer-portal',
+        intelephenseConfig,
         '<?php',
         model,
     );
@@ -222,7 +227,7 @@ it('rejects when the port endpoint responds with an error status', async () => {
     );
 
     await expect(
-        attachLanguageServer(monaco, 'customer-portal', '<?php', model),
+        attachLanguageServer(monaco, intelephenseConfig, '<?php', model),
     ).rejects.toThrow('Unable to start the language server (500).');
 });
 
@@ -233,14 +238,14 @@ it('rejects when the port endpoint response has no numeric port', async () => {
     );
 
     await expect(
-        attachLanguageServer(monaco, 'customer-portal', '<?php', model),
+        attachLanguageServer(monaco, intelephenseConfig, '<?php', model),
     ).rejects.toThrow('The language server did not report a port.');
 });
 
 it('rejects when the websocket errors before the connection opens', async () => {
     const attaching = attachLanguageServer(
         monaco,
-        'customer-portal',
+        intelephenseConfig,
         '<?php',
         model,
     );
@@ -256,7 +261,7 @@ it('rejects when the websocket errors before the connection opens', async () => 
 it('rejects a pending request instead of leaving it stuck forever when the connection closes', async () => {
     const attaching = attachLanguageServer(
         monaco,
-        'customer-portal',
+        intelephenseConfig,
         '<?php',
         model,
     );
@@ -283,7 +288,7 @@ it('rejects a pending request instead of leaving it stuck forever when the conne
 it('rejects pending requests immediately on dispose instead of waiting for the socket to close', async () => {
     const attaching = attachLanguageServer(
         monaco,
-        'customer-portal',
+        intelephenseConfig,
         '<?php',
         model,
     );
@@ -308,7 +313,7 @@ it('rejects pending requests immediately on dispose instead of waiting for the s
 it('maps a completion item into the shape Monaco expects, including snippet insertion and an auto-import edit', async () => {
     const attaching = attachLanguageServer(
         monaco,
-        'customer-portal',
+        intelephenseConfig,
         '<?php',
         model,
     );
@@ -399,7 +404,7 @@ it('maps a completion item into the shape Monaco expects, including snippet inse
 it('resolves a completion item with the server-provided documentation and import edits', async () => {
     const attaching = attachLanguageServer(
         monaco,
-        'customer-portal',
+        intelephenseConfig,
         '<?php',
         model,
     );
@@ -489,7 +494,7 @@ it('resolves a completion item with the server-provided documentation and import
 it('returns the hover contents reported by the language server', async () => {
     const attaching = attachLanguageServer(
         monaco,
-        'customer-portal',
+        intelephenseConfig,
         '<?php',
         model,
     );
@@ -530,7 +535,7 @@ it('returns the hover contents reported by the language server', async () => {
 it('returns no hover when the language server has nothing to show', async () => {
     const attaching = attachLanguageServer(
         monaco,
-        'customer-portal',
+        intelephenseConfig,
         '<?php',
         model,
     );
@@ -565,7 +570,7 @@ it('returns no hover when the language server has nothing to show', async () => 
 it('returns the active signature and parameter reported by the language server', async () => {
     const attaching = attachLanguageServer(
         monaco,
-        'customer-portal',
+        intelephenseConfig,
         '<?php',
         model,
     );
@@ -625,7 +630,7 @@ it('returns the active signature and parameter reported by the language server',
 it('returns no signature help when the language server has no matching signature', async () => {
     const attaching = attachLanguageServer(
         monaco,
-        'customer-portal',
+        intelephenseConfig,
         '<?php',
         model,
     );
@@ -665,7 +670,7 @@ it('returns no signature help when the language server has no matching signature
 it('rejects a request that times out waiting for a response', async () => {
     const attaching = attachLanguageServer(
         monaco,
-        'customer-portal',
+        intelephenseConfig,
         '<?php',
         model,
     );
@@ -693,7 +698,7 @@ it('rejects a request that times out waiting for a response', async () => {
 it('declares support for diagnostics when initializing', async () => {
     const attaching = attachLanguageServer(
         monaco,
-        'customer-portal',
+        intelephenseConfig,
         '<?php',
         model,
     );
@@ -716,7 +721,7 @@ it('declares support for diagnostics when initializing', async () => {
 it('applies diagnostics from the language server as Monaco markers', async () => {
     const attaching = attachLanguageServer(
         monaco,
-        'customer-portal',
+        intelephenseConfig,
         '<?php',
         model,
     );
@@ -760,7 +765,7 @@ it('applies diagnostics from the language server as Monaco markers', async () =>
 it('defaults a diagnostic with no reported severity to an error marker', async () => {
     const attaching = attachLanguageServer(
         monaco,
-        'customer-portal',
+        intelephenseConfig,
         '<?php',
         model,
     );
@@ -794,7 +799,7 @@ it('defaults a diagnostic with no reported severity to an error marker', async (
 it('clears markers when disposed', async () => {
     const attaching = attachLanguageServer(
         monaco,
-        'customer-portal',
+        intelephenseConfig,
         '<?php',
         model,
     );
@@ -808,4 +813,79 @@ it('clears markers when disposed', async () => {
         'intelephense',
         [],
     );
+});
+
+it('requests a port from the configured URL and applies diagnostics under the configured owner key', async () => {
+    const attaching = attachLanguageServer(
+        monaco,
+        {
+            requestPortUrl:
+                '/api/projects/customer-portal/laravel-language-server',
+            ownerKey: 'laravel-lsp',
+        },
+        '<?php',
+        model,
+    );
+    const socket = await connectAndHandshake();
+    await attaching;
+
+    expect(fetch).toHaveBeenCalledWith(
+        '/api/projects/customer-portal/laravel-language-server',
+        expect.objectContaining({ method: 'POST' }),
+    );
+
+    socket.receive({
+        jsonrpc: '2.0',
+        method: 'textDocument/publishDiagnostics',
+        params: {
+            uri: 'file:///tinkerbench-snippet.php',
+            diagnostics: [
+                {
+                    range: {
+                        start: { line: 0, character: 0 },
+                        end: { line: 0, character: 1 },
+                    },
+                    message: 'Route [missing.route] not defined.',
+                },
+            ],
+        },
+    });
+
+    expect(monaco.editor.setModelMarkers).toHaveBeenCalledWith(
+        model,
+        'laravel-lsp',
+        [
+            expect.objectContaining({
+                message: 'Route [missing.route] not defined.',
+            }),
+        ],
+    );
+});
+
+it('merges the configured initializationOptions into the initialize request', async () => {
+    const attaching = attachLanguageServer(
+        monaco,
+        {
+            requestPortUrl:
+                '/api/projects/customer-portal/laravel-language-server',
+            ownerKey: 'laravel-lsp',
+            initializationOptions: {
+                phpEnvironment: 'herd',
+                pestGenerateDocBlocks: false,
+            },
+        },
+        '<?php',
+        model,
+    );
+    const socket = await connectAndHandshake();
+    await attaching;
+
+    const initialize = JSON.parse(socket.sent[0]!) as {
+        params: { initializationOptions?: unknown };
+    };
+
+    expect(initialize.params.initializationOptions).toEqual({
+        phpEnvironment: 'herd',
+        pestGenerateDocBlocks: false,
+    });
 });

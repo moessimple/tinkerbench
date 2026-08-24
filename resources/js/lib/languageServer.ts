@@ -1,5 +1,4 @@
 import type * as Monaco from 'monaco-editor';
-import StartLanguageServerController from '@/actions/App/Http/Controllers/StartLanguageServerController';
 import { xsrfHeader } from '@/lib/csrf';
 
 const DOCUMENT_URI = 'file:///tinkerbench-snippet.php';
@@ -78,13 +77,19 @@ interface MonacoRange {
     startLineNumber: number;
 }
 
+export interface LanguageServerConfig {
+    initializationOptions?: Record<string, unknown>;
+    ownerKey: string;
+    requestPortUrl: string;
+}
+
 export interface LanguageServerHandle {
     dispose(): void;
     notifyContentChanged(content: string): void;
 }
 
-async function requestPort(project: string): Promise<number> {
-    const response = await fetch(StartLanguageServerController.url(project), {
+async function requestPort(requestPortUrl: string): Promise<number> {
+    const response = await fetch(requestPortUrl, {
         method: 'POST',
         headers: xsrfHeader(),
     });
@@ -157,11 +162,11 @@ function toMonacoRange(
 
 export async function attachLanguageServer(
     monaco: typeof Monaco,
-    project: string,
+    config: LanguageServerConfig,
     initialContent: string,
     model: Monaco.editor.ITextModel,
 ): Promise<LanguageServerHandle> {
-    const port = await requestPort(project);
+    const port = await requestPort(config.requestPortUrl);
     // Safari (macOS 15+) blocks a plain ws:// connection from an https:// page as mixed content, even to
     // 127.0.0.1, unlike Chrome/Firefox. wss:// against tinkerbench.test itself (not window.location.hostname,
     // browser tests may serve the page from a plain http://127.0.0.1 test server) matches the certificate the
@@ -259,7 +264,7 @@ export async function attachLanguageServer(
 
             monaco.editor.setModelMarkers(
                 model,
-                'intelephense',
+                config.ownerKey,
                 diagnostics.map((diagnostic) => ({
                     ...toMonacoRange(diagnostic.range, {
                         lineNumber: 1,
@@ -312,6 +317,7 @@ export async function attachLanguageServer(
     await request('initialize', {
         processId: null,
         rootUri: null,
+        initializationOptions: config.initializationOptions,
         capabilities: {
             textDocument: {
                 completion: {
@@ -505,7 +511,7 @@ export async function attachLanguageServer(
             completionProvider.dispose();
             hoverProvider.dispose();
             signatureHelpProvider.dispose();
-            monaco.editor.setModelMarkers(model, 'intelephense', []);
+            monaco.editor.setModelMarkers(model, config.ownerKey, []);
             rejectPendingRequests(
                 new Error('The language server was disposed.'),
             );

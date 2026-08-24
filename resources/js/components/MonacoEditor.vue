@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import * as monaco from 'monaco-editor';
 import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue';
+import StartLanguageServerController from '@/actions/App/Http/Controllers/StartLanguageServerController';
 import { useTheme } from '@/composables/useTheme';
 import { attachLanguageServer } from '@/lib/languageServer';
 import type { LanguageServerHandle } from '@/lib/languageServer';
@@ -96,7 +97,10 @@ onMounted(() => {
 
     attachLanguageServer(
         monaco,
-        props.project,
+        {
+            requestPortUrl: StartLanguageServerController.url(props.project),
+            ownerKey: 'intelephense',
+        },
         props.initialValue,
         editor.getModel()!,
     )
