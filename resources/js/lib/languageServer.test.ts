@@ -115,14 +115,20 @@ beforeEach(() => {
 
 afterEach(() => vi.unstubAllGlobals());
 
-async function connectAndHandshake(): Promise<FakeWebSocket> {
+async function connectAndHandshake(
+    initializeResult: unknown = {},
+): Promise<FakeWebSocket> {
     await vi.waitFor(() => expect(sockets).toHaveLength(1));
     const socket = sockets[0]!;
     socket.open();
 
     await vi.waitFor(() => expect(socket.sent).toHaveLength(1));
     const initialize = JSON.parse(socket.sent[0]!) as { id: number };
-    socket.receive({ jsonrpc: '2.0', id: initialize.id, result: {} });
+    socket.receive({
+        jsonrpc: '2.0',
+        id: initialize.id,
+        result: initializeResult,
+    });
 
     return socket;
 }
@@ -812,6 +818,52 @@ it('clears markers when disposed', async () => {
         model,
         'intelephense',
         [],
+    );
+});
+
+it("registers the completion provider with the server's own declared trigger characters", async () => {
+    const attaching = attachLanguageServer(
+        monaco,
+        intelephenseConfig,
+        '<?php',
+        model,
+    );
+    // A stale, hardcoded trigger-character list is exactly what caused this: typing "." after
+    // "app" inside config('app. never re-queried the server for narrowed keys, since "." wasn't
+    // in a list written for intelephense's own needs. A real LSP client always uses what the
+    // server itself declares in its initialize response instead.
+    await connectAndHandshake({
+        capabilities: {
+            completionProvider: { triggerCharacters: ['"', "'", '.', '|'] },
+        },
+    });
+    await attaching;
+
+    expect(
+        monaco.languages.registerCompletionItemProvider,
+    ).toHaveBeenCalledWith(
+        'php',
+        expect.objectContaining({ triggerCharacters: ['"', "'", '.', '|'] }),
+    );
+});
+
+it('registers the completion provider with no trigger characters when the server declares none', async () => {
+    const attaching = attachLanguageServer(
+        monaco,
+        intelephenseConfig,
+        '<?php',
+        model,
+    );
+    await connectAndHandshake({});
+    await attaching;
+
+    expect(
+        monaco.languages.registerCompletionItemProvider,
+    ).toHaveBeenCalledWith(
+        'php',
+        expect.objectContaining({
+            triggerCharacters: [],
+        }),
     );
 });
 

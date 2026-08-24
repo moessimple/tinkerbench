@@ -314,7 +314,7 @@ export async function attachLanguageServer(
     // intelephense behaves the same way here as it does in VS Code: snippet-formatted completions (parameter
     // placeholders), resolve() for auto-import edits it otherwise omits from the bulk list, plaintext docs
     // (no markdown support wired up here, so asking for markdown would just leak raw ** and ` syntax).
-    await request('initialize', {
+    const initializeResult = (await request('initialize', {
         processId: null,
         rootUri: null,
         initializationOptions: config.initializationOptions,
@@ -342,7 +342,11 @@ export async function attachLanguageServer(
                 publishDiagnostics: {},
             },
         },
-    });
+    })) as {
+        capabilities?: {
+            completionProvider?: { triggerCharacters?: string[] };
+        };
+    } | null;
     notify('initialized', {});
     notify('textDocument/didOpen', {
         textDocument: {
@@ -359,7 +363,16 @@ export async function attachLanguageServer(
     const completionProvider = monaco.languages.registerCompletionItemProvider(
         'php',
         {
-            triggerCharacters: ['$', '>', ':'],
+            // Using the server's own declared trigger characters (rather than a value hardcoded
+            // for one server) matters once two servers share this document: intelephense and
+            // laravel-lsp trigger on different characters (e.g. laravel-lsp on the quote and the
+            // "." that separate config('app.name' into narrower and narrower keys), and Monaco
+            // only re-queries providers when the typed character is in this list - anything typed
+            // outside a provider's own list just keeps client-side-filtering an increasingly stale
+            // response instead of asking that provider again.
+            triggerCharacters:
+                initializeResult?.capabilities?.completionProvider
+                    ?.triggerCharacters ?? [],
             async provideCompletionItems(model, position) {
                 const result = (await request('textDocument/completion', {
                     textDocument: { uri: DOCUMENT_URI },
