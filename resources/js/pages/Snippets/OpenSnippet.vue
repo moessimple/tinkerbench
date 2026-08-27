@@ -1,22 +1,15 @@
 <script setup lang="ts">
 import { Head, useHttp } from '@inertiajs/vue3';
-import {
-    computed,
-    nextTick,
-    onBeforeUnmount,
-    onMounted,
-    ref,
-    useTemplateRef,
-} from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
 import RunSnippetController from '@/actions/App/Http/Controllers/RunSnippetController';
 import UpdateSnippetContentController from '@/actions/App/Http/Controllers/UpdateSnippetContentController';
 import CommandPalette from '@/components/CommandPalette.vue';
-import DebugPanel from '@/components/DebugPanel.vue';
 import MonacoEditor from '@/components/MonacoEditor.vue';
+import OutputFeed from '@/components/OutputFeed.vue';
 import { useTheme } from '@/composables/useTheme';
 import { xsrfHeader } from '@/lib/csrf';
-import { detectOutput, executeScripts, highlightJson } from '@/lib/output';
-import type { OutputResult } from '@/lib/output';
+import { buildFeed } from '@/lib/feed';
+import type { FeedEntry } from '@/lib/feed';
 import { shortcuts } from '@/lib/shortcuts';
 import type { SnippetDebugPayload } from '@/types';
 
@@ -33,31 +26,32 @@ const pageTitle = computed(
     () => `${props.currentProject} / ${props.snippetName}`,
 );
 
-const lastResult = ref<OutputResult | null>(null);
+const rawOutput = ref('');
 const debug = ref<SnippetDebugPayload | null>(null);
-const activeTab = ref<'debug' | 'output'>('output');
 const errorMessage = ref('');
-const outputMode = ref<'raw' | 'rendered'>('raw');
 const isMaximized = ref(false);
-const outputEl = useTemplateRef('output');
+const showQueries = ref(true);
+const editorRef = useTemplateRef<{ revealLine: (line: number) => void }>(
+    'editor',
+);
 
 const { theme, toggleTheme } = useTheme();
 
-const outputText = computed(() => lastResult.value?.raw ?? '');
-const renderedJson = computed(() =>
-    lastResult.value?.type === 'json'
-        ? highlightJson(lastResult.value.pretty)
-        : '',
-);
-const showsFrame = computed(
-    () => outputMode.value === 'rendered' && lastResult.value?.type === 'html',
-);
-const showsMarkup = computed(
+const queryCount = computed(
     () =>
-        outputMode.value === 'rendered' &&
-        (lastResult.value?.type === 'dump' ||
-            lastResult.value?.type === 'json'),
+        debug.value?.items.filter((item) => item.kind === 'query').length ?? 0,
 );
+
+const feedEntries = computed<FeedEntry[]>(() => {
+    const entries = buildFeed(
+        debug.value ?? { items: [], duration_str: '', peak_memory_str: '' },
+        rawOutput.value,
+    );
+
+    return showQueries.value
+        ? entries
+        : entries.filter((entry) => entry.kind !== 'query');
+});
 
 const http = useHttp<
     { code: string },
@@ -138,30 +132,15 @@ onBeforeUnmount(() =>
     window.removeEventListener('keydown', onGlobalKeydown, { capture: true }),
 );
 
-async function executeDumpScripts(): Promise<void> {
-    await nextTick();
-
-    if (outputEl.value) {
-        executeScripts(outputEl.value);
-    }
-}
-
 function run(): void {
     errorMessage.value = '';
+    rawOutput.value = '';
     debug.value = null;
-    activeTab.value = 'output';
 
     http.post(RunSnippetController.url(props.currentProject), {
-        onSuccess: async (data) => {
-            lastResult.value = detectOutput(data.output);
+        onSuccess: (data) => {
+            rawOutput.value = data.output;
             debug.value = data.debug;
-
-            if (
-                outputMode.value === 'rendered' &&
-                lastResult.value.type === 'dump'
-            ) {
-                await executeDumpScripts();
-            }
         },
         onError: (errors) => {
             errorMessage.value = Object.values(errors).join(' ');
@@ -173,18 +152,13 @@ function run(): void {
 }
 
 function clearOutput(): void {
-    lastResult.value = null;
+    rawOutput.value = '';
     debug.value = null;
-    activeTab.value = 'output';
     errorMessage.value = '';
 }
 
-async function toggleOutputMode(): Promise<void> {
-    outputMode.value = outputMode.value === 'raw' ? 'rendered' : 'raw';
-
-    if (outputMode.value === 'rendered' && lastResult.value?.type === 'dump') {
-        await executeDumpScripts();
-    }
+function revealEditorLine(line: number): void {
+    editorRef.value?.revealLine(line);
 }
 
 function toggleMaximize(): void {
@@ -377,6 +351,7 @@ function toggleMaximize(): void {
                     </div>
                     <div class="min-h-0 min-w-0 flex-1">
                         <MonacoEditor
+                            ref="editor"
                             :initial-value="http.code"
                             :project="currentProject"
                             @change="onEditorChange"
@@ -387,104 +362,37 @@ function toggleMaximize(): void {
 
                 <div class="flex min-h-0 min-w-0 flex-2 flex-col">
                     <div
-                        role="tablist"
-                        class="flex shrink-0 border-b border-line"
+                        v-if="debug"
+                        class="flex shrink-0 items-center gap-4 border-b border-line px-4 py-2 font-mono text-xs text-muted"
                     >
+                        <span>{{ debug.duration_str }}</span>
+                        <span>{{ debug.peak_memory_str }}</span>
                         <button
                             type="button"
-                            role="tab"
-                            :aria-selected="activeTab === 'output'"
-                            class="px-3 py-2 font-mono text-xs font-semibold tracking-widest uppercase"
+                            :aria-pressed="showQueries"
+                            :aria-label="`${queryCount} queries`"
+                            class="ml-auto rounded px-2 py-0.5 tracking-widest uppercase"
                             :class="
-                                activeTab === 'output'
-                                    ? 'border-b-2 border-accent text-fg'
+                                showQueries
+                                    ? 'text-accent'
                                     : 'text-muted hover:text-fg'
                             "
-                            @click="activeTab = 'output'"
+                            @click="showQueries = !showQueries"
                         >
-                            Output
-                        </button>
-                        <button
-                            type="button"
-                            role="tab"
-                            :aria-selected="activeTab === 'debug'"
-                            class="px-3 py-2 font-mono text-xs font-semibold tracking-widest uppercase"
-                            :class="
-                                activeTab === 'debug'
-                                    ? 'border-b-2 border-accent text-fg'
-                                    : 'text-muted hover:text-fg'
-                            "
-                            @click="activeTab = 'debug'"
-                        >
-                            Debug
-                        </button>
-                        <button
-                            type="button"
-                            :title="
-                                outputMode === 'raw'
-                                    ? 'Show rendered output'
-                                    : 'Show raw output'
-                            "
-                            :aria-label="
-                                outputMode === 'raw'
-                                    ? 'Show rendered output'
-                                    : 'Show raw output'
-                            "
-                            :aria-pressed="outputMode === 'rendered'"
-                            class="ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded text-muted hover:bg-line/30 hover:text-fg"
-                            @click="toggleOutputMode"
-                        >
-                            <svg
-                                viewBox="0 0 16 16"
-                                width="16"
-                                height="16"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.5"
-                                stroke-linecap="round"
-                                aria-hidden="true"
-                            >
-                                <template v-if="outputMode === 'raw'">
-                                    <path
-                                        d="M1 8s2.7-4.5 7-4.4S15 8 15 8s-2.7 4.5-7 4.4S1 8 1 8Z"
-                                    />
-                                    <circle cx="8" cy="8" r="1.6" />
-                                </template>
-                                <path v-else d="M5 4 2 8l3 4M11 4l3 4-3 4" />
-                            </svg>
+                            {{ queryCount }} queries
                         </button>
                     </div>
                     <div
-                        v-show="activeTab === 'output' && !showsFrame"
-                        ref="output"
                         role="status"
                         aria-label="Snippet output"
                         aria-live="polite"
-                        class="min-h-0 flex-1 overflow-auto p-4 font-mono text-base leading-6.5 whitespace-pre-wrap [font-variant-ligatures:none]"
+                        class="min-h-0 flex-1 overflow-auto"
                     >
-                        <span
-                            v-if="showsMarkup"
-                            v-html="
-                                lastResult?.type === 'json'
-                                    ? renderedJson
-                                    : lastResult?.raw
-                            "
+                        <OutputFeed
+                            :items="feedEntries"
+                            @navigate="revealEditorLine"
                         />
-                        <template v-else>{{ outputText }}</template>
                     </div>
-                    <iframe
-                        v-show="activeTab === 'output' && showsFrame"
-                        class="min-h-0 flex-1 border-0 bg-white"
-                        sandbox="allow-scripts"
-                        title="Rendered HTML output"
-                        :srcdoc="
-                            lastResult?.type === 'html' ? lastResult.raw : ''
-                        "
-                    />
-                    <DebugPanel
-                        v-if="activeTab === 'debug'"
-                        :debug="debug ?? {}"
-                    />
                 </div>
             </div>
         </div>

@@ -1,7 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/vue';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { reactive, ref } from 'vue';
-import type * as OutputModule from '@/lib/output';
 import type { SnippetDebugPayload } from '@/types';
 
 let capturedPost: {
@@ -40,6 +39,8 @@ const httpState = reactive({
     },
 });
 
+const { revealLineSpy } = vi.hoisted(() => ({ revealLineSpy: vi.fn() }));
+
 // <Head> reads a headManager singleton that only exists once createInertiaApp() has run,
 // which never happens in a unit test; replace it with a fake that captures the title
 // instead. useHttp is replaced with a controllable fake so the test can trigger onSuccess
@@ -57,13 +58,14 @@ vi.mock('@inertiajs/vue3', () => ({
     },
 }));
 
-// MonacoEditor has its own test (MonacoEditor.test.ts) proving it renders the editor and
-// emits `change`/`run`; here it's replaced with a plain textarea plus a button so this test
-// can drive the same contract without loading real Monaco.
+// MonacoEditor has its own test (MonacoEditor.test.ts) proving it renders the editor,
+// emits `change`/`run`, and exposes `revealLine`; here it's replaced with a plain textarea
+// plus a button, and revealLine is a spy so this test can prove OpenSnippet.vue calls it.
 vi.mock('@/components/MonacoEditor.vue', () => ({
     default: {
         props: ['initialValue'],
         emits: ['change', 'run'],
+        methods: { revealLine: revealLineSpy },
         template: `
             <div>
                 <textarea aria-label="Snippet code" :value="initialValue" @input="$emit('change', $event.target.value)" />
@@ -83,13 +85,23 @@ vi.mock('@/components/CommandPalette.vue', () => ({
     },
 }));
 
-// DebugPanel has its own test (DebugPanel.test.ts) proving what it renders for a given
-// payload; replaced here so this test only proves OpenSnippet.vue wires the tab/data
-// through correctly, not DebugPanel's own rendering.
-vi.mock('@/components/DebugPanel.vue', () => ({
+// OutputFeed has its own test (OutputFeed.test.ts) proving per-kind card rendering and its
+// navigate re-emit; stubbed here to a shell that exposes each entry's kind (and an output
+// entry's text) plus a navigate trigger, so this test only proves OpenSnippet.vue's feed
+// assembly, the query filter, and the navigate wiring.
+vi.mock('@/components/OutputFeed.vue', () => ({
     default: {
-        props: ['debug'],
-        template: '<div>Debug panel</div>',
+        props: ['items'],
+        emits: ['navigate'],
+        template: `
+            <div data-testid="feed">
+                <div v-for="(item, i) in items" :key="i" :data-kind="item.kind">
+                    <template v-if="item.kind === 'output'">{{ item.text }}</template>
+                    <template v-else>{{ item.kind }}</template>
+                </div>
+                <button type="button" data-testid="feed-nav" @click="$emit('navigate', 42)">nav</button>
+            </div>
+        `,
     },
 }));
 
@@ -105,15 +117,6 @@ vi.mock('@/composables/useTheme', () => ({
     useTheme: () => ({ theme: mockTheme, toggleTheme }),
 }));
 
-// detectOutput/highlightJson are cheap, deterministic pure functions and run for real.
-// executeScripts has its own test (output.test.ts) proving it replaces <script> nodes so
-// browsers re-run them; jsdom never executes those scripts regardless, so it's mocked here
-// to prove only that OpenSnippet.vue calls it at the right time, not that it works.
-vi.mock('@/lib/output', async (importOriginal) => ({
-    ...(await importOriginal<typeof OutputModule>()),
-    executeScripts: vi.fn(),
-}));
-
 const { default: OpenSnippet } = await import('./OpenSnippet.vue');
 const props = {
     content: "echo 'hello world';",
@@ -123,10 +126,22 @@ const props = {
     snippetName: 'scratch',
 };
 
+function payload(
+    overrides: Partial<SnippetDebugPayload> = {},
+): SnippetDebugPayload {
+    return {
+        items: [],
+        duration_str: '1.00ms',
+        peak_memory_str: '1.00MB',
+        ...overrides,
+    };
+}
+
 beforeEach(() => {
     capturedPost = null;
     mockTheme.value = 'dark';
     toggleTheme.mockClear();
+    revealLineSpy.mockClear();
 });
 
 afterEach(() => {
@@ -170,13 +185,22 @@ it('sends the entered code to the run endpoint', async () => {
     expect(httpState.code).toBe("echo 'hi';");
 });
 
-it('shows the returned output', async () => {
+it('shows the returned stdout in the feed', async () => {
     render(OpenSnippet, { props });
 
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
-    capturedPost?.onSuccess({ output: 'hi' });
+    capturedPost?.onSuccess({ output: 'hi', debug: null });
 
     await screen.findByText('hi');
+});
+
+it('shows returned stdout as escaped text', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '<strong>hi</strong>', debug: null });
+
+    await screen.findByText('<strong>hi</strong>');
 });
 
 it('shows a validation error message when the request fails', async () => {
@@ -226,6 +250,80 @@ it('disables the run button and shows a running label while processing', () => {
     expect(button.disabled).toBe(true);
 
     httpState.processing = false;
+});
+
+it('shows the run duration, peak memory and query count after a run', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({
+        output: '',
+        debug: payload({
+            duration_str: '12.30ms',
+            peak_memory_str: '18.50MB',
+            items: [
+                {
+                    connection: 'sqlite',
+                    duplicate: false,
+                    duration_str: '4.00ms',
+                    kind: 'query',
+                    line: null,
+                    slow: false,
+                    sql: 'select 1',
+                },
+            ],
+        }),
+    });
+
+    await screen.findByText('12.30ms');
+    screen.getByText('18.50MB');
+    screen.getByRole('button', { name: '1 queries' });
+});
+
+it('hides query cards from the feed when the query filter is toggled off', async () => {
+    const { container } = render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({
+        output: '',
+        debug: payload({
+            items: [
+                {
+                    connection: 'sqlite',
+                    duplicate: false,
+                    duration_str: '4.00ms',
+                    kind: 'query',
+                    line: null,
+                    slow: false,
+                    sql: 'select 1',
+                },
+                { html: '<i>x</i>', kind: 'dump', line: 1 },
+            ],
+        }),
+    });
+
+    const chip = await screen.findByRole('button', { name: '1 queries' });
+    expect(container.querySelector('[data-kind="query"]')).not.toBeNull();
+
+    await fireEvent.click(chip);
+
+    expect(container.querySelector('[data-kind="query"]')).toBeNull();
+    expect(container.querySelector('[data-kind="dump"]')).not.toBeNull();
+
+    await fireEvent.click(chip);
+
+    expect(container.querySelector('[data-kind="query"]')).not.toBeNull();
+});
+
+it('reveals the line in the editor when the feed emits navigate', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: 'hi', debug: null });
+
+    await fireEvent.click(screen.getByTestId('feed-nav'));
+
+    expect(revealLineSpy).toHaveBeenCalledWith(42);
 });
 
 it('saves edited content 500ms after the last change', async () => {
@@ -410,11 +508,11 @@ it('flushes the pending debounced save immediately on Ctrl/Cmd+S', async () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
 });
 
-it('clears the output and any error message', async () => {
+it('clears the feed output and any error message', async () => {
     render(OpenSnippet, { props });
 
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
-    capturedPost?.onSuccess({ output: 'hi' });
+    capturedPost?.onSuccess({ output: 'hi', debug: null });
     await screen.findByText('hi');
 
     await fireEvent.click(screen.getByRole('button', { name: 'Clear output' }));
@@ -422,145 +520,19 @@ it('clears the output and any error message', async () => {
     expect(screen.queryByText('hi')).toBeNull();
 });
 
-it('shows the debug tab even before any run', () => {
-    render(OpenSnippet, { props });
-
-    screen.getByRole('tab', { name: 'Debug' });
-});
-
-it('shows an empty debug panel when the debug tab is clicked before any run', async () => {
-    render(OpenSnippet, { props });
-
-    await fireEvent.click(screen.getByRole('tab', { name: 'Debug' }));
-
-    await screen.findByText('Debug panel');
-});
-
-it('shows the debug panel and hides the output view when the debug tab is clicked', async () => {
-    const { container } = render(OpenSnippet, { props });
-
-    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
-    capturedPost?.onSuccess({
-        output: 'hi',
-        debug: { time: { duration_str: '1ms', measures: [] } },
-    });
-    await fireEvent.click(screen.getByRole('tab', { name: 'Debug' }));
-
-    await screen.findByText('Debug panel');
-    const output = container.querySelector('[aria-label="Snippet output"]');
-    expect(output).toHaveProperty('style.display', 'none');
-});
-
-it('shows the output view again when the output tab is clicked after viewing debug', async () => {
+it('clears the run metrics strip when output is cleared', async () => {
     render(OpenSnippet, { props });
 
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
     capturedPost?.onSuccess({
-        output: 'hi',
-        debug: { time: { duration_str: '1ms', measures: [] } },
+        output: '',
+        debug: payload({ duration_str: '9.90ms' }),
     });
-    await fireEvent.click(await screen.findByRole('tab', { name: 'Debug' }));
-    await fireEvent.click(screen.getByRole('tab', { name: 'Output' }));
-
-    await screen.findByText('hi');
-    expect(screen.queryByText('Debug panel')).toBeNull();
-});
-
-it('clears debug data and resets to the output tab when output is cleared', async () => {
-    render(OpenSnippet, { props });
-
-    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
-    capturedPost?.onSuccess({
-        output: 'hi',
-        debug: { time: { duration_str: '1ms', measures: [] } },
-    });
-    await fireEvent.click(screen.getByRole('tab', { name: 'Debug' }));
+    await screen.findByText('9.90ms');
 
     await fireEvent.click(screen.getByRole('button', { name: 'Clear output' }));
 
-    expect(screen.getByRole('tab', { name: 'Output' })).toHaveProperty(
-        'ariaSelected',
-        'true',
-    );
-    expect(screen.queryByText('Debug panel')).toBeNull();
-});
-
-it('shows the output as escaped text in raw mode', async () => {
-    render(OpenSnippet, { props });
-
-    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
-    capturedPost?.onSuccess({ output: '<strong>hi</strong>' });
-
-    await screen.findByText('<strong>hi</strong>');
-});
-
-it('renders HTML output as a sandboxed iframe after switching to rendered mode', async () => {
-    render(OpenSnippet, { props });
-
-    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
-    capturedPost?.onSuccess({ output: '<strong>hi</strong>' });
-    await screen.findByText('<strong>hi</strong>');
-
-    await fireEvent.click(
-        screen.getByRole('button', { name: 'Show rendered output' }),
-    );
-
-    const frame = screen.getByTitle('Rendered HTML output');
-    expect(frame.getAttribute('srcdoc')).toBe('<strong>hi</strong>');
-    expect(frame.getAttribute('sandbox')).toBe('allow-scripts');
-});
-
-it('renders JSON output as pretty-printed, escaped text in rendered mode', async () => {
-    render(OpenSnippet, { props });
-
-    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
-    capturedPost?.onSuccess({
-        output: '{"name":"<script>unsafe()</script>"}',
-    });
-    await fireEvent.click(
-        screen.getByRole('button', { name: 'Show rendered output' }),
-    );
-
-    const output = screen.getByRole('status', { name: 'Snippet output' });
-    expect(output.textContent).toBe(
-        '{\n  "name": "<script>unsafe()</script>"\n}',
-    );
-    expect(output.querySelector('script')).toBeNull();
-});
-
-it('leaves JSON output as its original raw string in raw mode', async () => {
-    render(OpenSnippet, { props });
-
-    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
-    capturedPost?.onSuccess({ output: '{"name":"tinkerbench"}' });
-
-    await screen.findByText('{"name":"tinkerbench"}');
-});
-
-it('re-executes embedded scripts when dump output is shown in rendered mode', async () => {
-    const { executeScripts } = await import('@/lib/output');
-    render(OpenSnippet, { props });
-
-    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
-    capturedPost?.onSuccess({ output: '<script>Sfdump("sf-dump-1")</script>' });
-    await fireEvent.click(
-        screen.getByRole('button', { name: 'Show rendered output' }),
-    );
-
-    await vi.waitFor(() => expect(executeScripts).toHaveBeenCalledOnce());
-});
-
-it('re-executes embedded scripts when a run completes while already in rendered mode', async () => {
-    const { executeScripts } = await import('@/lib/output');
-    render(OpenSnippet, { props });
-
-    await fireEvent.click(
-        screen.getByRole('button', { name: 'Show rendered output' }),
-    );
-    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
-    capturedPost?.onSuccess({ output: '<script>Sfdump("sf-dump-1")</script>' });
-
-    await vi.waitFor(() => expect(executeScripts).toHaveBeenCalledOnce());
+    expect(screen.queryByText('9.90ms')).toBeNull();
 });
 
 it('hides the header and shows an exit-fullscreen button when maximized', async () => {
