@@ -1,7 +1,7 @@
 import { render } from '@testing-library/vue';
 import * as monaco from 'monaco-editor';
 import { beforeEach, expect, it, vi } from 'vitest';
-import { ref } from 'vue';
+import { defineComponent, h, ref } from 'vue';
 import { attachLanguageServer } from '@/lib/languageServer';
 import MonacoEditor from './MonacoEditor.vue';
 
@@ -48,6 +48,8 @@ const editor = {
     getValue: vi.fn(() => '<?php echo "changed";'),
     layout: vi.fn(),
     onDidChangeModelContent,
+    revealLineInCenter: vi.fn(),
+    setPosition: vi.fn(),
 };
 
 // The real monaco-editor needs a full DOM/canvas rendering surface jsdom doesn't provide;
@@ -69,6 +71,8 @@ beforeEach(() => {
     editor.focus.mockClear();
     editor.getValue.mockClear();
     editor.layout.mockClear();
+    editor.revealLineInCenter.mockClear();
+    editor.setPosition.mockClear();
     onDidChangeModelContent.mockClear();
     intelephenseHandle.dispose.mockClear();
     intelephenseHandle.notifyContentChanged.mockClear();
@@ -340,4 +344,34 @@ it('still attaches intelephense when laravel-lsp fails to attach', async () => {
     expect(intelephenseHandle.notifyContentChanged).toHaveBeenCalledWith(
         '<?php echo "changed";',
     );
+});
+
+it('reveals and focuses a line when revealLine is called', () => {
+    let instance: { revealLine: (line: number) => void } | undefined;
+
+    const Harness = defineComponent({
+        render() {
+            return h(MonacoEditor, {
+                initialValue: '<?php',
+                project: 'my-project',
+                ref: (component: unknown) => {
+                    instance = component as {
+                        revealLine: (line: number) => void;
+                    };
+                },
+            });
+        },
+    });
+
+    render(Harness);
+    editor.focus.mockClear();
+
+    instance?.revealLine(7);
+
+    expect(editor.revealLineInCenter).toHaveBeenCalledWith(7);
+    expect(editor.setPosition).toHaveBeenCalledWith({
+        lineNumber: 7,
+        column: 1,
+    });
+    expect(editor.focus).toHaveBeenCalled();
 });

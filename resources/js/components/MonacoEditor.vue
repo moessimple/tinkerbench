@@ -25,6 +25,18 @@ function monacoThemeName(): string {
     return theme.value === 'dark' ? 'github-dark' : 'github-light';
 }
 
+function revealLine(lineNumber: number): void {
+    if (!editor) {
+        return;
+    }
+
+    editor.revealLineInCenter(lineNumber);
+    editor.setPosition({ lineNumber, column: 1 });
+    editor.focus();
+}
+
+defineExpose({ revealLine });
+
 onMounted(() => {
     // Monaco resolves language-service workers through this global lookup at the moment
     // it first needs one, so it has to be set before monaco.editor.create() runs below.
