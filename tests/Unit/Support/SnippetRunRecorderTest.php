@@ -73,6 +73,20 @@ it('flags a repeated query as a duplicate, leaving the first untouched', functio
         ->and($items[2]['duplicate'])->toBeFalse();
 });
 
+it('reports a zero duration when snapshot is taken before a run', function (): void {
+    $recorder = new SnippetRunRecorder(
+        Mockery::mock(DumpWatcher::class),
+        Mockery::mock(QueryWatcher::class),
+        Mockery::mock(LogWatcher::class),
+        Mockery::mock(ExceptionMapper::class),
+    );
+
+    $snapshot = $recorder->snapshot();
+
+    expect($snapshot['items'])->toBe([])
+        ->and($snapshot['duration_str'])->toBe('0.00ms');
+});
+
 it('appends an exception item mapped from the throwable', function (): void {
     $throwable = new RuntimeException('boom');
     $mapped = ['kind' => 'exception', 'type' => RuntimeException::class, 'message' => 'boom', 'line' => 5, 'frames' => []];

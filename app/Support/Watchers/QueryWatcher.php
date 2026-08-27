@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support\Watchers;
 
+use App\Support\Duration;
 use App\Support\SourceLocator;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\DatabaseManager;
@@ -24,21 +25,12 @@ class QueryWatcher
             $emit([
                 'kind' => 'query',
                 'sql' => $query->toRawSql(),
-                'duration_str' => $this->formatDuration($query->time),
+                'duration_str' => Duration::format($query->time),
                 'connection' => $query->connectionName,
                 'slow' => $query->time >= self::SLOW_QUERY_THRESHOLD_MS,
                 'duplicate' => false,
                 'line' => $this->source->snippetLine(),
             ]);
         });
-    }
-
-    private function formatDuration(float $milliseconds): string
-    {
-        if ($milliseconds >= 1000) {
-            return sprintf('%.2fs', $milliseconds / 1000);
-        }
-
-        return sprintf('%.2fms', $milliseconds);
     }
 }

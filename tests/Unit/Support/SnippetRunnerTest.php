@@ -2,7 +2,18 @@
 
 declare(strict_types=1);
 
+use App\Support\SnippetRunner;
+use App\Support\SnippetRunRecorder;
+use App\Support\SourceLocator;
 use Illuminate\Support\Facades\Process;
+
+/**
+ * @return array{items: list<mixed>, duration_str: string, peak_memory_str: string}
+ */
+function fixtureSnapshot(): array
+{
+    return ['items' => [], 'duration_str' => '1.00ms', 'peak_memory_str' => '1.00MB'];
+}
 
 /**
  * Runs $code through the real run-snippet.php subprocess against tinkerbench itself, the same
@@ -98,4 +109,105 @@ it('synthesizes an exception item for a hard fatal via the shutdown handler', fu
 
     expect($exceptions)->toHaveCount(1)
         ->and($exceptions[0]['message'])->toContain('memory');
+});
+
+// In-process runs exercise run()'s own wiring against tinkerbench itself. The shutdown handler
+// it registers no-ops at PHPUnit exit because run() has already persisted inline.
+
+function runInProcess(string $code): array
+{
+    $snippetPath = tempnam(sys_get_temp_dir(), 'snippet').'.php';
+    $debugPath = tempnam(sys_get_temp_dir(), 'debug');
+    file_put_contents($snippetPath, $code);
+
+    new SnippetRunner()->run(base_path(), $snippetPath, $debugPath);
+
+    $snapshot = json_decode((string) file_get_contents($debugPath), true);
+
+    unlink($snippetPath);
+    unlink($debugPath);
+
+    return is_array($snapshot) ? $snapshot : [];
+}
+
+it('echoes a string return from an in-process run and writes the snapshot', function (): void {
+    $snapshot = runInProcess("<?php\n\nreturn 'inprocess hello';");
+
+    expect($snapshot)->toHaveKeys(['items', 'duration_str', 'peak_memory_str']);
+})->expectOutputString('inprocess hello');
+
+it('prints nothing for a non-string return from an in-process run', function (): void {
+    runInProcess("<?php\n\n1 + 1;");
+})->expectOutputString('');
+
+it('records a thrown exception from an in-process run without re-throwing', function (): void {
+    $snapshot = runInProcess("<?php\n\nthrow new RuntimeException('inprocess boom');");
+
+    expect($snapshot['items'][0]['kind'])->toBe('exception')
+        ->and($snapshot['items'][0]['message'])->toBe('inprocess boom');
+});
+
+it('persist writes the snapshot and records no exception for a null last error', function (): void {
+    $debugPath = tempnam(sys_get_temp_dir(), 'persist');
+
+    $recorder = Mockery::mock(SnippetRunRecorder::class);
+    $recorder->shouldReceive('snapshot')->andReturn(fixtureSnapshot());
+    $recorder->shouldNotReceive('appendException');
+
+    new SnippetRunner()->persist($recorder, new SourceLocator('/x'), $debugPath, null);
+
+    $written = json_decode((string) file_get_contents($debugPath), true);
+    unlink($debugPath);
+
+    expect($written)->toBe(fixtureSnapshot());
+});
+
+it('persist synthesizes an exception item from a fatal-class last error', function (): void {
+    $debugPath = tempnam(sys_get_temp_dir(), 'persist');
+
+    $recorder = Mockery::mock(SnippetRunRecorder::class);
+    $recorder->shouldReceive('appendException')->once()->withArgs(
+        fn (Throwable $throwable): bool => $throwable instanceof ErrorException
+            && $throwable->getMessage() === 'oom',
+    );
+    $recorder->shouldReceive('snapshot')->andReturn(fixtureSnapshot());
+
+    new SnippetRunner()->persist(
+        $recorder,
+        new SourceLocator('/x'),
+        $debugPath,
+        ['type' => E_ERROR, 'message' => 'oom', 'file' => '/x', 'line' => 1],
+    );
+
+    unlink($debugPath);
+});
+
+it('persist ignores a non-fatal last error', function (): void {
+    $debugPath = tempnam(sys_get_temp_dir(), 'persist');
+
+    $recorder = Mockery::mock(SnippetRunRecorder::class);
+    $recorder->shouldReceive('snapshot')->andReturn(fixtureSnapshot());
+    $recorder->shouldNotReceive('appendException');
+
+    new SnippetRunner()->persist(
+        $recorder,
+        new SourceLocator('/x'),
+        $debugPath,
+        ['type' => E_WARNING, 'message' => 'just a warning', 'file' => '/x', 'line' => 1],
+    );
+
+    unlink($debugPath);
+});
+
+it('persist writes the snapshot only once', function (): void {
+    $debugPath = tempnam(sys_get_temp_dir(), 'persist');
+
+    $recorder = Mockery::mock(SnippetRunRecorder::class);
+    $recorder->shouldReceive('snapshot')->once()->andReturn(fixtureSnapshot());
+
+    $runner = new SnippetRunner();
+    $runner->persist($recorder, new SourceLocator('/x'), $debugPath, null);
+    $runner->persist($recorder, new SourceLocator('/x'), $debugPath, null);
+
+    unlink($debugPath);
 });

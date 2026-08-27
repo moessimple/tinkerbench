@@ -59,7 +59,7 @@ class SnippetRunRecorder
     {
         return [
             'items' => $this->items,
-            'duration_str' => $this->formatDuration($this->elapsedMilliseconds()),
+            'duration_str' => Duration::format($this->elapsedMilliseconds()),
             'peak_memory_str' => $this->formatMemory(memory_get_peak_usage(true)),
         ];
     }
@@ -92,15 +92,6 @@ class SnippetRunRecorder
     private function now(): float
     {
         return (float) hrtime(true);
-    }
-
-    private function formatDuration(float $milliseconds): string
-    {
-        if ($milliseconds >= 1000) {
-            return sprintf('%.2fs', $milliseconds / 1000);
-        }
-
-        return sprintf('%.2fms', $milliseconds);
     }
 
     private function formatMemory(int $bytes): string
