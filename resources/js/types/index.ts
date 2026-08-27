@@ -1,52 +1,41 @@
 export * from './auth';
 
-export interface DebugQueryStatement {
-    connection: string;
-    duration_str: string | null;
-    params: unknown[];
-    sql: string;
-}
-
-export interface DebugTimeMeasure {
-    duration_str: string;
-    label: string;
-}
-
-export interface DebugException {
+export interface ExceptionFrame {
     file: string;
+    function: string | null;
     line: number;
-    message: string;
-    type: string;
+    snippet?: { code: string; line: number }[];
+    vendor: boolean;
 }
 
-export interface DebugMessage {
-    label: string;
-    message: string | null;
-}
+export type FeedItem =
+    | { html: string; kind: 'dump'; line: number | null }
+    | {
+          connection: string;
+          duplicate: boolean;
+          duration_str: string;
+          kind: 'query';
+          line: number | null;
+          slow: boolean;
+          sql: string;
+      }
+    | {
+          context: string | null;
+          kind: 'log';
+          label: string;
+          line: number | null;
+          message: string;
+      }
+    | {
+          frames: ExceptionFrame[];
+          kind: 'exception';
+          line: number | null;
+          message: string;
+          type: string;
+      };
 
 export interface SnippetDebugPayload {
-    exceptions?: {
-        count: number;
-        exceptions: DebugException[];
-    };
-    logs?: {
-        count: number;
-        messages: DebugMessage[];
-    };
-    memory?: {
-        peak_usage: number;
-        peak_usage_str: string;
-    };
-    messages?: {
-        count: number;
-        messages: DebugMessage[];
-    };
-    queries?: {
-        count: number;
-        statements: DebugQueryStatement[];
-    };
-    time?: {
-        duration_str: string;
-        measures: DebugTimeMeasure[];
-    };
+    duration_str: string;
+    items: FeedItem[];
+    peak_memory_str: string;
 }
