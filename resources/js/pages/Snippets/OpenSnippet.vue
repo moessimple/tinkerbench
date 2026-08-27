@@ -42,16 +42,16 @@ const queryCount = computed(
         debug.value?.items.filter((item) => item.kind === 'query').length ?? 0,
 );
 
-const feedEntries = computed<FeedEntry[]>(() => {
-    const entries = buildFeed(
+const queryLabel = computed(
+    () => `${queryCount.value} ${queryCount.value === 1 ? 'query' : 'queries'}`,
+);
+
+const feedEntries = computed<FeedEntry[]>(() =>
+    buildFeed(
         debug.value ?? { items: [], duration_str: '', peak_memory_str: '' },
         rawOutput.value,
-    );
-
-    return showQueries.value
-        ? entries
-        : entries.filter((entry) => entry.kind !== 'query');
-});
+    ),
+);
 
 const http = useHttp<
     { code: string },
@@ -370,7 +370,7 @@ function toggleMaximize(): void {
                         <button
                             type="button"
                             :aria-pressed="showQueries"
-                            :aria-label="`${queryCount} queries`"
+                            :aria-label="queryLabel"
                             class="ml-auto rounded px-2 py-0.5 tracking-widest uppercase"
                             :class="
                                 showQueries
@@ -379,17 +379,17 @@ function toggleMaximize(): void {
                             "
                             @click="showQueries = !showQueries"
                         >
-                            {{ queryCount }} queries
+                            {{ queryLabel }}
                         </button>
                     </div>
                     <div
-                        role="status"
+                        role="region"
                         aria-label="Snippet output"
-                        aria-live="polite"
                         class="min-h-0 flex-1 overflow-auto"
                     >
                         <OutputFeed
                             :items="feedEntries"
+                            :hide-queries="!showQueries"
                             @navigate="revealEditorLine"
                         />
                     </div>

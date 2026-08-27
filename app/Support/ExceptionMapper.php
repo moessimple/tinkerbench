@@ -19,16 +19,18 @@ class ExceptionMapper
     public function __construct(private string $applicationPath) {}
 
     /**
+     * @param  bool  $includeFrames  Pass false for a synthesized fatal (memory exhaustion, timeout):
+     *                               its backtrace points at the runner internals, not the snippet.
      * @return array{kind: 'exception', type: string, message: string, line: int|null, frames: list<array{file: string, line: int, function: string|null, vendor: bool, snippet?: list<array{line: int, code: string}>}>}
      */
-    public function toItem(Throwable $throwable, ?int $line): array
+    public function toItem(Throwable $throwable, ?int $line, bool $includeFrames = true): array
     {
         return [
             'kind' => 'exception',
             'type' => $throwable::class,
             'message' => $throwable->getMessage(),
             'line' => $line,
-            'frames' => $this->frames($throwable),
+            'frames' => $includeFrames ? $this->frames($throwable) : [],
         ];
     }
 
@@ -50,8 +52,8 @@ class ExceptionMapper
     private function mapFrame(Frame $frame): array
     {
         $mapped = [
-            'file' => $frame->file,
-            'line' => $frame->lineNumber,
+            'file' => (string) $frame->file,
+            'line' => (int) $frame->lineNumber,
             'function' => $this->formatFunction($frame),
             'vendor' => ! $frame->applicationFrame,
         ];

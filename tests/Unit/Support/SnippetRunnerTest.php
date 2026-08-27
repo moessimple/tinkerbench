@@ -6,14 +6,22 @@ use App\Support\SnippetRunner;
 use App\Support\SnippetRunRecorder;
 use App\Support\SourceLocator;
 use Illuminate\Support\Facades\Process;
+use Symfony\Component\VarDumper\VarDumper;
 
 /**
  * @return array{items: list<mixed>, duration_str: string, peak_memory_str: string}
  */
 function fixtureSnapshot(): array
 {
-    return ['items' => [], 'duration_str' => '1.00ms', 'peak_memory_str' => '1.00MB'];
+    return ['items' => [], 'duration_str' => '1.00ms', 'peak_memory_str' => '1.00 MB'];
 }
+
+// An in-process run() installs a process-wide VarDumper handler via DumpWatcher and never
+// restores it; without this reset a dump() in a later test would be swallowed by the finished
+// run's recorder instead of reaching stdout.
+afterEach(function (): void {
+    VarDumper::setHandler(null);
+});
 
 /**
  * Runs $code through the real run-snippet.php subprocess against tinkerbench itself, the same
@@ -72,7 +80,7 @@ it('writes the run snapshot to the debug path', function (): void {
     expect($result['debug'])->toHaveKeys(['items', 'duration_str', 'peak_memory_str'])
         ->and($result['debug']['items'])->toBe([])
         ->and($result['debug']['duration_str'])->toMatch('/^\d+\.\d{2}(ms|s)$/')
-        ->and($result['debug']['peak_memory_str'])->toMatch('/^\d+\.\d{2}MB$/');
+        ->and($result['debug']['peak_memory_str'])->toMatch('/^[\d,]+\.\d{2} MB$/');
 });
 
 it('persists items captured before dd() exits the process', function (): void {
@@ -162,13 +170,34 @@ it('persist writes the snapshot and records no exception for a null last error',
     expect($written)->toBe(fixtureSnapshot());
 });
 
+it('persist writes valid JSON even when the snapshot carries non-UTF-8 bytes', function (): void {
+    $debugPath = tempnam(sys_get_temp_dir(), 'persist');
+
+    $recorder = Mockery::mock(SnippetRunRecorder::class);
+    $recorder->shouldReceive('snapshot')->andReturn([
+        'items' => [['kind' => 'dump', 'html' => "bad \xff\xfe bytes", 'line' => null]],
+        'duration_str' => '1.00ms',
+        'peak_memory_str' => '1.00 MB',
+    ]);
+
+    new SnippetRunner()->persist($recorder, new SourceLocator('/x'), $debugPath, null);
+
+    $decoded = json_decode((string) file_get_contents($debugPath), true);
+    unlink($debugPath);
+
+    expect(json_last_error())->toBe(JSON_ERROR_NONE)
+        ->and($decoded['items'])->toHaveCount(1)
+        ->and($decoded['items'][0]['kind'])->toBe('dump');
+});
+
 it('persist synthesizes an exception item from a fatal-class last error', function (): void {
     $debugPath = tempnam(sys_get_temp_dir(), 'persist');
 
     $recorder = Mockery::mock(SnippetRunRecorder::class);
     $recorder->shouldReceive('appendException')->once()->withArgs(
-        fn (Throwable $throwable): bool => $throwable instanceof ErrorException
-            && $throwable->getMessage() === 'oom',
+        fn (Throwable $throwable, ?int $line, bool $includeFrames): bool => $throwable instanceof ErrorException
+            && $throwable->getMessage() === 'oom'
+            && $includeFrames === false,
     );
     $recorder->shouldReceive('snapshot')->andReturn(fixtureSnapshot());
 

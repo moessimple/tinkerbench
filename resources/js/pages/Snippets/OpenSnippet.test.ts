@@ -85,16 +85,16 @@ vi.mock('@/components/CommandPalette.vue', () => ({
     },
 }));
 
-// OutputFeed has its own test (OutputFeed.test.ts) proving per-kind card rendering and its
-// navigate re-emit; stubbed here to a shell that exposes each entry's kind (and an output
-// entry's text) plus a navigate trigger, so this test only proves OpenSnippet.vue's feed
-// assembly, the query filter, and the navigate wiring.
+// OutputFeed has its own test (OutputFeed.test.ts) proving per-kind card rendering, the
+// hideQueries filter, and its navigate re-emit; stubbed here to a shell that exposes each
+// entry's kind (and an output entry's text), the hide-queries prop, and a navigate trigger,
+// so this test only proves OpenSnippet.vue's feed assembly and its filter/navigate wiring.
 vi.mock('@/components/OutputFeed.vue', () => ({
     default: {
-        props: ['items'],
+        props: ['items', 'hideQueries'],
         emits: ['navigate'],
         template: `
-            <div data-testid="feed">
+            <div data-testid="feed" :data-hide-queries="hideQueries ? 'yes' : 'no'">
                 <div v-for="(item, i) in items" :key="i" :data-kind="item.kind">
                     <template v-if="item.kind === 'output'">{{ item.text }}</template>
                     <template v-else>{{ item.kind }}</template>
@@ -132,7 +132,7 @@ function payload(
     return {
         items: [],
         duration_str: '1.00ms',
-        peak_memory_str: '1.00MB',
+        peak_memory_str: '1.00 MB',
         ...overrides,
     };
 }
@@ -260,11 +260,20 @@ it('shows the run duration, peak memory and query count after a run', async () =
         output: '',
         debug: payload({
             duration_str: '12.30ms',
-            peak_memory_str: '18.50MB',
+            peak_memory_str: '18.50 MB',
             items: [
                 {
                     connection: 'sqlite',
                     duplicate: false,
+                    duration_str: '4.00ms',
+                    kind: 'query',
+                    line: null,
+                    slow: false,
+                    sql: 'select 1',
+                },
+                {
+                    connection: 'sqlite',
+                    duplicate: true,
                     duration_str: '4.00ms',
                     kind: 'query',
                     line: null,
@@ -276,12 +285,12 @@ it('shows the run duration, peak memory and query count after a run', async () =
     });
 
     await screen.findByText('12.30ms');
-    screen.getByText('18.50MB');
-    screen.getByRole('button', { name: '1 queries' });
+    screen.getByText('18.50 MB');
+    screen.getByRole('button', { name: '2 queries' });
 });
 
-it('hides query cards from the feed when the query filter is toggled off', async () => {
-    const { container } = render(OpenSnippet, { props });
+it('tells the feed to hide queries when the query filter is toggled off', async () => {
+    render(OpenSnippet, { props });
 
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
     capturedPost?.onSuccess({
@@ -297,22 +306,20 @@ it('hides query cards from the feed when the query filter is toggled off', async
                     slow: false,
                     sql: 'select 1',
                 },
-                { html: '<i>x</i>', kind: 'dump', line: 1 },
             ],
         }),
     });
 
-    const chip = await screen.findByRole('button', { name: '1 queries' });
-    expect(container.querySelector('[data-kind="query"]')).not.toBeNull();
+    const chip = await screen.findByRole('button', { name: '1 query' });
+    const feed = screen.getByTestId('feed');
+    expect(feed.getAttribute('data-hide-queries')).toBe('no');
+    expect(feed.querySelector('[data-kind="query"]')).not.toBeNull();
 
     await fireEvent.click(chip);
-
-    expect(container.querySelector('[data-kind="query"]')).toBeNull();
-    expect(container.querySelector('[data-kind="dump"]')).not.toBeNull();
+    expect(feed.getAttribute('data-hide-queries')).toBe('yes');
 
     await fireEvent.click(chip);
-
-    expect(container.querySelector('[data-kind="query"]')).not.toBeNull();
+    expect(feed.getAttribute('data-hide-queries')).toBe('no');
 });
 
 it('reveals the line in the editor when the feed emits navigate', async () => {

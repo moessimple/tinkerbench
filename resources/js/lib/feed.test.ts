@@ -3,7 +3,7 @@ import type { SnippetDebugPayload } from '@/types';
 import { buildFeed } from './feed';
 
 function payload(items: SnippetDebugPayload['items']): SnippetDebugPayload {
-    return { duration_str: '1.00ms', items, peak_memory_str: '1.00MB' };
+    return { duration_str: '1.00ms', items, peak_memory_str: '1.00 MB' };
 }
 
 it('passes the payload items through in order', () => {

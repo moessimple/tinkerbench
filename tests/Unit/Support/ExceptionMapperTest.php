@@ -42,6 +42,14 @@ it('flags vendor frames and leaves off their code snippet', function (): void {
     }
 });
 
+it('omits frames entirely when frame collection is disabled', function (): void {
+    $item = new ExceptionMapper(base_path())->toItem(nestedRuntimeException(), null, false);
+
+    expect($item['frames'])->toBe([])
+        ->and($item['kind'])->toBe('exception')
+        ->and($item['message'])->toBe('boom');
+});
+
 it('includes surrounding code context on application frames', function (): void {
     $item = new ExceptionMapper(base_path())->toItem(nestedRuntimeException(), null);
 

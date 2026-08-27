@@ -51,19 +51,19 @@ it('collects emitted items in order and assembles a snapshot', function (): void
         ['kind' => 'log', 'label' => 'info', 'message' => 'hi', 'context' => null, 'line' => 2],
     ])
         ->and($snapshot['duration_str'])->toMatch('/^\d+\.\d{2}(ms|s)$/')
-        ->and($snapshot['peak_memory_str'])->toMatch('/^\d+\.\d{2}MB$/');
+        ->and($snapshot['peak_memory_str'])->toMatch('/^[\d,]+\.\d{2} MB$/');
 });
 
-it('flags a repeated query as a duplicate, leaving the first untouched', function (): void {
+it('flags an identical repeated query as a duplicate, leaving the first untouched', function (): void {
     $query = fn (string $sql): array => [
         'kind' => 'query', 'sql' => $sql, 'duration_str' => '1.00ms',
         'connection' => 'sqlite', 'slow' => false, 'duplicate' => false, 'line' => null,
     ];
 
     $recorder = runRecorder(function (callable $emit) use ($query): void {
-        $emit($query('select 1'));
-        $emit($query('select 1'));
-        $emit($query('select 2'));
+        $emit($query('select * from users where id = 1'));
+        $emit($query('select * from users where id = 1'));
+        $emit($query('select * from users where id = 2'));
     });
 
     $items = $recorder->snapshot()['items'];
@@ -92,7 +92,7 @@ it('appends an exception item mapped from the throwable', function (): void {
     $mapped = ['kind' => 'exception', 'type' => RuntimeException::class, 'message' => 'boom', 'line' => 5, 'frames' => []];
 
     $mapper = Mockery::mock(ExceptionMapper::class);
-    $mapper->shouldReceive('toItem')->once()->with($throwable, 5)->andReturn($mapped);
+    $mapper->shouldReceive('toItem')->once()->with($throwable, 5, true)->andReturn($mapped);
 
     $recorder = runRecorder(function (callable $emit): void {
         $emit(['kind' => 'dump', 'html' => '<a/>', 'line' => 1]);
@@ -104,4 +104,17 @@ it('appends an exception item mapped from the throwable', function (): void {
         ['kind' => 'dump', 'html' => '<a/>', 'line' => 1],
         $mapped,
     ]);
+});
+
+it('forwards a request to omit frames to the mapper', function (): void {
+    $throwable = new RuntimeException('boom');
+
+    $mapper = Mockery::mock(ExceptionMapper::class);
+    $mapper->shouldReceive('toItem')->once()->with($throwable, null, false)->andReturn(['kind' => 'exception']);
+
+    $recorder = runRecorder(function (callable $emit): void {}, $mapper);
+
+    $recorder->appendException($throwable, null, false);
+
+    expect($recorder->snapshot()['items'])->toBe([['kind' => 'exception']]);
 });

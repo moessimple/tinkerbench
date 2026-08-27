@@ -65,6 +65,29 @@ it('flags a slow, duplicated query', () => {
     expect(card?.textContent?.toLowerCase()).toContain('duplicate');
 });
 
+it('drops query cards but keeps everything else when hideQueries is set', () => {
+    const { container } = render(OutputFeed, {
+        props: {
+            hideQueries: true,
+            items: [
+                {
+                    connection: 'sqlite',
+                    duplicate: false,
+                    duration_str: '1.00ms',
+                    kind: 'query',
+                    line: 1,
+                    slow: false,
+                    sql: 'select 1',
+                },
+                { html: '<i>x</i>', kind: 'dump', line: 2 },
+            ] as FeedEntry[],
+        },
+    });
+
+    expect(container.querySelector('[data-label="Query"]')).toBeNull();
+    expect(container.querySelector('[data-label="Dump"]')).not.toBeNull();
+});
+
 it('gives a severe log entry the danger variant and a routine one the default', () => {
     const { container } = renderFeed([
         {

@@ -4,7 +4,10 @@ import type { FeedEntry } from '@/lib/feed';
 import { detectOutput, executeScripts, highlightJson } from '@/lib/output';
 import Card from './Card.vue';
 
-const props = defineProps<{ items: FeedEntry[] }>();
+const props = withDefaults(
+    defineProps<{ items: FeedEntry[]; hideQueries?: boolean }>(),
+    { hideQueries: false },
+);
 
 defineEmits<{ navigate: [line: number] }>();
 
@@ -13,11 +16,13 @@ const SEVERE_LOG_LEVELS = ['emergency', 'alert', 'critical', 'error'];
 const feedElement = useTemplateRef('feedElement');
 
 const rows = computed(() =>
-    props.items.map((entry) =>
-        entry.kind === 'output'
-            ? { entry, output: detectOutput(entry.text) }
-            : { entry, output: null },
-    ),
+    props.items
+        .filter((entry) => !(props.hideQueries && entry.kind === 'query'))
+        .map((entry) =>
+            entry.kind === 'output'
+                ? { entry, output: detectOutput(entry.text) }
+                : { entry, output: null },
+        ),
 );
 
 function frameCode(snippet: { code: string; line: number }[]): string {

@@ -9,6 +9,7 @@ use App\Support\Watchers\LogWatcher;
 use App\Support\Watchers\QueryWatcher;
 use Closure;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Support\Number;
 use Throwable;
 
 class SnippetRunRecorder
@@ -47,9 +48,9 @@ class SnippetRunRecorder
         }
     }
 
-    public function appendException(Throwable $throwable, ?int $line): void
+    public function appendException(Throwable $throwable, ?int $line, bool $includeFrames = true): void
     {
-        $this->items[] = $this->exceptionMapper->toItem($throwable, $line);
+        $this->items[] = $this->exceptionMapper->toItem($throwable, $line, $includeFrames);
     }
 
     /**
@@ -60,11 +61,15 @@ class SnippetRunRecorder
         return [
             'items' => $this->items,
             'duration_str' => Duration::format($this->elapsedMilliseconds()),
-            'peak_memory_str' => $this->formatMemory(memory_get_peak_usage(true)),
+            'peak_memory_str' => Number::fileSize(memory_get_peak_usage(true), precision: 2),
         ];
     }
 
     /**
+     * A query counts as a duplicate only when the identical statement and bindings ran before,
+     * matching Laravel Debugbar's rule (bindings are already inlined into `sql`). The same
+     * statement with different bindings is an N+1, which this flag deliberately does not cover.
+     *
      * @param  array<string, mixed>  $item
      */
     private function append(array $item): void
@@ -92,10 +97,5 @@ class SnippetRunRecorder
     private function now(): float
     {
         return (float) hrtime(true);
-    }
-
-    private function formatMemory(int $bytes): string
-    {
-        return sprintf('%.2fMB', $bytes / 1024 / 1024);
     }
 }
