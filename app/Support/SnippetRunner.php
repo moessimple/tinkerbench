@@ -38,7 +38,7 @@ class SnippetRunner
             new DumpWatcher($source, new ValueRenderer()),
             new QueryWatcher($source),
             new LogWatcher($source),
-            new ExceptionMapper($projectPath),
+            new ExceptionMapper($projectPath, $source->path()),
         );
 
         // Safety net for the exit paths run() can't return from: dd()/die()/exit() and fatals.

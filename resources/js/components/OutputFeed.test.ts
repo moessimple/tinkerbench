@@ -119,12 +119,14 @@ it('renders an exception with its type, message and de-emphasised vendor frames'
                     file: '/app/Foo.php',
                     function: 'handle',
                     line: 10,
+                    snippet: false,
                     vendor: false,
                 },
                 {
                     file: '/vendor/laravel/x.php',
                     function: 'run',
                     line: 99,
+                    snippet: false,
                     vendor: true,
                 },
             ],
@@ -139,7 +141,63 @@ it('renders an exception with its type, message and de-emphasised vendor frames'
     expect(card?.getAttribute('data-variant')).toBe('danger');
     expect(card?.textContent).toContain('RuntimeException');
     expect(card?.textContent).toContain('nope');
+    expect(card?.querySelector('details')).not.toBeNull();
     expect(card?.querySelector('[data-vendor="true"]')).not.toBeNull();
+});
+
+it('omits the stack trace disclosure when the only frame is the snippet itself', () => {
+    const { container } = renderFeed([
+        {
+            frames: [
+                {
+                    file: '/tmp/snippet.php',
+                    function: null,
+                    line: 3,
+                    snippet: true,
+                    vendor: false,
+                },
+            ],
+            kind: 'exception',
+            line: 3,
+            message: 'boom',
+            type: 'RuntimeException',
+        },
+    ]);
+
+    const card = container.querySelector('[data-label="Exception"]');
+    expect(card?.textContent).toContain('boom');
+    expect(card?.querySelector('details')).toBeNull();
+});
+
+it('shows a snippet frame as "snippet:line" rather than its temp path', () => {
+    const { container } = renderFeed([
+        {
+            frames: [
+                {
+                    file: '/private/var/tmp/tinkerbench-snippet-abc.php',
+                    function: null,
+                    line: 8,
+                    snippet: true,
+                    vendor: false,
+                },
+                {
+                    file: '/vendor/x.php',
+                    function: 'run',
+                    line: 1,
+                    snippet: false,
+                    vendor: true,
+                },
+            ],
+            kind: 'exception',
+            line: 8,
+            message: 'x',
+            type: 'RuntimeException',
+        },
+    ]);
+
+    const trace = container.querySelector('[data-label="Exception"] details');
+    expect(trace?.textContent).toContain('snippet:8');
+    expect(trace?.textContent).not.toContain('tinkerbench-snippet-abc');
 });
 
 it('renders the raw stdout Output entry as text', () => {

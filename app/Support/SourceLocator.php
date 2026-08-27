@@ -20,6 +20,11 @@ class SourceLocator
         $this->snippetPath = realpath($snippetPath) ?: $snippetPath;
     }
 
+    public function path(): string
+    {
+        return $this->snippetPath;
+    }
+
     public function snippetLine(): ?int
     {
         return $this->lineIn(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));

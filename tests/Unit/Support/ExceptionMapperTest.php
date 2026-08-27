@@ -6,7 +6,7 @@ use App\Support\ExceptionMapper;
 
 /**
  * A RuntimeException thrown through a framework (vendor) call, so the trace carries both
- * application frames (this file) and vendor frames (Illuminate\Support\Collection).
+ * a frame in this file and vendor frames (Illuminate\Support\Collection).
  */
 function nestedRuntimeException(): RuntimeException
 {
@@ -19,8 +19,16 @@ function nestedRuntimeException(): RuntimeException
     throw new LogicException('the callback above must throw');
 }
 
+/**
+ * Treats this test file as the snippet, so the frame it throws from is the "snippet" frame.
+ */
+function mapper(): ExceptionMapper
+{
+    return new ExceptionMapper(base_path(), (string) realpath(__FILE__));
+}
+
 it('maps a throwable to the exception feed-item shape', function (): void {
-    $item = new ExceptionMapper(base_path())->toItem(nestedRuntimeException(), 7);
+    $item = mapper()->toItem(nestedRuntimeException(), 7);
 
     expect($item['kind'])->toBe('exception')
         ->and($item['type'])->toBe(RuntimeException::class)
@@ -29,40 +37,38 @@ it('maps a throwable to the exception feed-item shape', function (): void {
         ->and($item['frames'])->not->toBeEmpty();
 });
 
-it('flags vendor frames and leaves off their code snippet', function (): void {
-    $item = new ExceptionMapper(base_path())->toItem(nestedRuntimeException(), null);
+it('gives every frame the same flat shape without an inline code excerpt', function (): void {
+    $item = mapper()->toItem(nestedRuntimeException(), null);
 
-    $vendorFrames = array_values(array_filter($item['frames'], fn (array $frame): bool => $frame['vendor']));
-
-    expect($vendorFrames)->not->toBeEmpty();
-
-    foreach ($vendorFrames as $frame) {
-        expect($frame)->toHaveKeys(['file', 'line', 'function', 'vendor'])
-            ->and($frame)->not->toHaveKey('snippet');
+    foreach ($item['frames'] as $frame) {
+        expect(array_keys($frame))->toBe(['file', 'line', 'function', 'vendor', 'snippet'])
+            ->and($frame['vendor'])->toBeBool()
+            ->and($frame['snippet'])->toBeBool();
     }
 });
 
+it('flags frames outside the application as vendor frames', function (): void {
+    $item = mapper()->toItem(nestedRuntimeException(), null);
+
+    $vendor = array_filter($item['frames'], fn (array $frame): bool => $frame['vendor']);
+
+    expect($vendor)->not->toBeEmpty();
+});
+
+it('marks the frame that sits in the snippet file', function (): void {
+    $item = mapper()->toItem(nestedRuntimeException(), null);
+
+    $snippetFrames = array_values(array_filter($item['frames'], fn (array $frame): bool => $frame['snippet']));
+
+    expect($snippetFrames)->not->toBeEmpty()
+        ->and($snippetFrames[0]['file'])->toBe((string) realpath(__FILE__))
+        ->and($snippetFrames[0]['vendor'])->toBeFalse();
+});
+
 it('omits frames entirely when frame collection is disabled', function (): void {
-    $item = new ExceptionMapper(base_path())->toItem(nestedRuntimeException(), null, false);
+    $item = mapper()->toItem(nestedRuntimeException(), null, false);
 
     expect($item['frames'])->toBe([])
         ->and($item['kind'])->toBe('exception')
         ->and($item['message'])->toBe('boom');
-});
-
-it('includes surrounding code context on application frames', function (): void {
-    $item = new ExceptionMapper(base_path())->toItem(nestedRuntimeException(), null);
-
-    $withSnippet = array_values(array_filter(
-        $item['frames'],
-        fn (array $frame): bool => ! $frame['vendor'] && array_key_exists('snippet', $frame),
-    ));
-
-    expect($withSnippet)->not->toBeEmpty();
-
-    $snippet = $withSnippet[0]['snippet'];
-
-    expect($snippet)->not->toBeEmpty()
-        ->and($snippet[0])->toHaveKeys(['line', 'code'])
-        ->and($snippet[0]['line'])->toBeInt();
 });

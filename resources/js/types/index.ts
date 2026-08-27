@@ -4,7 +4,7 @@ export interface ExceptionFrame {
     file: string;
     function: string | null;
     line: number;
-    snippet?: { code: string; line: number }[];
+    snippet: boolean;
     vendor: boolean;
 }
 

@@ -2,6 +2,7 @@
 import { computed, nextTick, useTemplateRef, watch } from 'vue';
 import type { FeedEntry } from '@/lib/feed';
 import { detectOutput, executeScripts, highlightJson } from '@/lib/output';
+import type { ExceptionFrame } from '@/types';
 import Card from './Card.vue';
 
 const props = withDefaults(
@@ -25,8 +26,15 @@ const rows = computed(() =>
         ),
 );
 
-function frameCode(snippet: { code: string; line: number }[]): string {
-    return snippet.map((row) => row.code).join('\n');
+// A lone snippet frame adds nothing the card header (line N) doesn't already show.
+function hasTrace(frames: ExceptionFrame[]): boolean {
+    return frames.length > 1 || (frames.length === 1 && !frames[0].snippet);
+}
+
+function frameLocation(frame: ExceptionFrame): string {
+    return frame.snippet
+        ? `snippet:${frame.line}`
+        : `${frame.file}:${frame.line}`;
 }
 
 watch(
@@ -104,25 +112,33 @@ watch(
                     <strong>{{ row.entry.type }}</strong
                     >: {{ row.entry.message }}
                 </p>
-                <ul class="mt-2 flex flex-col gap-1 text-xs">
-                    <li
-                        v-for="(frame, frameIndex) in row.entry.frames"
-                        :key="frameIndex"
-                        :data-vendor="frame.vendor"
-                        :class="
-                            frame.vendor ? 'text-muted opacity-60' : 'text-fg'
-                        "
+                <details v-if="hasTrace(row.entry.frames)" class="mt-2 text-xs">
+                    <summary
+                        class="cursor-pointer text-muted uppercase select-none"
                     >
-                        {{ frame.file }}:{{ frame.line }}
-                        <span v-if="frame.function" class="text-muted">
-                            — {{ frame.function }}
-                        </span>
-                        <pre
-                            v-if="frame.snippet"
-                            class="mt-1 overflow-x-auto"
-                            >{{ frameCode(frame.snippet) }}</pre>
-                    </li>
-                </ul>
+                        {{ row.entry.frames.length }} stack frames
+                    </summary>
+                    <ul class="mt-1 flex flex-col gap-0.5">
+                        <li
+                            v-for="(frame, frameIndex) in row.entry.frames"
+                            :key="frameIndex"
+                            :data-vendor="frame.vendor"
+                            :class="
+                                frame.vendor
+                                    ? 'text-muted opacity-60'
+                                    : 'text-fg'
+                            "
+                        >
+                            {{ frameLocation(frame) }}
+                            <span
+                                v-if="frame.function && !frame.snippet"
+                                class="text-muted"
+                            >
+                                — {{ frame.function }}
+                            </span>
+                        </li>
+                    </ul>
+                </details>
             </Card>
 
             <Card

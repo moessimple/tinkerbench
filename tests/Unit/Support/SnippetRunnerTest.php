@@ -103,6 +103,21 @@ it('records an uncaught exception without crashing the process', function (): vo
         ->and($result['debug']['items'][0]['message'])->toBe('snippet failed');
 });
 
+it('trims the exception trace to the snippet, dropping the runner frames', function (): void {
+    $result = runSnippetSubprocess("<?php\n\nthrow new RuntimeException('boom');");
+
+    $frames = $result['debug']['items'][0]['frames'];
+
+    expect($frames)->toHaveCount(1)
+        ->and($frames[0]['snippet'])->toBeTrue()
+        ->and($frames[0]['line'])->toBe(3);
+
+    foreach ($frames as $frame) {
+        expect($frame['function'] ?? '')->not->toContain('SnippetRunner')
+            ->and($frame['function'] ?? '')->not->toContain('SnippetRunRecorder');
+    }
+});
+
 it('synthesizes an exception item for a hard fatal via the shutdown handler', function (): void {
     // Memory exhaustion never surfaces as a Throwable, so the try/catch cannot see it; only the
     // shutdown handler's error_get_last() check recovers it into the feed.
