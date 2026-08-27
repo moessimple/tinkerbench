@@ -20,3 +20,8 @@ Readonly classes/properties are fine: they only cause the same Mockery problem (
 
 ## Don't keep single-implementation interfaces for mockability
 Now that classes aren't final (see "No final classes, anywhere"), an interface with exactly one implementation and no second caller has no reason to exist just to enable mocking, mock the concrete class's own leaf dependency instead: App\Actions\RunSnippetAction depends on App\Support\Herd directly, no wrapping interface, since Herd is mockable on its own. Before adding an interface "for testability", check whether the class it would wrap is even blocked from direct mocking.
+
+## Use composer test as the final verification gate
+Before considering a change done (committing, closing out a task/checkpoint), run `composer test` rather than manually chaining `pint`, `phpstan`, `pest --type-coverage`, and `pest --coverage` as separate commands — it already runs exactly that sequence (see composer.json's `test`/`test:*` scripts) in one shot and is less error-prone than reassembling it by hand each time.
+
+This doesn't replace fast, targeted `php artisan test --compact --filter=X` runs while actively iterating on one piece (still the right tool for quick RED/GREEN feedback) — it's the gate before calling the work finished.

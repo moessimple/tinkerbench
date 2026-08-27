@@ -75,11 +75,28 @@ onMounted(() => {
         fontFamily: "'Fira Code', Menlo, monospace",
         fontLigatures: true,
         fontSize: 16,
-        lineHeight: 26,
+        lineHeight: 28,
         minimap: { enabled: false },
         wordWrap: 'on',
         padding: { top: 16, bottom: 16 },
         fixedOverflowWidgets: true,
+        // Editor rendering/interaction options carried over from the user's VS Code
+        // settings.json, limited to the ones that matter in an embedded snippet editor.
+        scrollbar: { vertical: 'hidden', horizontal: 'hidden' },
+        scrollBeyondLastLine: false,
+        overviewRulerLanes: 0,
+        renderLineHighlight: 'none',
+        occurrencesHighlight: 'off',
+        selectionHighlight: false,
+        matchBrackets: 'never',
+        bracketPairColorization: { enabled: false },
+        guides: { indentation: false },
+        colorDecorators: false,
+        detectIndentation: false,
+        snippetSuggestions: 'top',
+        linkedEditing: true,
+        emptySelectionClipboard: false,
+        copyWithSyntaxHighlighting: false,
     });
 
     editor.onDidChangeModelContent(() => {

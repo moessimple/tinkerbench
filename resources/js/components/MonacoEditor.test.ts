@@ -115,6 +115,45 @@ it('creates the editor with PHP syntax highlighting and the github-dark theme', 
     );
 });
 
+it('hides diagnostic markers from the overview ruler, keeping only the inline squiggly underline', () => {
+    render(MonacoEditor, {
+        props: { initialValue: '<?php echo "initial";', project: 'my-project' },
+    });
+
+    expect(monaco.editor.create).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ overviewRulerLanes: 0 }),
+    );
+});
+
+it('creates the editor with the rendering and interaction options mirrored from the user VS Code settings', () => {
+    render(MonacoEditor, {
+        props: { initialValue: '<?php echo "initial";', project: 'my-project' },
+    });
+
+    expect(monaco.editor.create).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+            lineHeight: 28,
+            scrollbar: { vertical: 'hidden', horizontal: 'hidden' },
+            scrollBeyondLastLine: false,
+            overviewRulerLanes: 0,
+            renderLineHighlight: 'none',
+            occurrencesHighlight: 'off',
+            selectionHighlight: false,
+            matchBrackets: 'never',
+            bracketPairColorization: { enabled: false },
+            guides: { indentation: false },
+            colorDecorators: false,
+            detectIndentation: false,
+            snippetSuggestions: 'top',
+            linkedEditing: true,
+            emptySelectionClipboard: false,
+            copyWithSyntaxHighlighting: false,
+        }),
+    );
+});
+
 it('defines a github-light theme alongside github-dark', () => {
     render(MonacoEditor, {
         props: { initialValue: '<?php echo "initial";', project: 'my-project' },
