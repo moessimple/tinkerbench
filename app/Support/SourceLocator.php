@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use Throwable;
+
 class SourceLocator
 {
     private readonly string $snippetPath;
@@ -20,10 +22,31 @@ class SourceLocator
 
     public function snippetLine(): ?int
     {
-        foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $frame) {
-            if (($frame['file'] ?? null) === $this->snippetPath) {
-                return $frame['line'] ?? null;
+        return $this->lineIn(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
+    }
+
+    public function throwableLine(Throwable $throwable): ?int
+    {
+        if ($throwable->getFile() === $this->snippetPath) {
+            return $throwable->getLine();
+        }
+
+        return $this->lineIn($throwable->getTrace());
+    }
+
+    /**
+     * @param  iterable<array<string, mixed>>  $frames
+     */
+    private function lineIn(iterable $frames): ?int
+    {
+        foreach ($frames as $frame) {
+            if (($frame['file'] ?? null) !== $this->snippetPath) {
+                continue;
             }
+
+            $line = $frame['line'] ?? null;
+
+            return is_int($line) ? $line : null;
         }
 
         return null;
