@@ -268,6 +268,21 @@ it('shows the run duration and peak memory after a run', async () => {
     screen.getByText('18.50 MB');
 });
 
+it('confirms a finished run that produced nothing with a no-output note', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '', debug: payload() });
+
+    await screen.findByText(/no output\. return a value or call dump\(\)/i);
+});
+
+it('shows no no-output note before the first run', () => {
+    render(OpenSnippet, { props });
+
+    expect(screen.queryByText(/no output/i)).toBeNull();
+});
+
 it('labels each filter tab with its live entry count', async () => {
     render(OpenSnippet, { props });
 
@@ -305,6 +320,39 @@ it('labels each filter tab with its live entry count', async () => {
     screen.getByRole('tab', { name: 'Queries 2' });
     screen.getByRole('tab', { name: 'Dumps 1' });
     screen.getByRole('tab', { name: 'Logs 0' });
+});
+
+it('counts the raw stdout Output card in the All tab total', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({
+        output: 'printed line',
+        debug: payload({
+            items: [{ html: '<i>x</i>', kind: 'dump', line: 1 }],
+        }),
+    });
+
+    await screen.findByRole('tab', { name: 'All 2' });
+    screen.getByRole('tab', { name: 'Dumps 1' });
+});
+
+it('counts a result entry under All but gives it no facet tab of its own', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({
+        output: '',
+        debug: payload({
+            items: [
+                { html: '<i>x</i>', kind: 'dump', line: 1 },
+                { html: '<i>the value</i>', kind: 'result' },
+            ],
+        }),
+    });
+
+    await screen.findByRole('tab', { name: 'All 2' });
+    expect(screen.queryByRole('tab', { name: /result/i })).toBeNull();
 });
 
 it('tells the feed which kind to show when a filter tab is selected', async () => {

@@ -336,16 +336,19 @@ it('surfaces the process error when the given php binary does not exist', functi
     expect($result->output)->not->toBe('');
 });
 
-it('runs a snippet in a subprocess and returns its output', function (): void {
+it('runs a snippet in a subprocess and returns its return value as a result item', function (): void {
     $result = new Herd()->runSnippet("<?php\n\nreturn 'from the subprocess';", PHP_BINARY, base_path());
 
-    expect($result->output)->toBe('from the subprocess');
+    expect($result->output)->toBe('')
+        ->and($result->debug['items'])->toHaveCount(1)
+        ->and($result->debug['items'][0]['kind'])->toBe('result')
+        ->and($result->debug['items'][0]['html'])->toContain('from the subprocess');
 });
 
 it('boots the target project so snippets can use its Laravel helpers', function (): void {
     $result = new Herd()->runSnippet("<?php\n\nreturn config('app.name');", PHP_BINARY, base_path());
 
-    expect($result->output)->toBe(config('app.name'));
+    expect($result->debug['items'][0]['html'])->toContain(config('app.name'));
 });
 
 it('lets two snippets that redeclare the same class both succeed', function (): void {
@@ -354,8 +357,10 @@ it('lets two snippets that redeclare the same class both succeed', function (): 
     $first = $herd->runSnippet("<?php\n\nclass DuplicateSnippetClass {}\n\nreturn 'first';", PHP_BINARY, base_path());
     $second = $herd->runSnippet("<?php\n\nclass DuplicateSnippetClass {}\n\nreturn 'second';", PHP_BINARY, base_path());
 
-    expect($first->output)->toBe('first')
-        ->and($second->output)->toBe('second');
+    expect($first->debug['items'][0]['html'])->toContain('first')
+        ->and($second->debug['items'][0]['html'])->toContain('second')
+        ->and(array_column($first->debug['items'], 'kind'))->not->toContain('exception')
+        ->and(array_column($second->debug['items'], 'kind'))->not->toContain('exception');
 });
 
 it('does not crash the subprocess when the snippet throws', function (): void {

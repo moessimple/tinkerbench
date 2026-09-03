@@ -5,12 +5,14 @@ import { FACET_KINDS, FEED_KINDS, rendererFor } from './kinds';
 import LogCard from './LogCard.vue';
 import OutputCard from './OutputCard.vue';
 import QueryCard from './QueryCard.vue';
+import ResultCard from './ResultCard.vue';
 
 it('maps every kind to its renderer', () => {
     expect(rendererFor('dump')).toBe(DumpCard);
     expect(rendererFor('query')).toBe(QueryCard);
     expect(rendererFor('log')).toBe(LogCard);
     expect(rendererFor('exception')).toBe(ExceptionCard);
+    expect(rendererFor('result')).toBe(ResultCard);
     expect(rendererFor('output')).toBe(OutputCard);
 });
 
@@ -27,7 +29,7 @@ it('exposes every FEED_KINDS entry through rendererFor', () => {
     }
 });
 
-it('excludes the synthetic Output entry from the facet list', () => {
+it('keeps the facet-less Result and Output entries out of the facet list', () => {
     expect(FACET_KINDS.map((kind) => kind.kind)).toEqual([
         'dump',
         'query',

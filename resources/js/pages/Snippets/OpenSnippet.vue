@@ -66,17 +66,25 @@ const kindCounts = computed(() => {
     return counts;
 });
 
-function filterCount(filter: FeedFilter): number {
-    return filter === 'all'
-        ? (debug.value?.items.length ?? 0)
-        : kindCounts.value[filter];
-}
-
 const feedEntries = computed<FeedEntry[]>(() =>
     buildFeed(
         debug.value ?? { items: [], duration_str: '', peak_memory_str: '' },
         rawOutput.value,
     ),
+);
+
+// The "all" tab counts what the feed actually renders, so it includes the synthetic Output entry
+// that buildFeed appends for raw stdout; per-kind tabs count only their captured items.
+function filterCount(filter: FeedFilter): number {
+    return filter === 'all'
+        ? feedEntries.value.length
+        : kindCounts.value[filter];
+}
+
+// A finished run whose feed is empty: distinct from the pre-run state (debug is still null there),
+// so the panel can confirm the run instead of looking like the button did nothing.
+const ranWithoutOutput = computed(
+    () => debug.value !== null && feedEntries.value.length === 0,
 );
 
 const http = useHttp<
@@ -461,7 +469,15 @@ function toggleMaximize(): void {
                         aria-label="Snippet output"
                         class="min-h-0 flex-1 overflow-auto"
                     >
+                        <p
+                            v-if="ranWithoutOutput && activeFilter === 'all'"
+                            class="px-4 py-8 text-center font-mono text-xs text-muted"
+                        >
+                            No output. Return a value or call dump() to see it
+                            here.
+                        </p>
                         <OutputFeed
+                            v-else
                             :items="feedEntries"
                             :filter="activeFilter"
                             :sort="

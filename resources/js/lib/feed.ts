@@ -20,18 +20,25 @@ export type FeedFilter = FeedItem['kind'] | 'all';
 export type FeedSort = 'recent' | 'slowest';
 
 /**
- * Assembles the render list for the output feed: the captured items in execution order, followed by
- * an Output entry for the snippet's raw stdout when it produced any.
+ * Assembles the render list for the output feed: the captured items in execution order, then an
+ * Output entry for the snippet's raw stdout when it produced any, then the Result entry for the
+ * snippet's return value. Result comes last because it is the run's final value, whatever order the
+ * runner recorded it in among the items.
  */
 export function buildFeed(
     payload: SnippetDebugPayload,
     rawOutput: string,
 ): FeedEntry[] {
-    const entries: FeedEntry[] = [...payload.items];
+    const result = payload.items.filter((item) => item.kind === 'result');
+    const entries: FeedEntry[] = payload.items.filter(
+        (item) => item.kind !== 'result',
+    );
 
     if (rawOutput.trim() !== '') {
         entries.push({ kind: 'output', text: rawOutput });
     }
+
+    entries.push(...result);
 
     return entries;
 }

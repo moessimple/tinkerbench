@@ -33,10 +33,11 @@ class SnippetRunner
         $app->make(Kernel::class)->bootstrap();
 
         $source = new SourceLocator($snippetPath);
+        $valueRenderer = new ValueRenderer();
 
         $recorder = new SnippetRunRecorder(
             [
-                new DumpWatcher($source, new ValueRenderer()),
+                new DumpWatcher($source, $valueRenderer),
                 new QueryWatcher($source),
                 new LogWatcher($source),
             ],
@@ -57,11 +58,14 @@ class SnippetRunner
             $recorder->appendException($throwable, $source->throwableLine($throwable));
         }
 
-        $this->persist($recorder, $source, $debugPath, null);
-
-        if (is_string($returned)) {
-            echo $returned;
+        // `require` yields int(1) for a snippet with no `return` statement and null for a bare
+        // `return;`, so both count as "no result". A literal `return 1;` is indistinguishable from
+        // the no-return case and likewise shows nothing.
+        if ($returned !== null && $returned !== 1) {
+            $recorder->appendResult($valueRenderer->render($returned));
         }
+
+        $this->persist($recorder, $source, $debugPath, null);
     }
 
     /**

@@ -94,6 +94,19 @@ it('appends an exception item mapped from the throwable', function (): void {
     ]);
 });
 
+it('appends the rendered return value as a result item after the captured items', function (): void {
+    $recorder = runRecorder(function (callable $emit): void {
+        $emit(['kind' => 'dump', 'html' => '<a/>', 'line' => 1]);
+    });
+
+    $recorder->appendResult('<pre>the value</pre>');
+
+    expect($recorder->snapshot()['items'])->toBe([
+        ['kind' => 'dump', 'html' => '<a/>', 'line' => 1],
+        ['kind' => 'result', 'html' => '<pre>the value</pre>'],
+    ]);
+});
+
 it('forwards a request to omit frames to the mapper', function (): void {
     $throwable = new RuntimeException('boom');
 

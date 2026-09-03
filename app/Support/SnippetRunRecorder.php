@@ -55,6 +55,14 @@ class SnippetRunRecorder
     }
 
     /**
+     * Records the snippet's own return value, already rendered to VarDumper HTML by the caller.
+     */
+    public function appendResult(string $html): void
+    {
+        $this->items[] = ['kind' => 'result', 'html' => $html];
+    }
+
+    /**
      * @return array{items: list<array<string, mixed>>, duration_str: string, peak_memory_str: string}
      */
     public function snapshot(): array

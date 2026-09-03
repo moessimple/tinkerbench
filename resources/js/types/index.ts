@@ -10,6 +10,7 @@ export interface ExceptionFrame {
 
 export type FeedItem =
     | { html: string; kind: 'dump'; line: number | null }
+    | { html: string; kind: 'result' }
     | {
           connection: string;
           duplicate: boolean;

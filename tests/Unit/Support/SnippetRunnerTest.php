@@ -61,21 +61,39 @@ function runSnippetSubprocess(string $code): array
     ];
 }
 
-it('echoes the snippet string return value', function (): void {
-    $result = runSnippetSubprocess("<?php\n\nreturn 'hello from the snippet';");
+it('records the snippet return value as a result item instead of printing it', function (): void {
+    $result = runSnippetSubprocess("<?php\n\nreturn ['a' => 1, 'b' => 2];");
 
-    expect($result['output'])->toBe('hello from the snippet')
-        ->and($result['exitCode'])->toBe(0);
+    expect($result['output'])->toBe('')
+        ->and($result['exitCode'])->toBe(0)
+        ->and($result['debug']['items'])->toHaveCount(1)
+        ->and($result['debug']['items'][0]['kind'])->toBe('result')
+        ->and($result['debug']['items'][0]['html'])->toContain('array:2')
+        ->and($result['debug']['items'][0])->not->toHaveKey('line');
 });
 
-it('prints nothing when the snippet does not return a string', function (): void {
-    $result = runSnippetSubprocess("<?php\n\n1 + 1;");
+it('records a result item after the items captured during the run', function (): void {
+    $result = runSnippetSubprocess("<?php\n\ndump('side effect');\n\nreturn 'the value';");
 
-    expect($result['output'])->toBe('');
+    expect(array_column($result['debug']['items'], 'kind'))->toBe(['dump', 'result'])
+        ->and($result['debug']['items'][1]['html'])->toContain('the value');
+});
+
+it('records no result item when the snippet has no return statement', function (): void {
+    $result = runSnippetSubprocess("<?php\n\n\$x = 1 + 1;");
+
+    expect($result['output'])->toBe('')
+        ->and($result['debug']['items'])->toBe([]);
+});
+
+it('records no result item for a literal return of 1, which it cannot tell from no return', function (): void {
+    $result = runSnippetSubprocess("<?php\n\nreturn 1;");
+
+    expect($result['debug']['items'])->toBe([]);
 });
 
 it('writes the run snapshot to the debug path', function (): void {
-    $result = runSnippetSubprocess("<?php\n\nreturn 'ok';");
+    $result = runSnippetSubprocess("<?php\n\n\$x = 'ok';");
 
     expect($result['debug'])->toHaveKeys(['items', 'duration_str', 'peak_memory_str'])
         ->and($result['debug']['items'])->toBe([])
@@ -153,14 +171,19 @@ function runInProcess(string $code): array
     return is_array($snapshot) ? $snapshot : [];
 }
 
-it('echoes a string return from an in-process run and writes the snapshot', function (): void {
+it('records the return value of an in-process run as a result item and writes the snapshot', function (): void {
     $snapshot = runInProcess("<?php\n\nreturn 'inprocess hello';");
 
-    expect($snapshot)->toHaveKeys(['items', 'duration_str', 'peak_memory_str']);
-})->expectOutputString('inprocess hello');
+    expect($snapshot)->toHaveKeys(['items', 'duration_str', 'peak_memory_str'])
+        ->and($snapshot['items'])->toHaveCount(1)
+        ->and($snapshot['items'][0]['kind'])->toBe('result')
+        ->and($snapshot['items'][0]['html'])->toContain('inprocess hello');
+})->expectOutputString('');
 
-it('prints nothing for a non-string return from an in-process run', function (): void {
-    runInProcess("<?php\n\n1 + 1;");
+it('records no result item for an in-process run with no return statement', function (): void {
+    $snapshot = runInProcess("<?php\n\n\$x = 1 + 1;");
+
+    expect($snapshot['items'])->toBe([]);
 })->expectOutputString('');
 
 it('records a thrown exception from an in-process run without re-throwing', function (): void {

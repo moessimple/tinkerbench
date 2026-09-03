@@ -408,8 +408,17 @@ function cancelRename(): void {
         return;
     }
 
+    // Escape leaves the rename input focused at this point; a blur to somewhere else does not.
+    // Only the Escape case needs the search input refocused, so the palette keeps handling keys
+    // instead of dropping focus to <body>. A blur means the user already moved focus themselves.
+    const escapedFromInput = renameInputEl.value === document.activeElement;
+
     renaming.value = null;
     renameError.value = '';
+
+    if (escapedFromInput && isOpen.value) {
+        void nextTick(() => createInputEl.value?.focus());
+    }
 }
 
 async function confirmRename(name: string): Promise<void> {
@@ -458,8 +467,16 @@ async function startDelete(name: string): Promise<void> {
 }
 
 function cancelDelete(): void {
+    // The confirm row's buttons had focus; returning it to the search input keeps the palette
+    // handling keys. Skipped when close() is the caller, since it has already torn the palette down.
+    const wasOpen = isOpen.value;
+
     deleting.value = null;
     deleteError.value = '';
+
+    if (wasOpen) {
+        void nextTick(() => createInputEl.value?.focus());
+    }
 }
 
 async function confirmDelete(name: string): Promise<void> {

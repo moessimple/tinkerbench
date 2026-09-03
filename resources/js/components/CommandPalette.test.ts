@@ -730,6 +730,28 @@ it('does nothing when renaming is cancelled with Escape', async () => {
     expect(fetch).toHaveBeenCalledTimes(2);
 });
 
+it('returns focus to the search field after a rename is cancelled with Escape', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    await screen.findByText('scratch');
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Rename scratch' }),
+    );
+    await fireEvent.keyDown(screen.getByLabelText('Rename scratch'), {
+        key: 'Escape',
+    });
+
+    expect(document.activeElement).toBe(
+        screen.getByLabelText('Search snippets'),
+    );
+});
+
 it('does nothing when renaming is cancelled by losing focus', async () => {
     vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], []));
     render(CommandPalette, {
@@ -991,6 +1013,26 @@ it('does nothing when delete is cancelled with Escape', async () => {
 
     screen.getByRole('button', { name: 'Delete scratch' });
     expect(fetch).toHaveBeenCalledTimes(2);
+});
+
+it('returns focus to the search field after a delete confirmation is dismissed', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    await screen.findByText('scratch');
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Delete scratch' }),
+    );
+    await fireEvent.click(screen.getByRole('button', { name: 'No' }));
+
+    expect(document.activeElement).toBe(
+        screen.getByLabelText('Search snippets'),
+    );
 });
 
 it('deletes the current snippet and navigates to the project root', async () => {

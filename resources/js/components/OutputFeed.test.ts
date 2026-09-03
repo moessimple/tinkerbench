@@ -29,6 +29,7 @@ vi.mock('./feed/DumpCard.vue', () => ({ default: kindStub('dump') }));
 vi.mock('./feed/QueryCard.vue', () => ({ default: kindStub('query') }));
 vi.mock('./feed/LogCard.vue', () => ({ default: kindStub('log') }));
 vi.mock('./feed/ExceptionCard.vue', () => ({ default: kindStub('exception') }));
+vi.mock('./feed/ResultCard.vue', () => ({ default: kindStub('result') }));
 vi.mock('./feed/OutputCard.vue', () => ({ default: kindStub('output') }));
 
 const dump = (line: number): FeedEntry => ({
@@ -56,12 +57,13 @@ it('renders one card per entry, dispatched to the component for its kind', () =>
         dump(1),
         { context: null, kind: 'log', label: 'info', line: 2, message: 'hi' },
         { kind: 'exception', line: 3, message: 'boom', type: 'E', frames: [] },
+        { html: '<i>v</i>', kind: 'result' },
     ]);
 
     const kinds = [...container.querySelectorAll('[data-kind]')].map((el) =>
         el.getAttribute('data-kind'),
     );
-    expect(kinds).toEqual(['dump', 'log', 'exception']);
+    expect(kinds).toEqual(['dump', 'log', 'exception', 'result']);
 });
 
 it('narrows the feed to entries of the selected kind when a filter is set', () => {
