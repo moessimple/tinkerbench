@@ -4,6 +4,7 @@ import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
 import RunSnippetController from '@/actions/App/Http/Controllers/RunSnippetController';
 import UpdateSnippetContentController from '@/actions/App/Http/Controllers/UpdateSnippetContentController';
 import CommandPalette from '@/components/CommandPalette.vue';
+import { FACET_KINDS } from '@/components/feed/kinds';
 import MonacoEditor from '@/components/MonacoEditor.vue';
 import OutputFeed from '@/components/OutputFeed.vue';
 import { useTheme } from '@/composables/useTheme';
@@ -40,10 +41,10 @@ const { theme, toggleTheme } = useTheme();
 
 const feedFilters: { label: string; value: FeedFilter }[] = [
     { label: 'All', value: 'all' },
-    { label: 'Dumps', value: 'dump' },
-    { label: 'Queries', value: 'query' },
-    { label: 'Logs', value: 'log' },
-    { label: 'Exceptions', value: 'exception' },
+    ...FACET_KINDS.map((kind) => ({
+        label: kind.facet,
+        value: kind.kind as FeedFilter,
+    })),
 ];
 
 const querySorts: { label: string; value: FeedSort }[] = [
@@ -51,16 +52,15 @@ const querySorts: { label: string; value: FeedSort }[] = [
     { label: 'Slowest', value: 'slowest' },
 ];
 
-const kindCounts = computed<Record<FeedItem['kind'], number>>(() => {
-    const counts: Record<FeedItem['kind'], number> = {
-        dump: 0,
-        query: 0,
-        log: 0,
-        exception: 0,
-    };
+const kindCounts = computed(() => {
+    const counts = Object.fromEntries(
+        FACET_KINDS.map((kind) => [kind.kind, 0]),
+    ) as Record<FeedItem['kind'], number>;
 
     for (const item of debug.value?.items ?? []) {
-        counts[item.kind] += 1;
+        if (item.kind in counts) {
+            counts[item.kind] += 1;
+        }
     }
 
     return counts;

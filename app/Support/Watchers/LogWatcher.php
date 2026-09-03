@@ -9,7 +9,7 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Log\Events\MessageLogged;
 
-class LogWatcher
+class LogWatcher implements Watcher
 {
     public function __construct(private SourceLocator $source) {}
 

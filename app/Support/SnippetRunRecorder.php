@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support;
 
-use App\Support\Watchers\DumpWatcher;
-use App\Support\Watchers\LogWatcher;
-use App\Support\Watchers\QueryWatcher;
+use App\Support\Watchers\Watcher;
 use Closure;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Number;
@@ -24,10 +22,13 @@ class SnippetRunRecorder
 
     private ?float $finishedAt = null;
 
+    /**
+     * @param  list<Watcher>  $watchers  Every feed-item source for the run. ExceptionMapper is not
+     *                                   one of these: it turns caught throwables and fatal shutdown
+     *                                   errors into items, it does not listen to an event.
+     */
     public function __construct(
-        private DumpWatcher $dumpWatcher,
-        private QueryWatcher $queryWatcher,
-        private LogWatcher $logWatcher,
+        private array $watchers,
         private ExceptionMapper $exceptionMapper,
     ) {}
 
@@ -35,9 +36,9 @@ class SnippetRunRecorder
     {
         $emit = $this->append(...);
 
-        $this->dumpWatcher->register($app, $emit);
-        $this->queryWatcher->register($app, $emit);
-        $this->logWatcher->register($app, $emit);
+        foreach ($this->watchers as $watcher) {
+            $watcher->register($app, $emit);
+        }
 
         $this->startedAt = $this->now();
 

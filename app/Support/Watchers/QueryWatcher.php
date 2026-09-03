@@ -10,7 +10,7 @@ use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Events\QueryExecuted;
 
-class QueryWatcher
+class QueryWatcher implements Watcher
 {
     private const int SLOW_QUERY_THRESHOLD_MS = 100;
 

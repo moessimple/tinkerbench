@@ -4,32 +4,25 @@ declare(strict_types=1);
 
 use App\Support\ExceptionMapper;
 use App\Support\SnippetRunRecorder;
-use App\Support\Watchers\DumpWatcher;
-use App\Support\Watchers\LogWatcher;
-use App\Support\Watchers\QueryWatcher;
+use App\Support\Watchers\Watcher;
 use Illuminate\Contracts\Foundation\Application;
 
 /**
- * Runs a recorder whose watchers are stubbed to hand their emit callback straight to $run,
- * so a test drives item capture without real dump/query/log events.
+ * Runs a recorder with one stub watcher that hands its emit callback straight to $run, so a test
+ * drives item capture without real dump/query/log events.
  *
  * @param  Closure(callable): void  $run
  */
 function runRecorder(Closure $run, ?ExceptionMapper $mapper = null): SnippetRunRecorder
 {
     $emit = null;
-    $capture = function ($app, callable $given) use (&$emit): void {
+
+    $watcher = Mockery::mock(Watcher::class);
+    $watcher->shouldReceive('register')->andReturnUsing(function ($app, callable $given) use (&$emit): void {
         $emit = $given;
-    };
+    });
 
-    $dump = Mockery::mock(DumpWatcher::class);
-    $dump->shouldReceive('register')->andReturnUsing($capture);
-    $query = Mockery::mock(QueryWatcher::class);
-    $query->shouldReceive('register')->andReturnUsing($capture);
-    $log = Mockery::mock(LogWatcher::class);
-    $log->shouldReceive('register')->andReturnUsing($capture);
-
-    $recorder = new SnippetRunRecorder($dump, $query, $log, $mapper ?? Mockery::mock(ExceptionMapper::class));
+    $recorder = new SnippetRunRecorder([$watcher], $mapper ?? Mockery::mock(ExceptionMapper::class));
 
     $recorder->record(Mockery::mock(Application::class), function () use (&$emit, $run): void {
         $run($emit);
@@ -74,12 +67,7 @@ it('flags an identical repeated query as a duplicate, leaving the first untouche
 });
 
 it('reports a zero duration when snapshot is taken before a run', function (): void {
-    $recorder = new SnippetRunRecorder(
-        Mockery::mock(DumpWatcher::class),
-        Mockery::mock(QueryWatcher::class),
-        Mockery::mock(LogWatcher::class),
-        Mockery::mock(ExceptionMapper::class),
-    );
+    $recorder = new SnippetRunRecorder([], Mockery::mock(ExceptionMapper::class));
 
     $snapshot = $recorder->snapshot();
 

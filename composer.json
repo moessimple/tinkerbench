@@ -83,7 +83,7 @@
             "npm run test:lint"
         ],
         "test:unit": [
-            "sh -c 'pest=\"vendor/bin/pest --coverage --exactly=100.0\"; command -v herd >/dev/null 2>&1 && herd coverage $pest || XDEBUG_MODE=coverage $pest'",
+            "sh -c 'pest=\"vendor/bin/pest --parallel --coverage --exactly=100.0\"; command -v herd >/dev/null 2>&1 && herd coverage $pest || XDEBUG_MODE=coverage $pest'",
             "npm run test:unit"
         ],
         "test:types": [

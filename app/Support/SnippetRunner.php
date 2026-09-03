@@ -35,9 +35,11 @@ class SnippetRunner
         $source = new SourceLocator($snippetPath);
 
         $recorder = new SnippetRunRecorder(
-            new DumpWatcher($source, new ValueRenderer()),
-            new QueryWatcher($source),
-            new LogWatcher($source),
+            [
+                new DumpWatcher($source, new ValueRenderer()),
+                new QueryWatcher($source),
+                new LogWatcher($source),
+            ],
             new ExceptionMapper($projectPath, $source->path()),
         );
 

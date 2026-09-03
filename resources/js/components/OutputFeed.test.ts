@@ -1,333 +1,129 @@
-import { fireEvent, render, screen } from '@testing-library/vue';
+import { fireEvent, render } from '@testing-library/vue';
 import { expect, it, vi } from 'vitest';
 import type { FeedEntry } from '@/lib/feed';
 import { executeScripts } from '@/lib/output';
 import OutputFeed from './OutputFeed.vue';
 
 // output.ts has its own test (output.test.ts); executeScripts touches the real DOM, so it is
-// stubbed here to assert it runs, while detectOutput/highlightJson stay real (leaf, pure).
+// stubbed here to assert it runs.
 vi.mock('@/lib/output', async (importOriginal) => ({
     ...(await importOriginal<Record<string, unknown>>()),
     executeScripts: vi.fn(),
 }));
 
-// Card has its own test (Card.test.ts); stubbed to a shell that exposes its props and a hook to
-// fire navigate, so this test only proves OutputFeed's per-kind content and event wiring.
-vi.mock('./Card.vue', () => ({
-    default: {
-        props: ['label', 'line', 'variant'],
+// Each kind card has its own test under feed/; here they are stubbed to a shell that echoes the
+// entry kind, its query sql (for sort assertions) and a navigate hook, so this test only proves
+// OutputFeed's dispatch, filter, sort, empty state and navigate re-emit.
+const { kindStub } = vi.hoisted(() => ({
+    kindStub: (kind: string) => ({
+        props: ['entry'],
         emits: ['navigate'],
-        template: `<article :data-label="label" :data-line="line" :data-variant="variant">
-            <slot /><slot name="footer" />
-            <button class="stub-nav" @click="$emit('navigate', line)">nav</button>
+        template: `<article data-kind="${kind}">
+            <span class="sql">{{ entry.sql }}</span>
+            <button class="nav" @click="$emit('navigate', entry.line)">nav</button>
         </article>`,
-    },
+    }),
 }));
 
-function renderFeed(items: FeedEntry[]) {
-    return render(OutputFeed, { props: { items } });
+vi.mock('./feed/DumpCard.vue', () => ({ default: kindStub('dump') }));
+vi.mock('./feed/QueryCard.vue', () => ({ default: kindStub('query') }));
+vi.mock('./feed/LogCard.vue', () => ({ default: kindStub('log') }));
+vi.mock('./feed/ExceptionCard.vue', () => ({ default: kindStub('exception') }));
+vi.mock('./feed/OutputCard.vue', () => ({ default: kindStub('output') }));
+
+const dump = (line: number): FeedEntry => ({
+    html: '<i>x</i>',
+    kind: 'dump',
+    line,
+});
+const query = (sql: string, ms: number): FeedEntry => ({
+    connection: 'sqlite',
+    duplicate: false,
+    duration_ms: ms,
+    duration_str: `${ms}.00ms`,
+    kind: 'query',
+    line: null,
+    slow: false,
+    sql,
+});
+
+function renderFeed(items: FeedEntry[], props: Record<string, unknown> = {}) {
+    return render(OutputFeed, { props: { items, ...props } });
 }
 
-it('renders one card per feed entry', () => {
-    renderFeed([
-        { html: '<i>x</i>', kind: 'dump', line: 1 },
+it('renders one card per entry, dispatched to the component for its kind', () => {
+    const { container } = renderFeed([
+        dump(1),
         { context: null, kind: 'log', label: 'info', line: 2, message: 'hi' },
+        { kind: 'exception', line: 3, message: 'boom', type: 'E', frames: [] },
     ]);
 
-    expect(screen.getAllByRole('article')).toHaveLength(2);
+    const kinds = [...container.querySelectorAll('[data-kind]')].map((el) =>
+        el.getAttribute('data-kind'),
+    );
+    expect(kinds).toEqual(['dump', 'log', 'exception']);
 });
 
-it('renders a dump entry as its html under a Dump card', () => {
-    const { container } = renderFeed([
-        { html: '<i>dumped</i>', kind: 'dump', line: 1 },
-    ]);
+it('narrows the feed to entries of the selected kind when a filter is set', () => {
+    const { container } = renderFeed([query('select 1', 1), dump(2)], {
+        filter: 'query',
+    });
 
-    const card = container.querySelector('[data-label="Dump"]');
-    expect(card?.innerHTML).toContain('<i>dumped</i>');
+    expect(container.querySelector('[data-kind="query"]')).not.toBeNull();
+    expect(container.querySelector('[data-kind="dump"]')).toBeNull();
 });
 
-it('flags a slow, duplicated query', () => {
-    const { container } = renderFeed([
-        {
-            connection: 'sqlite',
-            duplicate: true,
-            duration_ms: 120,
-            duration_str: '120.00ms',
-            kind: 'query',
-            line: 3,
-            slow: true,
-            sql: 'select * from users',
-        },
-    ]);
+it('orders query entries slowest first when the slowest sort is set', () => {
+    const { container } = renderFeed(
+        [query('select 1', 1), query('select 2', 50), query('select 3', 5)],
+        { filter: 'query', sort: 'slowest' },
+    );
 
-    const card = container.querySelector('[data-label="Query"]');
-    expect(card?.textContent).toContain('select * from users');
-    expect(card?.textContent?.toLowerCase()).toContain('slow');
-    expect(card?.textContent?.toLowerCase()).toContain('duplicate');
-    expect(card?.getAttribute('data-variant')).toBe('danger');
+    const order = [...container.querySelectorAll('.sql')].map(
+        (el) => el.textContent,
+    );
+    expect(order).toEqual(['select 2', 'select 3', 'select 1']);
 });
 
-it('leaves a routine query on the default variant', () => {
-    const { container } = renderFeed([
-        {
-            connection: 'sqlite',
-            duplicate: false,
-            duration_ms: 2,
-            duration_str: '2.00ms',
-            kind: 'query',
-            line: 3,
-            slow: false,
-            sql: 'select 1',
-        },
-    ]);
+it('keeps execution order under the recent sort', () => {
+    const { container } = renderFeed(
+        [query('select 1', 50), query('select 2', 1)],
+        { filter: 'query', sort: 'recent' },
+    );
 
-    expect(
-        container
-            .querySelector('[data-label="Query"]')
-            ?.getAttribute('data-variant'),
-    ).toBe('default');
+    const order = [...container.querySelectorAll('.sql')].map(
+        (el) => el.textContent,
+    );
+    expect(order).toEqual(['select 1', 'select 2']);
 });
 
 it('shows a facet-specific empty message when a filter matches nothing', () => {
-    const { container } = render(OutputFeed, {
-        props: {
-            filter: 'exception',
-            items: [{ html: '<i>x</i>', kind: 'dump', line: 1 }] as FeedEntry[],
-        },
-    });
+    const { container } = renderFeed([dump(1)], { filter: 'exception' });
 
-    expect(container.querySelector('[data-label="Dump"]')).toBeNull();
+    expect(container.querySelector('[data-kind]')).toBeNull();
     expect(container.textContent).toContain('No exceptions on this run');
 });
 
 it('shows no empty message on the all facet', () => {
-    const { container } = render(OutputFeed, {
-        props: { filter: 'all', items: [] as FeedEntry[] },
-    });
+    const { container } = renderFeed([], { filter: 'all' });
 
     expect(container.textContent?.trim()).toBe('');
 });
 
-it('narrows the feed to entries of the selected kind when a filter is set', () => {
-    const { container } = render(OutputFeed, {
-        props: {
-            filter: 'query',
-            items: [
-                {
-                    connection: 'sqlite',
-                    duplicate: false,
-                    duration_ms: 1,
-                    duration_str: '1.00ms',
-                    kind: 'query',
-                    line: 1,
-                    slow: false,
-                    sql: 'select 1',
-                },
-                { html: '<i>x</i>', kind: 'dump', line: 2 },
-            ] as FeedEntry[],
-        },
-    });
-
-    expect(container.querySelector('[data-label="Query"]')).not.toBeNull();
-    expect(container.querySelector('[data-label="Dump"]')).toBeNull();
-});
-
-it('orders query entries slowest first when the slowest sort is set', () => {
-    const query = (sql: string, ms: number): FeedEntry => ({
-        connection: 'sqlite',
-        duplicate: false,
-        duration_ms: ms,
-        duration_str: `${ms}.00ms`,
-        kind: 'query',
-        line: null,
-        slow: false,
-        sql,
-    });
-
-    const { container } = render(OutputFeed, {
-        props: {
-            filter: 'query',
-            sort: 'slowest',
-            items: [
-                query('select 1', 1),
-                query('select 2', 50),
-                query('select 3', 5),
-            ],
-        },
-    });
-
-    const order = [
-        ...container.querySelectorAll('[data-label="Query"] code'),
-    ].map((code) => code.textContent);
-
-    expect(order).toEqual(['select 2', 'select 3', 'select 1']);
-});
-
-it('gives a severe log entry the danger variant and a routine one the default', () => {
-    const { container } = renderFeed([
-        {
-            context: null,
-            kind: 'log',
-            label: 'error',
-            line: 1,
-            message: 'boom',
-        },
-        {
-            context: null,
-            kind: 'log',
-            label: 'info',
-            line: 2,
-            message: 'noted',
-        },
-    ]);
-
-    const cards = container.querySelectorAll('[data-label="Log"]');
-    expect(cards[0].getAttribute('data-variant')).toBe('danger');
-    expect(cards[1].getAttribute('data-variant')).toBe('default');
-});
-
-it('renders an exception with its type, message and de-emphasised vendor frames', () => {
-    const { container } = renderFeed([
-        {
-            frames: [
-                {
-                    file: '/app/Foo.php',
-                    function: 'handle',
-                    line: 10,
-                    snippet: false,
-                    vendor: false,
-                },
-                {
-                    file: '/vendor/laravel/x.php',
-                    function: 'run',
-                    line: 99,
-                    snippet: false,
-                    vendor: true,
-                },
-            ],
-            kind: 'exception',
-            line: 4,
-            message: 'nope',
-            type: 'RuntimeException',
-        },
-    ]);
-
-    const card = container.querySelector('[data-label="Exception"]');
-    expect(card?.getAttribute('data-variant')).toBe('danger');
-    expect(card?.textContent).toContain('RuntimeException');
-    expect(card?.textContent).toContain('nope');
-    expect(card?.querySelector('details')).not.toBeNull();
-    expect(card?.querySelector('summary')?.textContent?.trim()).toBe(
-        '2 stack frames',
-    );
-    expect(card?.querySelector('[data-vendor="true"]')).not.toBeNull();
-});
-
-it('labels the stack trace disclosure with a singular noun for a lone frame', () => {
-    const { container } = renderFeed([
-        {
-            frames: [
-                {
-                    file: '/vendor/x.php',
-                    function: 'run',
-                    line: 1,
-                    snippet: false,
-                    vendor: true,
-                },
-            ],
-            kind: 'exception',
-            line: 1,
-            message: 'x',
-            type: 'RuntimeException',
-        },
-    ]);
-
-    const summary = container.querySelector('[data-label="Exception"] summary');
-    expect(summary?.textContent?.trim()).toBe('1 stack frame');
-});
-
-it('omits the stack trace disclosure when the only frame is the snippet itself', () => {
-    const { container } = renderFeed([
-        {
-            frames: [
-                {
-                    file: '/tmp/snippet.php',
-                    function: null,
-                    line: 3,
-                    snippet: true,
-                    vendor: false,
-                },
-            ],
-            kind: 'exception',
-            line: 3,
-            message: 'boom',
-            type: 'RuntimeException',
-        },
-    ]);
-
-    const card = container.querySelector('[data-label="Exception"]');
-    expect(card?.textContent).toContain('boom');
-    expect(card?.querySelector('details')).toBeNull();
-});
-
-it('shows a snippet frame as "snippet:line" rather than its temp path', () => {
-    const { container } = renderFeed([
-        {
-            frames: [
-                {
-                    file: '/private/var/tmp/tinkerbench-snippet-abc.php',
-                    function: null,
-                    line: 8,
-                    snippet: true,
-                    vendor: false,
-                },
-                {
-                    file: '/vendor/x.php',
-                    function: 'run',
-                    line: 1,
-                    snippet: false,
-                    vendor: true,
-                },
-            ],
-            kind: 'exception',
-            line: 8,
-            message: 'x',
-            type: 'RuntimeException',
-        },
-    ]);
-
-    const trace = container.querySelector('[data-label="Exception"] details');
-    expect(trace?.textContent).toContain('snippet:8');
-    expect(trace?.textContent).not.toContain('tinkerbench-snippet-abc');
-});
-
-it('renders the raw stdout Output entry as text', () => {
-    const { container } = renderFeed([
-        { kind: 'output', text: 'plain printed line' },
-    ]);
-
-    const card = container.querySelector('[data-label="Output"]');
-    expect(card?.textContent).toContain('plain printed line');
-});
-
 it('runs executeScripts when the items change', async () => {
-    const { rerender } = renderFeed([
-        { html: '<i>a</i>', kind: 'dump', line: 1 },
-    ]);
+    const { rerender } = renderFeed([dump(1)]);
 
     vi.mocked(executeScripts).mockClear();
 
-    await rerender({ items: [{ html: '<i>b</i>', kind: 'dump', line: 2 }] });
+    await rerender({ items: [dump(2)] });
 
     expect(executeScripts).toHaveBeenCalled();
 });
 
 it('re-emits navigate from a child card', async () => {
-    const { emitted, container } = renderFeed([
-        { html: '<i>x</i>', kind: 'dump', line: 7 },
-    ]);
+    const { emitted, container } = renderFeed([dump(7)]);
 
-    await fireEvent.click(container.querySelector('.stub-nav') as HTMLElement);
+    await fireEvent.click(container.querySelector('.nav') as HTMLElement);
 
     expect(emitted().navigate).toEqual([[7]]);
 });

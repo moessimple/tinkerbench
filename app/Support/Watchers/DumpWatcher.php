@@ -9,7 +9,7 @@ use App\Support\ValueRenderer;
 use Illuminate\Contracts\Foundation\Application;
 use Symfony\Component\VarDumper\VarDumper;
 
-class DumpWatcher
+class DumpWatcher implements Watcher
 {
     public function __construct(
         private SourceLocator $source,
