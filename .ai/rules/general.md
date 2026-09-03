@@ -25,3 +25,14 @@ Now that classes aren't final (see "No final classes, anywhere"), an interface w
 Before considering a change done (committing, closing out a task/checkpoint), run `composer test` rather than manually chaining `pint`, `phpstan`, `pest --type-coverage`, and `pest --coverage` as separate commands — it already runs exactly that sequence (see composer.json's `test`/`test:*` scripts) in one shot and is less error-prone than reassembling it by hand each time.
 
 This doesn't replace fast, targeted `php artisan test --compact --filter=X` runs while actively iterating on one piece (still the right tool for quick RED/GREEN feedback) — it's the gate before calling the work finished.
+
+## Dead-code sweeps: don't flag framework/starter-kit scaffolding
+When hunting for dead code, a file having no caller is not enough to call it dead if it ships as Laravel/Pest/starter-kit scaffolding. Keep these even with zero references:
+
+- app/Http/Controllers/Controller.php - Laravel skeleton base controller (nothing extends it, that's fine).
+- tests/Pest.php: expect()->extend('toBeOne', ...) and function something() - Pest --init scaffolding.
+- Auth baseline, even though there is no login route or auth middleware: app/Models/User.php, UserFactory, tests/Unit/Models/UserTest.php, config/auth.php, the create_users_table migration, the auth.user share in HandleInertiaRequests, resources/js/types/auth.ts.
+
+Grey zone (ask before removing, don't just delete): resources/js/lib/utils.ts cn() helper from laravel/vue-starter-kit - currently unused, and clsx + tailwind-merge are its only consumers.
+
+Only propose removing code that was written for this app's own logic and lost its last caller.
