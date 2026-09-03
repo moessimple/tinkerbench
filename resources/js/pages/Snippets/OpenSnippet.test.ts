@@ -85,16 +85,16 @@ vi.mock('@/components/CommandPalette.vue', () => ({
     },
 }));
 
-// OutputFeed has its own test (OutputFeed.test.ts) proving per-kind card rendering, the
-// hideQueries filter, and its navigate re-emit; stubbed here to a shell that exposes each
-// entry's kind (and an output entry's text), the hide-queries prop, and a navigate trigger,
-// so this test only proves OpenSnippet.vue's feed assembly and its filter/navigate wiring.
+// OutputFeed has its own test (OutputFeed.test.ts) proving per-kind card rendering, the kind
+// filter, the slowest sort, and its navigate re-emit; stubbed here to a shell that exposes each
+// entry's kind (and an output entry's text), the filter and sort props, and a navigate trigger,
+// so this test only proves OpenSnippet.vue's feed assembly and its filter/sort/navigate wiring.
 vi.mock('@/components/OutputFeed.vue', () => ({
     default: {
-        props: ['items', 'hideQueries'],
+        props: ['items', 'filter', 'sort'],
         emits: ['navigate'],
         template: `
-            <div data-testid="feed" :data-hide-queries="hideQueries ? 'yes' : 'no'">
+            <div data-testid="feed" :data-filter="filter" :data-sort="sort">
                 <div v-for="(item, i) in items" :key="i" :data-kind="item.kind">
                     <template v-if="item.kind === 'output'">{{ item.text }}</template>
                     <template v-else>{{ item.kind }}</template>
@@ -252,7 +252,7 @@ it('disables the run button and shows a running label while processing', () => {
     httpState.processing = false;
 });
 
-it('shows the run duration, peak memory and query count after a run', async () => {
+it('shows the run duration and peak memory after a run', async () => {
     render(OpenSnippet, { props });
 
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
@@ -261,10 +261,25 @@ it('shows the run duration, peak memory and query count after a run', async () =
         debug: payload({
             duration_str: '12.30ms',
             peak_memory_str: '18.50 MB',
+        }),
+    });
+
+    await screen.findByText('12.30ms');
+    screen.getByText('18.50 MB');
+});
+
+it('labels each filter tab with its live entry count', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({
+        output: '',
+        debug: payload({
             items: [
                 {
                     connection: 'sqlite',
                     duplicate: false,
+                    duration_ms: 4,
                     duration_str: '4.00ms',
                     kind: 'query',
                     line: null,
@@ -274,22 +289,25 @@ it('shows the run duration, peak memory and query count after a run', async () =
                 {
                     connection: 'sqlite',
                     duplicate: true,
+                    duration_ms: 4,
                     duration_str: '4.00ms',
                     kind: 'query',
                     line: null,
                     slow: false,
                     sql: 'select 1',
                 },
+                { html: '<i>x</i>', kind: 'dump', line: 1 },
             ],
         }),
     });
 
-    await screen.findByText('12.30ms');
-    screen.getByText('18.50 MB');
-    screen.getByRole('button', { name: '2 queries' });
+    await screen.findByRole('tab', { name: 'All 3' });
+    screen.getByRole('tab', { name: 'Queries 2' });
+    screen.getByRole('tab', { name: 'Dumps 1' });
+    screen.getByRole('tab', { name: 'Logs 0' });
 });
 
-it('tells the feed to hide queries when the query filter is toggled off', async () => {
+it('tells the feed which kind to show when a filter tab is selected', async () => {
     render(OpenSnippet, { props });
 
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
@@ -300,6 +318,40 @@ it('tells the feed to hide queries when the query filter is toggled off', async 
                 {
                     connection: 'sqlite',
                     duplicate: false,
+                    duration_ms: 4,
+                    duration_str: '4.00ms',
+                    kind: 'query',
+                    line: null,
+                    slow: false,
+                    sql: 'select 1',
+                },
+                { html: '<i>x</i>', kind: 'dump', line: 1 },
+            ],
+        }),
+    });
+
+    const feed = await screen.findByTestId('feed');
+    expect(feed.getAttribute('data-filter')).toBe('all');
+
+    await fireEvent.click(screen.getByRole('tab', { name: 'Queries 1' }));
+    expect(feed.getAttribute('data-filter')).toBe('query');
+
+    await fireEvent.click(screen.getByRole('tab', { name: 'All 2' }));
+    expect(feed.getAttribute('data-filter')).toBe('all');
+});
+
+it('offers the query sort control only while the queries facet is active', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({
+        output: '',
+        debug: payload({
+            items: [
+                {
+                    connection: 'sqlite',
+                    duplicate: false,
+                    duration_ms: 4,
                     duration_str: '4.00ms',
                     kind: 'query',
                     line: null,
@@ -310,16 +362,83 @@ it('tells the feed to hide queries when the query filter is toggled off', async 
         }),
     });
 
-    const chip = await screen.findByRole('button', { name: '1 query' });
+    await screen.findByRole('tab', { name: 'All 1' });
+    expect(screen.queryByRole('button', { name: 'Slowest' })).toBeNull();
+
+    await fireEvent.click(screen.getByRole('tab', { name: 'Queries 1' }));
+    screen.getByRole('button', { name: 'Slowest' });
+
+    await fireEvent.click(screen.getByRole('tab', { name: 'All 1' }));
+    expect(screen.queryByRole('button', { name: 'Slowest' })).toBeNull();
+});
+
+it('tells the feed to sort queries by duration when slowest is picked', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({
+        output: '',
+        debug: payload({
+            items: [
+                {
+                    connection: 'sqlite',
+                    duplicate: false,
+                    duration_ms: 4,
+                    duration_str: '4.00ms',
+                    kind: 'query',
+                    line: null,
+                    slow: false,
+                    sql: 'select 1',
+                },
+            ],
+        }),
+    });
+
+    await fireEvent.click(
+        await screen.findByRole('tab', { name: 'Queries 1' }),
+    );
     const feed = screen.getByTestId('feed');
-    expect(feed.getAttribute('data-hide-queries')).toBe('no');
-    expect(feed.querySelector('[data-kind="query"]')).not.toBeNull();
+    expect(feed.getAttribute('data-sort')).toBe('recent');
 
-    await fireEvent.click(chip);
-    expect(feed.getAttribute('data-hide-queries')).toBe('yes');
+    await fireEvent.click(screen.getByRole('button', { name: 'Slowest' }));
+    expect(feed.getAttribute('data-sort')).toBe('slowest');
 
-    await fireEvent.click(chip);
-    expect(feed.getAttribute('data-hide-queries')).toBe('no');
+    await fireEvent.click(screen.getByRole('tab', { name: 'All 1' }));
+    expect(feed.getAttribute('data-sort')).toBe('recent');
+});
+
+it('resets the active filter when the output is cleared', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({
+        output: '',
+        debug: payload({
+            items: [
+                {
+                    connection: 'sqlite',
+                    duplicate: false,
+                    duration_ms: 4,
+                    duration_str: '4.00ms',
+                    kind: 'query',
+                    line: null,
+                    slow: false,
+                    sql: 'select 1',
+                },
+            ],
+        }),
+    });
+
+    await fireEvent.click(
+        await screen.findByRole('tab', { name: 'Queries 1' }),
+    );
+    await fireEvent.click(screen.getByRole('button', { name: 'Clear output' }));
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '', debug: payload() });
+
+    const allTab = await screen.findByRole('tab', { name: 'All 0' });
+    expect(allTab.getAttribute('aria-selected')).toBe('true');
 });
 
 it('reveals the line in the editor when the feed emits navigate', async () => {

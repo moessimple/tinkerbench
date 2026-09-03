@@ -17,7 +17,7 @@ class QueryWatcher
     public function __construct(private SourceLocator $source) {}
 
     /**
-     * @param  callable(array{kind: 'query', sql: string, duration_str: string, connection: string, slow: bool, duplicate: bool, line: int|null}): void  $emit
+     * @param  callable(array{kind: 'query', sql: string, duration_str: string, duration_ms: float, connection: string, slow: bool, duplicate: bool, line: int|null}): void  $emit
      */
     public function register(Application $app, callable $emit): void
     {
@@ -26,6 +26,7 @@ class QueryWatcher
                 'kind' => 'query',
                 'sql' => $query->toRawSql(),
                 'duration_str' => Duration::format($query->time),
+                'duration_ms' => $query->time,
                 'connection' => $query->connectionName,
                 'slow' => $query->time >= self::SLOW_QUERY_THRESHOLD_MS,
                 'duplicate' => false,

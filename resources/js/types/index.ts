@@ -13,6 +13,7 @@ export type FeedItem =
     | {
           connection: string;
           duplicate: boolean;
+          duration_ms: number;
           duration_str: string;
           kind: 'query';
           line: number | null;

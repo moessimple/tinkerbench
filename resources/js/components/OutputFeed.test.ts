@@ -51,6 +51,7 @@ it('flags a slow, duplicated query', () => {
         {
             connection: 'sqlite',
             duplicate: true,
+            duration_ms: 120,
             duration_str: '120.00ms',
             kind: 'query',
             line: 3,
@@ -65,14 +66,15 @@ it('flags a slow, duplicated query', () => {
     expect(card?.textContent?.toLowerCase()).toContain('duplicate');
 });
 
-it('drops query cards but keeps everything else when hideQueries is set', () => {
+it('narrows the feed to entries of the selected kind when a filter is set', () => {
     const { container } = render(OutputFeed, {
         props: {
-            hideQueries: true,
+            filter: 'query',
             items: [
                 {
                     connection: 'sqlite',
                     duplicate: false,
+                    duration_ms: 1,
                     duration_str: '1.00ms',
                     kind: 'query',
                     line: 1,
@@ -84,8 +86,39 @@ it('drops query cards but keeps everything else when hideQueries is set', () => 
         },
     });
 
-    expect(container.querySelector('[data-label="Query"]')).toBeNull();
-    expect(container.querySelector('[data-label="Dump"]')).not.toBeNull();
+    expect(container.querySelector('[data-label="Query"]')).not.toBeNull();
+    expect(container.querySelector('[data-label="Dump"]')).toBeNull();
+});
+
+it('orders query entries slowest first when the slowest sort is set', () => {
+    const query = (sql: string, ms: number): FeedEntry => ({
+        connection: 'sqlite',
+        duplicate: false,
+        duration_ms: ms,
+        duration_str: `${ms}.00ms`,
+        kind: 'query',
+        line: null,
+        slow: false,
+        sql,
+    });
+
+    const { container } = render(OutputFeed, {
+        props: {
+            filter: 'query',
+            sort: 'slowest',
+            items: [
+                query('select 1', 1),
+                query('select 2', 50),
+                query('select 3', 5),
+            ],
+        },
+    });
+
+    const order = [
+        ...container.querySelectorAll('[data-label="Query"] code'),
+    ].map((code) => code.textContent);
+
+    expect(order).toEqual(['select 2', 'select 3', 'select 1']);
 });
 
 it('gives a severe log entry the danger variant and a routine one the default', () => {

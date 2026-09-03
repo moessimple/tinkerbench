@@ -9,9 +9,9 @@ import OutputFeed from '@/components/OutputFeed.vue';
 import { useTheme } from '@/composables/useTheme';
 import { xsrfHeader } from '@/lib/csrf';
 import { buildFeed } from '@/lib/feed';
-import type { FeedEntry } from '@/lib/feed';
+import type { FeedEntry, FeedFilter, FeedSort } from '@/lib/feed';
 import { shortcuts } from '@/lib/shortcuts';
-import type { SnippetDebugPayload } from '@/types';
+import type { FeedItem, SnippetDebugPayload } from '@/types';
 
 const props = defineProps<{
     content: string;
@@ -30,21 +30,47 @@ const rawOutput = ref('');
 const debug = ref<SnippetDebugPayload | null>(null);
 const errorMessage = ref('');
 const isMaximized = ref(false);
-const showQueries = ref(true);
+const activeFilter = ref<FeedFilter>('all');
+const querySort = ref<FeedSort>('recent');
 const editorRef = useTemplateRef<{ revealLine: (line: number) => void }>(
     'editor',
 );
 
 const { theme, toggleTheme } = useTheme();
 
-const queryCount = computed(
-    () =>
-        debug.value?.items.filter((item) => item.kind === 'query').length ?? 0,
-);
+const feedFilters: { label: string; value: FeedFilter }[] = [
+    { label: 'All', value: 'all' },
+    { label: 'Dumps', value: 'dump' },
+    { label: 'Queries', value: 'query' },
+    { label: 'Logs', value: 'log' },
+    { label: 'Exceptions', value: 'exception' },
+];
 
-const queryLabel = computed(
-    () => `${queryCount.value} ${queryCount.value === 1 ? 'query' : 'queries'}`,
-);
+const querySorts: { label: string; value: FeedSort }[] = [
+    { label: 'Recent', value: 'recent' },
+    { label: 'Slowest', value: 'slowest' },
+];
+
+const kindCounts = computed<Record<FeedItem['kind'], number>>(() => {
+    const counts: Record<FeedItem['kind'], number> = {
+        dump: 0,
+        query: 0,
+        log: 0,
+        exception: 0,
+    };
+
+    for (const item of debug.value?.items ?? []) {
+        counts[item.kind] += 1;
+    }
+
+    return counts;
+});
+
+function filterCount(filter: FeedFilter): number {
+    return filter === 'all'
+        ? (debug.value?.items.length ?? 0)
+        : kindCounts.value[filter];
+}
 
 const feedEntries = computed<FeedEntry[]>(() =>
     buildFeed(
@@ -155,6 +181,8 @@ function clearOutput(): void {
     rawOutput.value = '';
     debug.value = null;
     errorMessage.value = '';
+    activeFilter.value = 'all';
+    querySort.value = 'recent';
 }
 
 function revealEditorLine(line: number): void {
@@ -201,9 +229,6 @@ function toggleMaximize(): void {
                 <span class="text-muted">/</span>
                 {{ snippetName }}
             </h1>
-            <p class="mt-2 font-mono text-xs text-muted">
-                PHP {{ phpVersion }} · Laravel {{ laravelVersion }}
-            </p>
         </div>
 
         <div
@@ -362,25 +387,74 @@ function toggleMaximize(): void {
 
                 <div class="flex min-h-0 min-w-0 flex-2 flex-col">
                     <div
-                        v-if="debug"
-                        class="flex shrink-0 items-center gap-4 border-b border-line px-4 py-2 font-mono text-xs text-muted"
+                        class="flex shrink-0 items-center gap-3 border-b border-line px-4 py-2 font-mono text-xs text-muted"
                     >
-                        <span>{{ debug.duration_str }}</span>
-                        <span>{{ debug.peak_memory_str }}</span>
+                        <span>
+                            PHP {{ phpVersion }} · Laravel {{ laravelVersion }}
+                        </span>
+                        <template v-if="debug">
+                            <span class="ml-auto">{{
+                                debug.duration_str
+                            }}</span>
+                            <span>{{ debug.peak_memory_str }}</span>
+                        </template>
+                    </div>
+                    <div
+                        v-if="debug"
+                        role="tablist"
+                        aria-label="Filter output by kind"
+                        class="flex shrink-0 gap-0.5 overflow-x-auto border-b border-line px-3 py-1.5 font-mono text-[11px]"
+                    >
                         <button
+                            v-for="filter in feedFilters"
+                            :key="filter.value"
                             type="button"
-                            :aria-pressed="showQueries"
-                            :aria-label="queryLabel"
-                            class="ml-auto rounded px-2 py-0.5 tracking-widest uppercase"
+                            role="tab"
+                            :aria-selected="activeFilter === filter.value"
+                            class="flex shrink-0 items-baseline gap-1 rounded px-1.5 py-0.5 tracking-wide whitespace-nowrap uppercase"
                             :class="
-                                showQueries
-                                    ? 'text-accent'
-                                    : 'text-muted hover:text-fg'
+                                activeFilter === filter.value
+                                    ? 'bg-accent/10 text-accent'
+                                    : 'text-muted hover:bg-line/40 hover:text-fg'
                             "
-                            @click="showQueries = !showQueries"
+                            @click="activeFilter = filter.value"
                         >
-                            {{ queryLabel }}
+                            {{ filter.label }}
+                            <span
+                                class="tabular-nums"
+                                :class="
+                                    activeFilter === filter.value
+                                        ? 'text-accent/70'
+                                        : 'text-muted/70'
+                                "
+                            >
+                                {{ filterCount(filter.value) }}
+                            </span>
                         </button>
+                    </div>
+                    <div
+                        v-if="debug && activeFilter === 'query'"
+                        class="flex shrink-0 items-center gap-3 border-b border-line px-4 py-1.5 font-mono text-[11px] text-muted"
+                    >
+                        <span>{{ kindCounts.query }} statements</span>
+                        <div class="ml-auto flex items-center gap-1">
+                            <span class="tracking-wide uppercase">Sort</span>
+                            <button
+                                v-for="option in querySorts"
+                                :key="option.value"
+                                type="button"
+                                :aria-pressed="querySort === option.value"
+                                class="rounded px-1.5 py-0.5 tracking-wide uppercase"
+                                :class="
+                                    querySort === option.value
+                                        ? 'bg-accent/10 text-accent'
+                                        : 'hover:bg-line/40 hover:text-fg'
+                                "
+                                @click="querySort = option.value"
+                            >
+                                {{ option.label }}
+                            </button>
+                        </div>
                     </div>
                     <div
                         role="region"
@@ -389,7 +463,10 @@ function toggleMaximize(): void {
                     >
                         <OutputFeed
                             :items="feedEntries"
-                            :hide-queries="!showQueries"
+                            :filter="activeFilter"
+                            :sort="
+                                activeFilter === 'query' ? querySort : 'recent'
+                            "
                             @navigate="revealEditorLine"
                         />
                     </div>

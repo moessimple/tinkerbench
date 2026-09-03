@@ -16,10 +16,11 @@ it('renders the line as a button and emits navigate with the line on click', asy
     expect(emitted().navigate).toEqual([[12]]);
 });
 
-it('shows the line badge as non-interactive text when line is null', () => {
+it('omits the line control entirely when line is null', () => {
     render(Card, { props: { label: 'Dump', line: null } });
 
     expect(screen.queryByRole('button')).toBeNull();
+    expect(screen.queryByText(/line/i)).toBeNull();
 });
 
 it('marks the card with its variant for danger styling', () => {

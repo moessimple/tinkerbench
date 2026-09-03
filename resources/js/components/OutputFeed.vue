@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { computed, nextTick, useTemplateRef, watch } from 'vue';
-import type { FeedEntry } from '@/lib/feed';
+import type { FeedEntry, FeedFilter, FeedSort } from '@/lib/feed';
 import { detectOutput, executeScripts, highlightJson } from '@/lib/output';
 import type { ExceptionFrame } from '@/types';
 import Card from './Card.vue';
 
 const props = withDefaults(
-    defineProps<{ items: FeedEntry[]; hideQueries?: boolean }>(),
-    { hideQueries: false },
+    defineProps<{
+        items: FeedEntry[];
+        filter?: FeedFilter;
+        sort?: FeedSort;
+    }>(),
+    { filter: 'all', sort: 'recent' },
 );
 
 defineEmits<{ navigate: [line: number] }>();
@@ -16,15 +20,28 @@ const SEVERE_LOG_LEVELS = ['emergency', 'alert', 'critical', 'error'];
 
 const feedElement = useTemplateRef('feedElement');
 
-const rows = computed(() =>
-    props.items
-        .filter((entry) => !(props.hideQueries && entry.kind === 'query'))
-        .map((entry) =>
-            entry.kind === 'output'
-                ? { entry, output: detectOutput(entry.text) }
-                : { entry, output: null },
-        ),
-);
+function entryDurationMs(entry: FeedEntry): number {
+    return entry.kind === 'query' ? entry.duration_ms : 0;
+}
+
+const rows = computed(() => {
+    const visible = props.items.filter(
+        (entry) => props.filter === 'all' || entry.kind === props.filter,
+    );
+
+    const ordered =
+        props.sort === 'slowest'
+            ? [...visible].sort(
+                  (a, b) => entryDurationMs(b) - entryDurationMs(a),
+              )
+            : visible;
+
+    return ordered.map((entry) =>
+        entry.kind === 'output'
+            ? { entry, output: detectOutput(entry.text) }
+            : { entry, output: null },
+    );
+});
 
 // A lone snippet frame adds nothing the card header (line N) doesn't already show.
 function hasTrace(frames: ExceptionFrame[]): boolean {
@@ -69,18 +86,27 @@ watch(
             <Card
                 v-else-if="row.entry.kind === 'query'"
                 label="Query"
+                variant="accent"
                 :line="row.entry.line"
                 @navigate="$emit('navigate', $event)"
             >
                 <code class="block break-all">{{ row.entry.sql }}</code>
                 <template #footer>
-                    <span v-if="row.entry.slow" class="mr-2 text-red-400">
+                    <span
+                        v-if="row.entry.slow"
+                        class="rounded bg-danger/10 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-danger uppercase"
+                    >
                         slow
                     </span>
-                    <span v-if="row.entry.duplicate" class="mr-2 text-red-400">
+                    <span
+                        v-if="row.entry.duplicate"
+                        class="rounded bg-danger/10 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-danger uppercase"
+                    >
                         duplicate
                     </span>
-                    {{ row.entry.duration_str }} · {{ row.entry.connection }}
+                    <span>{{ row.entry.duration_str }}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>{{ row.entry.connection }}</span>
                 </template>
             </Card>
 
@@ -95,10 +121,19 @@ watch(
                 "
                 @navigate="$emit('navigate', $event)"
             >
-                <span class="mr-2 text-xs text-muted uppercase">
-                    {{ row.entry.label }}
-                </span>
-                <span class="break-all">{{ row.entry.message }}</span>
+                <div class="flex flex-wrap items-baseline gap-x-2">
+                    <span
+                        class="rounded px-1.5 py-0.5 text-[10px] font-medium tracking-wide uppercase"
+                        :class="
+                            SEVERE_LOG_LEVELS.includes(row.entry.label)
+                                ? 'bg-danger/10 text-danger'
+                                : 'bg-line/60 text-muted'
+                        "
+                    >
+                        {{ row.entry.label }}
+                    </span>
+                    <span class="break-all">{{ row.entry.message }}</span>
+                </div>
                 <pre
                     v-if="row.entry.context"
                     class="mt-1 overflow-x-auto text-xs text-muted"
@@ -113,16 +148,16 @@ watch(
                 @navigate="$emit('navigate', $event)"
             >
                 <p>
-                    <strong>{{ row.entry.type }}</strong
+                    <strong class="text-danger">{{ row.entry.type }}</strong
                     >: {{ row.entry.message }}
                 </p>
                 <details v-if="hasTrace(row.entry.frames)" class="mt-2 text-xs">
                     <summary
-                        class="cursor-pointer text-muted uppercase select-none"
+                        class="cursor-pointer tracking-wide text-muted uppercase select-none hover:text-fg"
                     >
                         {{ frameCountLabel(row.entry.frames) }}
                     </summary>
-                    <ul class="mt-1 flex flex-col gap-0.5">
+                    <ul class="mt-1.5 flex flex-col gap-0.5">
                         <li
                             v-for="(frame, frameIndex) in row.entry.frames"
                             :key="frameIndex"
@@ -138,7 +173,7 @@ watch(
                                 v-if="frame.function && !frame.snippet"
                                 class="text-muted"
                             >
-                                — {{ frame.function }}
+                                · {{ frame.function }}
                             </span>
                         </li>
                     </ul>

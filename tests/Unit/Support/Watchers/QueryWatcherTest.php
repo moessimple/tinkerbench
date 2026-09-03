@@ -36,6 +36,7 @@ it('emits a query item with the documented shape', function (): void {
             'kind' => 'query',
             'sql' => 'select * from "users" where "id" = 5',
             'duration_str' => '4.20ms',
+            'duration_ms' => 4.2,
             'connection' => DB::connection()->getName(),
             'slow' => false,
             'duplicate' => false,
