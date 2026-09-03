@@ -166,6 +166,15 @@ it('shows the running PHP and Laravel version', () => {
     screen.getByText('PHP 8.5.0 · Laravel 13.0.0');
 });
 
+it('renders the project and snippet name in the output bar as a fallback for the hidden heading', () => {
+    render(OpenSnippet, { props });
+
+    const bar = screen.getByText('PHP 8.5.0 · Laravel 13.0.0').closest('div');
+
+    expect(bar?.textContent).toContain('my-project');
+    expect(bar?.textContent).toContain('scratch');
+});
+
 it('surfaces the keyboard shortcuts as a visible legend, not only on hover', () => {
     render(OpenSnippet, { props });
 

@@ -412,6 +412,17 @@ function toggleMaximize(): void {
                     <div
                         class="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-b border-line px-4 py-2 font-mono text-xs text-muted"
                     >
+                        <span
+                            class="flex items-center gap-x-2"
+                            :class="{ 'min-[900px]:hidden': !isMaximized }"
+                        >
+                            <span class="text-fg">
+                                {{ currentProject
+                                }}<span class="text-muted"> / </span
+                                >{{ snippetName }}
+                            </span>
+                            <span aria-hidden="true">·</span>
+                        </span>
                         <span>
                             PHP {{ phpVersion }} · Laravel {{ laravelVersion }}
                         </span>
@@ -457,10 +468,9 @@ function toggleMaximize(): void {
                     </div>
                     <div
                         v-if="debug && activeFilter === 'query'"
-                        class="flex shrink-0 items-center gap-3 border-b border-line px-4 py-1.5 font-mono text-[11px] text-muted"
+                        class="flex shrink-0 items-center justify-end gap-3 border-b border-line px-4 py-1.5 font-mono text-[11px] text-muted"
                     >
-                        <span>{{ kindCounts.query }} statements</span>
-                        <div class="ml-auto flex items-center gap-1">
+                        <div class="flex items-center gap-1">
                             <span class="tracking-wide uppercase">Sort</span>
                             <button
                                 v-for="option in querySorts"

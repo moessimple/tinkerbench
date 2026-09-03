@@ -331,6 +331,23 @@ it('shows a hint to create the typed name when nothing matches', async () => {
     );
 });
 
+it('drops the # scope prefix from the create hint', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('Search snippets');
+    await fireEvent.update(input, '#my-report');
+
+    await screen.findByText(
+        'No snippet named "my-report" yet. Press Enter to create it.',
+    );
+});
+
 it('clears a typed filter when reopened after being closed without acting on it', async () => {
     vi.stubGlobal('fetch', fetchRoutedTo(['apple', 'scratch', 'zebra'], []));
     render(CommandPalette, {

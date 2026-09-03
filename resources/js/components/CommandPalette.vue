@@ -630,8 +630,9 @@ async function confirmDelete(name: string): Promise<void> {
                         No snippets found.
                     </p>
                     <p v-else class="px-3 py-2 font-mono text-xs text-muted">
-                        No snippet named "{{ createForm.name.trim() }}" yet.
-                        Press Enter to create it.
+                        No snippet named "{{
+                            snippetNameFromInput(createForm.name).trim()
+                        }}" yet. Press Enter to create it.
                     </p>
                 </template>
 
