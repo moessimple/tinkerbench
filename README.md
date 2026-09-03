@@ -16,8 +16,8 @@ A take on Laravel's [`tinker`](https://github.com/laravel/tinker), inspired by [
 * Command palette (`⌘P`) to jump between snippets and projects, similar to an editor's quick open.
 * Monaco based editor with PHP syntax highlighting, autosave, and a run shortcut (`⌘Enter`).
 * PHP autocompletion, hover documentation, and signature help for the target project's own code, powered by intelephense (the same language server VS Code uses).
-* Raw or rendered output. Rendered mode shows `dump()`/`dd()` calls with Symfony's interactive VarDumper, syntax highlights JSON, and renders HTML output in a sandboxed frame.
-* A debug tab next to the output, showing the queries, timing, and dumps a snippet run touched, and any exception it threw.
+* Output rendering adapts to the value: `dump()`/`dd()` calls use Symfony's interactive VarDumper, JSON is syntax highlighted, and HTML output renders in a sandboxed frame.
+* A single chronological feed of everything a run touched: each dump, database query, log entry, and exception as its own card, in execution order. Filter the feed by kind with live counts. Queries that ran three or more times or slower than 100ms are flagged and can be sorted slowest first. A card's line reference jumps the editor to that line.
 * Light and dark theme, switchable from the sidebar, defaulting to your system preference.
 
 **tinkerbench runs locally on your own machine through Herd. It's a personal dev tool.**
@@ -44,7 +44,7 @@ Open [`https://tinkerbench.test`](https://tinkerbench.test). It opens the `scrat
 
 * Write PHP in the editor and run it with the play button or `⌘Enter`.
 * Press `⌘P` to search snippets and projects, scope the search to snippets (`#` prefix) or another Herd project (`/` prefix), or create a new snippet by typing a name that doesn't exist yet.
-* Toggle raw/rendered output, clear the output, or maximize the editor from the sidebar icons.
+* Clear the output or maximize the editor from the sidebar icons.
 
 ## Staying Up to Date
 
