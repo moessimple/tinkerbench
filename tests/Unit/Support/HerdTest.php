@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use App\Support\Herd;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
+use Illuminate\Support\Str;
 
 it('merges sites and parked into a project map', function (): void {
     config(['services.herd.bin' => '/tmp/herd-bin']);
@@ -322,23 +324,29 @@ it('captures dump() as an HTML dump item in the debug data', function (): void {
 });
 
 it('cleans up the temp snippet file after running', function (): void {
-    $before = glob(sys_get_temp_dir().'/tinkerbench-snippet-*.php');
+    $scratch = sys_get_temp_dir().'/tinkerbench-herd-test-'.Str::random(16);
+    File::makeDirectory($scratch);
 
-    new Herd()->runSnippet("<?php\n\nreturn 'cleanup check';", PHP_BINARY, base_path());
+    try {
+        new Herd($scratch)->runSnippet("<?php\n\nreturn 'cleanup check';", PHP_BINARY, base_path());
 
-    $after = glob(sys_get_temp_dir().'/tinkerbench-snippet-*.php');
-
-    expect($after)->toBe($before);
+        expect(glob($scratch.'/tinkerbench-snippet-*.php'))->toBe([]);
+    } finally {
+        File::deleteDirectory($scratch);
+    }
 });
 
 it('cleans up the temp debug file after running', function (): void {
-    $before = glob(sys_get_temp_dir().'/tinkerbench-debug-*.json');
+    $scratch = sys_get_temp_dir().'/tinkerbench-herd-test-'.Str::random(16);
+    File::makeDirectory($scratch);
 
-    new Herd()->runSnippet("<?php\n\nreturn 'cleanup check';", PHP_BINARY, base_path());
+    try {
+        new Herd($scratch)->runSnippet("<?php\n\nreturn 'cleanup check';", PHP_BINARY, base_path());
 
-    $after = glob(sys_get_temp_dir().'/tinkerbench-debug-*.json');
-
-    expect($after)->toBe($before);
+        expect(glob($scratch.'/tinkerbench-debug-*.json'))->toBe([]);
+    } finally {
+        File::deleteDirectory($scratch);
+    }
 });
 
 it('returns the debug data collected by the subprocess', function (): void {

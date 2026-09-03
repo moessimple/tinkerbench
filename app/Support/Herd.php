@@ -15,6 +15,14 @@ class Herd
 {
     private const int DEFAULT_SNIPPET_TIMEOUT_SECONDS = 300;
 
+    /**
+     * @param  string|null  $scratchDirectory  Directory for the snippet's transient input/debug files;
+     *                                         defaults to the system temp directory. Set it to an
+     *                                         isolated path when a caller needs the run's temp files
+     *                                         kept away from other processes' tinkerbench-* files.
+     */
+    public function __construct(private ?string $scratchDirectory = null) {}
+
     /** @return array<string, string> */
     public function projects(): array
     {
@@ -104,8 +112,9 @@ class Herd
         // from under a snippet that Process::timeout() is still waiting to terminate.
         set_time_limit($timeoutSeconds + 30);
 
-        $snippetPath = sys_get_temp_dir().'/tinkerbench-snippet-'.Str::random(32).'.php';
-        $debugPath = sys_get_temp_dir().'/tinkerbench-debug-'.Str::random(32).'.json';
+        $scratchDirectory = $this->scratchDirectory ?? sys_get_temp_dir();
+        $snippetPath = $scratchDirectory.'/tinkerbench-snippet-'.Str::random(32).'.php';
+        $debugPath = $scratchDirectory.'/tinkerbench-debug-'.Str::random(32).'.json';
         file_put_contents($snippetPath, $code);
 
         try {
