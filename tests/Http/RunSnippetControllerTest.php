@@ -21,13 +21,12 @@ it('uses the right middleware', function (): void {
 });
 
 it('uses the right action', function (): void {
+    mockKnownProject();
+
     $this->mock(RunSnippetAction::class)
-        ->shouldReceive('execute')->once()->with('my-project', Mockery::type('string'))->andReturn(new SnippetRunResult('output', null));
+        ->shouldReceive('execute')->once()->with('my-project', 'echo 1;')->andReturn(new SnippetRunResult('output', null));
 
-    $request = new RunSnippetRequest();
-    $request->merge(['code' => 'echo 1;']);
-
-    app()->call(new RunSnippetController(), ['request' => $request, 'project' => 'my-project']);
+    $this->postJson('/api/projects/my-project/snippets/executions', ['code' => 'echo 1;']);
 });
 
 it('returns the right output', function (): void {

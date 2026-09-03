@@ -7,10 +7,12 @@ use App\Http\Controllers\StartLanguageServerController;
 use App\Http\Middleware\EnsureKnownProject;
 
 it('uses the right action', function (): void {
+    mockKnownProject();
+
     $this->mock(StartLanguageServerAction::class)
         ->shouldReceive('execute')->once()->with('my-project')->andReturn(54213);
 
-    app()->call(new StartLanguageServerController(), ['project' => 'my-project']);
+    $this->postJson('/api/projects/my-project/language-server');
 });
 
 it('uses the right middleware', function (): void {

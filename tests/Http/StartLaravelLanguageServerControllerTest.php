@@ -7,10 +7,12 @@ use App\Http\Controllers\StartLaravelLanguageServerController;
 use App\Http\Middleware\EnsureKnownProject;
 
 it('uses the right action', function (): void {
+    mockKnownProject();
+
     $this->mock(StartLaravelLanguageServerAction::class)
         ->shouldReceive('execute')->once()->with('my-project')->andReturn(54213);
 
-    app()->call(new StartLaravelLanguageServerController(), ['project' => 'my-project']);
+    $this->postJson('/api/projects/my-project/laravel-language-server');
 });
 
 it('uses the right middleware', function (): void {
