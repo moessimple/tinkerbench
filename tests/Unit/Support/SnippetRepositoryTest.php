@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enums\CreateSnippetResult;
 use App\Enums\DeleteSnippetResult;
 use App\Enums\Disk;
 use App\Enums\RenameSnippetResult;
@@ -70,6 +71,82 @@ it('lets the same snippet name coexist independently in two projects', function 
 
     expect(new SnippetRepository()->contents('project-a', 'scratch'))->toBe('echo "a";')
         ->and(new SnippetRepository()->contents('project-b', 'scratch'))->toBe(File::get(resource_path('stubs/scratch.php')));
+});
+
+it('creates a snippet with default content for a free name', function (): void {
+    $result = new SnippetRepository()->create('my-project', 'fresh');
+
+    expect($result)->toBe(CreateSnippetResult::Created);
+    Storage::disk(Disk::Snippets)->assertExists('my-project/fresh.php', File::get(resource_path('stubs/scratch.php')));
+});
+
+it('reports a conflict when creating a name that is already taken', function (): void {
+    Storage::disk(Disk::Snippets)->put('my-project/taken.php', 'echo "kept";');
+
+    $result = new SnippetRepository()->create('my-project', 'taken');
+
+    expect($result)->toBe(CreateSnippetResult::Conflict);
+    Storage::disk(Disk::Snippets)->assertExists('my-project/taken.php', 'echo "kept";');
+});
+
+it('reports failure instead of success when creating a snippet fails', function (): void {
+    Storage::shouldReceive('disk')
+        ->with(Disk::Snippets)
+        ->andReturn(Mockery::mock(Filesystem::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('exists')->andReturn(false);
+            $mock->shouldReceive('put')->once()->andReturn(false);
+        }));
+
+    expect(new SnippetRepository()->create('my-project', 'fresh'))->toBe(CreateSnippetResult::Failed);
+});
+
+it('logs the failure when creating a snippet fails', function (): void {
+    Log::shouldReceive('error')->once()->with('Unable to write the snippet at my-project/fresh.php.');
+
+    Storage::shouldReceive('disk')
+        ->with(Disk::Snippets)
+        ->andReturn(Mockery::mock(Filesystem::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('exists')->andReturn(false);
+            $mock->shouldReceive('put')->once()->andReturn(false);
+        }));
+
+    new SnippetRepository()->create('my-project', 'fresh');
+});
+
+it('locks the target snippet name for the duration of the create', function (): void {
+    $lock = Mockery::mock(Lock::class);
+    $lock->shouldReceive('block')->once()->with(5);
+    $lock->shouldReceive('release')->once();
+
+    Cache::shouldReceive('lock')
+        ->once()
+        ->with('tinkerbench:snippet-create:my-project:fresh', 5)
+        ->andReturn($lock);
+
+    $result = new SnippetRepository()->create('my-project', 'fresh');
+
+    expect($result)->toBe(CreateSnippetResult::Created);
+});
+
+it('releases the create lock even when the name is already taken', function (): void {
+    Storage::disk(Disk::Snippets)->put('my-project/taken.php', 'echo 1;');
+
+    $lock = Mockery::mock(Lock::class);
+    $lock->shouldReceive('block')->once()->with(5);
+    $lock->shouldReceive('release')->once();
+
+    Cache::shouldReceive('lock')->once()->andReturn($lock);
+
+    new SnippetRepository()->create('my-project', 'taken');
+});
+
+it('does not conflict with a same-named snippet in a different project when creating', function (): void {
+    Storage::disk(Disk::Snippets)->put('project-a/shared.php', 'echo "a";');
+
+    $result = new SnippetRepository()->create('project-b', 'shared');
+
+    expect($result)->toBe(CreateSnippetResult::Created);
+    Storage::disk(Disk::Snippets)->assertExists('project-b/shared.php', File::get(resource_path('stubs/scratch.php')));
 });
 
 it('returns the contents of an existing snippet', function (): void {

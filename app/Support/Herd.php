@@ -90,17 +90,33 @@ class Herd
 
     public function phpVersion(string $phpBinary): string
     {
-        $version = mb_trim($this->run([$phpBinary, '-r', 'echo PHP_VERSION;']));
+        return Cache::rememberForever("herd:php-version:{$phpBinary}", fn (): string => $this->resolvePhpVersion($phpBinary));
+    }
 
-        return $version !== '' ? $version : 'unknown';
+    public function refreshPhpVersion(string $phpBinary): string
+    {
+        $version = $this->resolvePhpVersion($phpBinary);
+
+        Cache::forever("herd:php-version:{$phpBinary}", $version);
+
+        return $version;
     }
 
     public function laravelVersion(string $phpBinary, string $projectPath): string
     {
-        $probe = 'require $argv[1]."/vendor/autoload.php"; echo (require $argv[1]."/bootstrap/app.php")->version();';
-        $version = mb_trim($this->run([$phpBinary, '-r', $probe, $projectPath]));
+        return Cache::rememberForever(
+            "herd:laravel-version:{$phpBinary}:{$projectPath}",
+            fn (): string => $this->resolveLaravelVersion($phpBinary, $projectPath),
+        );
+    }
 
-        return $version !== '' ? $version : 'unknown';
+    public function refreshLaravelVersion(string $phpBinary, string $projectPath): string
+    {
+        $version = $this->resolveLaravelVersion($phpBinary, $projectPath);
+
+        Cache::forever("herd:laravel-version:{$phpBinary}:{$projectPath}", $version);
+
+        return $version;
     }
 
     public function runSnippet(string $code, string $phpBinary, string $projectPath, int $timeoutSeconds = self::DEFAULT_SNIPPET_TIMEOUT_SECONDS): SnippetRunResult
@@ -173,6 +189,21 @@ class Herd
         $binary = mb_trim($this->run([$this->php(), $this->phar(), 'which-php', $project]));
 
         return $binary !== '' ? $binary : $this->php();
+    }
+
+    private function resolvePhpVersion(string $phpBinary): string
+    {
+        $version = mb_trim($this->run([$phpBinary, '-r', 'echo PHP_VERSION;']));
+
+        return $version !== '' ? $version : 'unknown';
+    }
+
+    private function resolveLaravelVersion(string $phpBinary, string $projectPath): string
+    {
+        $probe = 'require $argv[1]."/vendor/autoload.php"; echo (require $argv[1]."/bootstrap/app.php")->version();';
+        $version = mb_trim($this->run([$phpBinary, '-r', $probe, $projectPath]));
+
+        return $version !== '' ? $version : 'unknown';
     }
 
     private function php(): string

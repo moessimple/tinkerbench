@@ -33,6 +33,8 @@ const projectsErrorMessage = ref('');
 const highlightedIndex = ref(0);
 const createInputEl = useTemplateRef<HTMLInputElement>('createInput');
 
+const createError = ref('');
+
 const renaming = ref<string | null>(null);
 const renameValue = ref('');
 const renameError = ref('');
@@ -183,6 +185,7 @@ watch(
     () => createForm.name,
     () => {
         highlightedIndex.value = 0;
+        createError.value = '';
     },
 );
 
@@ -201,6 +204,7 @@ async function open(prefix: '' | '#' | '/'): Promise<void> {
     isOpen.value = true;
     createForm.reset();
     createForm.name = prefix;
+    createError.value = '';
     await Promise.all([loadNames(), loadProjects()]);
     await nextTick();
     createInputEl.value?.focus();
@@ -354,11 +358,20 @@ function switchProject(name: string): void {
 }
 
 function createSnippet(): void {
+    createError.value = '';
+
     createForm.post(CreateSnippetController.url(props.currentProject), {
         onSuccess: () => {
             const name = snippetNameFromInput(createForm.name);
             createForm.reset();
             openSnippet(name);
+        },
+        // A taken name (409) or a write failure (500) is a domain error, not a
+        // field-validation error, so it arrives here rather than in createForm.errors.
+        onHttpException: (response) => {
+            createError.value =
+                (response.data as { message?: string })?.message ??
+                'Unable to create the snippet.';
         },
     });
 }
@@ -564,6 +577,12 @@ async function confirmDelete(name: string): Promise<void> {
                         class="mt-1 font-mono text-xs text-red-400"
                     >
                         {{ createForm.errors.name }}
+                    </p>
+                    <p
+                        v-if="createError"
+                        class="mt-1 font-mono text-xs text-red-400"
+                    >
+                        {{ createError }}
                     </p>
                 </form>
 

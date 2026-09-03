@@ -25,7 +25,14 @@ class RefreshHerdCacheOnFullPageLoad
         $project = $this->herd->resolveProject(is_string($routeProject) ? $routeProject : null);
 
         if (array_key_exists($project, $projects)) {
-            $this->herd->refreshPhpBinary($project);
+            $phpBinary = $this->herd->refreshPhpBinary($project);
+            $this->herd->refreshPhpVersion($phpBinary);
+
+            $projectPath = $this->herd->projectPath($project);
+
+            if ($projectPath !== null) {
+                $this->herd->refreshLaravelVersion($phpBinary, $projectPath);
+            }
         }
 
         return $next($request);

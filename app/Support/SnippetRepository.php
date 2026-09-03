@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use App\Enums\CreateSnippetResult;
 use App\Enums\DeleteSnippetResult;
 use App\Enums\Disk;
 use App\Enums\RenameSnippetResult;
@@ -31,6 +32,10 @@ class SnippetRepository
         return $names;
     }
 
+    /**
+     * Idempotent open-or-create: succeeds whether the snippet already existed or was just created.
+     * For the explicit "create a new snippet" action that must reject an existing name, use create().
+     */
     public function ensureExists(string $project, string $snippet): bool
     {
         if ($this->exists($project, $snippet)) {
@@ -38,6 +43,18 @@ class SnippetRepository
         }
 
         return $this->write($project, $snippet, $this->defaultContent());
+    }
+
+    public function create(string $project, string $snippet): CreateSnippetResult
+    {
+        $lock = Cache::lock("tinkerbench:snippet-create:{$project}:{$snippet}", 5);
+        $lock->block(5);
+
+        try {
+            return $this->createWhileLocked($project, $snippet);
+        } finally {
+            $lock->release();
+        }
     }
 
     public function contents(string $project, string $snippet): string
@@ -84,6 +101,19 @@ class SnippetRepository
         }
 
         return DeleteSnippetResult::Deleted;
+    }
+
+    private function createWhileLocked(string $project, string $snippet): CreateSnippetResult
+    {
+        if ($this->exists($project, $snippet)) {
+            return CreateSnippetResult::Conflict;
+        }
+
+        if (! $this->write($project, $snippet, $this->defaultContent())) {
+            return CreateSnippetResult::Failed;
+        }
+
+        return CreateSnippetResult::Created;
     }
 
     private function renameWhileLocked(string $project, string $from, string $to): RenameSnippetResult

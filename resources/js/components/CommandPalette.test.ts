@@ -7,6 +7,7 @@ const validateSpy = vi.fn();
 let capturedCreatePost: {
     url: string;
     onSuccess?: () => void;
+    onHttpException?: (response: { status: number; data: unknown }) => void;
     data: { name: string };
 } | null = null;
 
@@ -35,10 +36,20 @@ const createFormState = reactive({
 
         return createFormState;
     },
-    post(url: string, options?: { onSuccess?: () => void }) {
+    post(
+        url: string,
+        options?: {
+            onSuccess?: () => void;
+            onHttpException?: (response: {
+                status: number;
+                data: unknown;
+            }) => void;
+        },
+    ) {
         capturedCreatePost = {
             url,
             onSuccess: options?.onSuccess,
+            onHttpException: options?.onHttpException,
             data: { name: transformName(createFormState.name) },
         };
     },
@@ -614,6 +625,28 @@ it('creates a new snippet and navigates to it on success', async () => {
     capturedCreatePost?.onSuccess?.();
 
     expect(routerGet).toHaveBeenCalledWith('/my-project/my-new-snippet');
+});
+
+it('shows the domain error message when a create is rejected', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo([], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('Search snippets');
+    await fireEvent.update(input, 'taken-name');
+    await fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+    capturedCreatePost?.onHttpException?.({
+        status: 409,
+        data: { message: "A snippet named 'taken-name' already exists" },
+    });
+
+    await screen.findByText("A snippet named 'taken-name' already exists");
+    expect(routerGet).not.toHaveBeenCalled();
 });
 
 it('strips the # prefix before creating and navigating to a #-scoped new snippet', async () => {

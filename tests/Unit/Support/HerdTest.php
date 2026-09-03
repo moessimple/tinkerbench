@@ -266,6 +266,46 @@ it('reports the laravel version as unknown when the given project produces no ou
     expect(new Herd()->laravelVersion('/some/php', '/some/path'))->toBe('unknown');
 });
 
+it('shells out for a php version only once, sharing the cache across instances', function (): void {
+    Process::fake(['*' => "8.5.0\n"]);
+
+    new Herd()->phpVersion('/some/php');
+    new Herd()->phpVersion('/some/php');
+
+    Process::assertRanTimes(fn ($process): bool => in_array('echo PHP_VERSION;', $process->command, true), 1);
+});
+
+it('refreshes the cached php version explicitly', function (): void {
+    Process::fake(['*' => "8.5.0\n"]);
+
+    expect(new Herd()->phpVersion('/some/php'))->toBe('8.5.0');
+
+    Process::fake(['*' => "8.5.1\n"]);
+
+    expect(new Herd()->refreshPhpVersion('/some/php'))->toBe('8.5.1')
+        ->and(new Herd()->phpVersion('/some/php'))->toBe('8.5.1');
+});
+
+it('shells out for a laravel version only once, sharing the cache across instances', function (): void {
+    Process::fake(['*' => "13.0.0\n"]);
+
+    new Herd()->laravelVersion('/some/php', '/some/path');
+    new Herd()->laravelVersion('/some/php', '/some/path');
+
+    Process::assertRanTimes(fn ($process): bool => in_array('/some/php', $process->command, true), 1);
+});
+
+it('refreshes the cached laravel version explicitly', function (): void {
+    Process::fake(['*' => "13.0.0\n"]);
+
+    expect(new Herd()->laravelVersion('/some/php', '/some/path'))->toBe('13.0.0');
+
+    Process::fake(['*' => "13.1.0\n"]);
+
+    expect(new Herd()->refreshLaravelVersion('/some/php', '/some/path'))->toBe('13.1.0')
+        ->and(new Herd()->laravelVersion('/some/php', '/some/path'))->toBe('13.1.0');
+});
+
 it('surfaces the process error when the given php binary does not exist', function (): void {
     config(['services.herd.bin' => '/nonexistent-herd-bin']);
 
