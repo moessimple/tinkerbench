@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Support\SnippetRunner;
 use App\Support\SnippetRunRecorder;
 use App\Support\SourceLocator;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Process;
 use Symfony\Component\VarDumper\VarDumper;
 
@@ -16,11 +17,15 @@ function fixtureSnapshot(): array
     return ['items' => [], 'duration_str' => '1.00ms', 'peak_memory_str' => '1.00 MB'];
 }
 
-// An in-process run() installs a process-wide VarDumper handler via DumpWatcher and never
-// restores it; without this reset a dump() in a later test would be swallowed by the finished
-// run's recorder instead of reaching stdout.
+// An in-process run() leaves the process-wide state its watchers install and never restore: the
+// VarDumper handler (DumpWatcher), and preventLazyLoading plus automatic eager loading off
+// (LazyLoadWatcher). Without this reset a dump() in a later test is swallowed by the finished
+// run's recorder, and a later test that lazy-loads a relation hits the stale violation handler.
 afterEach(function (): void {
     VarDumper::setHandler(null);
+    Model::preventLazyLoading(false);
+    Model::handleLazyLoadingViolationUsing(null);
+    Model::automaticallyEagerLoadRelationships();
 });
 
 /**
@@ -150,6 +155,77 @@ it('synthesizes an exception item for a hard fatal via the shutdown handler', fu
 
     expect($exceptions)->toHaveCount(1)
         ->and($exceptions[0]['message'])->toContain('memory');
+});
+
+it('aggregates a lazy-loaded relation from a real run into one n_plus_one item', function (): void {
+    $code = <<<'PHP'
+    <?php
+
+    use Illuminate\Database\Eloquent\Model;
+    use Illuminate\Database\Schema\Blueprint;
+    use Illuminate\Support\Facades\Schema;
+
+    config(['database.connections.nplus' => ['driver' => 'sqlite', 'database' => ':memory:']]);
+
+    Schema::connection('nplus')->create('n_plus_one_authors', function (Blueprint $table): void {
+        $table->increments('id');
+    });
+
+    Schema::connection('nplus')->create('n_plus_one_books', function (Blueprint $table): void {
+        $table->increments('id');
+        $table->unsignedInteger('author_id');
+    });
+
+    class NPlusOneAuthor extends Model
+    {
+        protected $connection = 'nplus';
+
+        protected $table = 'n_plus_one_authors';
+
+        protected $guarded = [];
+
+        public $timestamps = false;
+
+        public function books()
+        {
+            return $this->hasMany(NPlusOneBook::class, 'author_id');
+        }
+    }
+
+    class NPlusOneBook extends Model
+    {
+        protected $connection = 'nplus';
+
+        protected $table = 'n_plus_one_books';
+
+        protected $guarded = [];
+
+        public $timestamps = false;
+    }
+
+    foreach (range(1, 3) as $id) {
+        NPlusOneAuthor::create(['id' => $id]);
+        NPlusOneBook::create(['id' => $id, 'author_id' => $id]);
+    }
+
+    foreach (NPlusOneAuthor::all() as $author) {
+        $author->books->count();
+    }
+    PHP;
+
+    $result = runSnippetSubprocess($code);
+
+    $findings = array_values(array_filter(
+        $result['debug']['items'] ?? [],
+        fn (array $item): bool => $item['kind'] === 'n_plus_one',
+    ));
+
+    expect($result['exitCode'])->toBe(0)
+        ->and($findings)->toHaveCount(1)
+        ->and($findings[0]['model'])->toBe('NPlusOneAuthor')
+        ->and($findings[0]['relation'])->toBe('books')
+        ->and($findings[0]['count'])->toBe(3)
+        ->and($findings[0]['line'])->toBeInt();
 });
 
 // In-process runs exercise run()'s own wiring against tinkerbench itself. The shutdown handler

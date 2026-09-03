@@ -17,6 +17,11 @@ class LazyLoadWatcher implements Watcher
      */
     public function register(Application $app, callable $emit): void
     {
+        // nunomaduro/essentials turns automatic relationship eager loading on by default. While it
+        // is on, a lazy access on a retrieved collection batch-loads the relation before the
+        // preventLazyLoading() check runs, so no violation ever fires and the N+1 goes unseen. The
+        // run forces it off so the snippet's real query shape is what the feed reports.
+        Model::automaticallyEagerLoadRelationships(false);
         Model::preventLazyLoading();
 
         // Replaces Laravel's default violation handler, which throws LazyLoadingViolationException.

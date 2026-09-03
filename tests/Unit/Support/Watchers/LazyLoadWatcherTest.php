@@ -9,10 +9,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 
 afterEach(function (): void {
-    // preventLazyLoading() and the violation callback are process-wide static state; without this
-    // reset every later test that lazy-loads a relation would blow up on this watcher's handler.
+    // These are process-wide static state; without the reset every later test that lazy-loads a
+    // relation would hit this watcher's handler, and autoloading would stay off for the suite.
     Model::preventLazyLoading(false);
     Model::handleLazyLoadingViolationUsing(null);
+    Model::automaticallyEagerLoadRelationships();
 });
 
 /**
@@ -60,6 +61,18 @@ it('turns lazy loading prevention on', function (): void {
     );
 
     expect(Model::preventsLazyLoading())->toBeTrue();
+});
+
+it('turns automatic relationship eager loading off so lazy loads are not batched away', function (): void {
+    $source = Mockery::mock(SourceLocator::class);
+    $source->shouldReceive('snippetLine')->andReturn(null);
+
+    new LazyLoadWatcher($source)->register(
+        Mockery::mock(Application::class),
+        function (array $item): void {},
+    );
+
+    expect(Model::isAutomaticallyEagerLoadingRelationships())->toBeFalse();
 });
 
 it('emits one n_plus_one item with the model, relation and snippet line', function (): void {
