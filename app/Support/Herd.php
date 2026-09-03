@@ -56,6 +56,15 @@ class Herd
         return realpath($path) ?: null;
     }
 
+    public function projectPathOrFail(string $project): string
+    {
+        $path = $this->projectPath($project);
+
+        throw_if($path === null, RuntimeException::class, "Unknown Herd project: {$project}");
+
+        return $path;
+    }
+
     public function currentProject(): string
     {
         $ownPath = realpath(base_path());

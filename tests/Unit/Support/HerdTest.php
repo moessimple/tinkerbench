@@ -165,6 +165,28 @@ it('returns null for an unknown project', function (): void {
     expect(new Herd()->projectPath('does-not-exist'))->toBeNull();
 });
 
+it('returns the resolved path when requiring a known project', function (): void {
+    config(['services.herd.bin' => '/tmp/herd-bin']);
+    Process::fake([
+        "*'sites' '--json'" => json_encode([
+            ['site' => 'tinkerbench', 'path' => base_path()],
+        ]),
+        "*'parked' '--json'" => json_encode([]),
+    ]);
+
+    expect(new Herd()->projectPathOrFail('tinkerbench'))->toBe(realpath(base_path()));
+});
+
+it('throws when requiring the path of a project unknown to herd', function (): void {
+    config(['services.herd.bin' => '/tmp/herd-bin']);
+    Process::fake([
+        "*'sites' '--json'" => json_encode([]),
+        "*'parked' '--json'" => json_encode([]),
+    ]);
+
+    new Herd()->projectPathOrFail('does-not-exist');
+})->throws(RuntimeException::class, 'Unknown Herd project: does-not-exist');
+
 it('finds its own herd site name by matching its own path', function (): void {
     config(['services.herd.bin' => '/tmp/herd-bin']);
     Process::fake([

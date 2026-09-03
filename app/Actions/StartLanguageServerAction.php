@@ -6,7 +6,6 @@ namespace App\Actions;
 
 use App\Support\Herd;
 use App\Support\LanguageServerBridge;
-use RuntimeException;
 
 class StartLanguageServerAction
 {
@@ -14,9 +13,7 @@ class StartLanguageServerAction
 
     public function execute(string $project): int
     {
-        $projectPath = $this->herd->projectPath($project);
-
-        throw_if($projectPath === null, RuntimeException::class, "Unknown Herd project: {$project}");
+        $projectPath = $this->herd->projectPathOrFail($project);
 
         $phpVersion = $this->herd->phpVersion($this->herd->phpBinary($project));
 

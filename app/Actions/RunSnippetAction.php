@@ -6,7 +6,6 @@ namespace App\Actions;
 
 use App\Support\Herd;
 use App\Support\SnippetRunResult;
-use RuntimeException;
 
 class RunSnippetAction
 {
@@ -14,9 +13,7 @@ class RunSnippetAction
 
     public function execute(string $project, string $code): SnippetRunResult
     {
-        $projectPath = $this->herd->projectPath($project);
-
-        throw_if($projectPath === null, RuntimeException::class, "Unknown Herd project: {$project}");
+        $projectPath = $this->herd->projectPathOrFail($project);
 
         return $this->herd->runSnippet($code, $this->herd->phpBinary($project), $projectPath);
     }
