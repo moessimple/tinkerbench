@@ -64,6 +64,48 @@ it('flags a slow, duplicated query', () => {
     expect(card?.textContent).toContain('select * from users');
     expect(card?.textContent?.toLowerCase()).toContain('slow');
     expect(card?.textContent?.toLowerCase()).toContain('duplicate');
+    expect(card?.getAttribute('data-variant')).toBe('danger');
+});
+
+it('leaves a routine query on the default variant', () => {
+    const { container } = renderFeed([
+        {
+            connection: 'sqlite',
+            duplicate: false,
+            duration_ms: 2,
+            duration_str: '2.00ms',
+            kind: 'query',
+            line: 3,
+            slow: false,
+            sql: 'select 1',
+        },
+    ]);
+
+    expect(
+        container
+            .querySelector('[data-label="Query"]')
+            ?.getAttribute('data-variant'),
+    ).toBe('default');
+});
+
+it('shows a facet-specific empty message when a filter matches nothing', () => {
+    const { container } = render(OutputFeed, {
+        props: {
+            filter: 'exception',
+            items: [{ html: '<i>x</i>', kind: 'dump', line: 1 }] as FeedEntry[],
+        },
+    });
+
+    expect(container.querySelector('[data-label="Dump"]')).toBeNull();
+    expect(container.textContent).toContain('No exceptions on this run');
+});
+
+it('shows no empty message on the all facet', () => {
+    const { container } = render(OutputFeed, {
+        props: { filter: 'all', items: [] as FeedEntry[] },
+    });
+
+    expect(container.textContent?.trim()).toBe('');
 });
 
 it('narrows the feed to entries of the selected kind when a filter is set', () => {

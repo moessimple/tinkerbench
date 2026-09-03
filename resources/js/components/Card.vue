@@ -3,7 +3,7 @@ withDefaults(
     defineProps<{
         label: string;
         line: number | null;
-        variant?: 'default' | 'accent' | 'danger';
+        variant?: 'default' | 'danger';
     }>(),
     { variant: 'default' },
 );
@@ -16,17 +16,14 @@ const emit = defineEmits<{ navigate: [line: number] }>();
         :data-label="label"
         :data-variant="variant"
         class="border-b border-l-2 border-line px-4 py-3 font-mono"
-        :class="{
-            'border-l-accent': variant === 'accent',
-            'border-l-danger': variant === 'danger',
-        }"
+        :class="
+            variant === 'danger' ? 'border-l-danger' : 'border-l-transparent'
+        "
     >
         <header
-            class="flex items-baseline justify-between gap-3 text-[11px] tracking-wider uppercase"
+            class="flex items-baseline justify-between gap-3 text-[11px] tracking-wider text-muted uppercase"
         >
-            <span :class="variant === 'danger' ? 'text-danger' : 'text-muted'">
-                {{ label }}
-            </span>
+            <span>{{ label }}</span>
 
             <button
                 v-if="line !== null"

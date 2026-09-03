@@ -387,15 +387,15 @@ function toggleMaximize(): void {
 
                 <div class="flex min-h-0 min-w-0 flex-2 flex-col">
                     <div
-                        class="flex shrink-0 items-center gap-3 border-b border-line px-4 py-2 font-mono text-xs text-muted"
+                        class="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-b border-line px-4 py-2 font-mono text-xs text-muted"
                     >
                         <span>
                             PHP {{ phpVersion }} · Laravel {{ laravelVersion }}
                         </span>
                         <template v-if="debug">
-                            <span class="ml-auto">{{
-                                debug.duration_str
-                            }}</span>
+                            <span aria-hidden="true">·</span>
+                            <span>{{ debug.duration_str }}</span>
+                            <span aria-hidden="true">·</span>
                             <span>{{ debug.peak_memory_str }}</span>
                         </template>
                     </div>

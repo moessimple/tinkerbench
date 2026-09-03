@@ -18,6 +18,13 @@ defineEmits<{ navigate: [line: number] }>();
 
 const SEVERE_LOG_LEVELS = ['emergency', 'alert', 'critical', 'error'];
 
+const EMPTY_FACET_LABEL: Record<Exclude<FeedFilter, 'all'>, string> = {
+    dump: 'No dumps on this run',
+    query: 'No queries on this run',
+    log: 'No log messages on this run',
+    exception: 'No exceptions on this run',
+};
+
 const feedElement = useTemplateRef('feedElement');
 
 function entryDurationMs(entry: FeedEntry): number {
@@ -73,6 +80,13 @@ watch(
 
 <template>
     <div ref="feedElement" class="flex flex-col">
+        <p
+            v-if="rows.length === 0 && filter !== 'all'"
+            class="px-4 py-8 text-center font-mono text-xs text-muted"
+        >
+            {{ EMPTY_FACET_LABEL[filter] }}
+        </p>
+
         <template v-for="(row, index) in rows" :key="index">
             <Card
                 v-if="row.entry.kind === 'dump'"
@@ -86,7 +100,7 @@ watch(
             <Card
                 v-else-if="row.entry.kind === 'query'"
                 label="Query"
-                variant="accent"
+                :variant="row.entry.slow ? 'danger' : 'default'"
                 :line="row.entry.line"
                 @navigate="$emit('navigate', $event)"
             >
@@ -123,11 +137,11 @@ watch(
             >
                 <div class="flex flex-wrap items-baseline gap-x-2">
                     <span
-                        class="rounded px-1.5 py-0.5 text-[10px] font-medium tracking-wide uppercase"
+                        class="text-[10px] tracking-wide uppercase"
                         :class="
                             SEVERE_LOG_LEVELS.includes(row.entry.label)
-                                ? 'bg-danger/10 text-danger'
-                                : 'bg-line/60 text-muted'
+                                ? 'text-danger'
+                                : 'text-muted'
                         "
                     >
                         {{ row.entry.label }}
