@@ -13,6 +13,14 @@ Every new/changed class in app/Actions|Support|Enums needs its own isolated unit
 
 How to keep that coverage isolated and non-duplicated (mocking, one behavior per test, not re-proving a lower layer) is defined in tests.md for PHP and js.md for JS/Vue, follow those. When two sibling classes share a shape (e.g. two FormRequest-backed controllers), give them symmetric coverage.
 
+## Never mutate the developer's saved snippets
+The `.php` files under `storage/app/snippets/**` are the developer's own data, not source or fixtures. Do not
+create, rename, delete, or edit an existing snippet, whether by editing the file, calling the
+`/api/projects/{project}/snippets/...` write endpoints, or driving the running app to run/save/rename/delete one
+(running a snippet autosaves it). For verification, prefer `POST /api/projects/{project}/snippets/executions`
+with an inline `code` body — it runs arbitrary PHP and returns the feed without persisting anything. Full rule,
+exceptions (an explicitly named snippet in a task; the `agent-scratch` sandbox) and recovery steps: snippets.md.
+
 ## No final classes, anywhere
 No class in the app is `final`. It blocks Mockery from creating a class double ("cannot override methods of a final class"), which forces awkward workarounds when a test needs to mock a class directly. Enforced project-wide by tests/ArchTest.php.
 

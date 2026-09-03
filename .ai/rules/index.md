@@ -15,5 +15,6 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Http/Requests/** | .ai/rules/requests.md |
 | routes/** | .ai/rules/routes.md |
 | app/Support/** | .ai/rules/support.md |
+| storage/app/snippets/** | .ai/rules/snippets.md |
 | tests/**, tests/ArchTest.php | .ai/rules/tests.md |
 | app/Support/Watchers/** | .ai/rules/watchers.md |

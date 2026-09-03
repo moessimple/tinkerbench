@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "deny": [
+      "Edit(storage/app/snippets/**)",
+      "Write(storage/app/snippets/**)"
+    ]
+  }
+}
