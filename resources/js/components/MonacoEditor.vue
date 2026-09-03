@@ -124,6 +124,9 @@ onMounted(() => {
         keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
         run: () => emit('run'),
     });
+    // A single-snippet scratch editor has nothing to search; swallow Cmd/Ctrl+F so it
+    // neither opens Monaco's find widget nor bubbles to the browser's page search.
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF, () => {});
     editor.focus();
 
     watch(theme, () => monaco.editor.setTheme(monacoThemeName()));

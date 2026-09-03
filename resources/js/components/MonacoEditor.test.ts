@@ -39,9 +39,11 @@ vi.mock('@/lib/languageServer', () => ({
 
 const onDidChangeModelContent = vi.fn();
 const addAction = vi.fn();
+const addCommand = vi.fn();
 const model = {};
 const editor = {
     addAction,
+    addCommand,
     dispose: vi.fn(),
     focus: vi.fn(),
     getModel: vi.fn(() => model),
@@ -60,13 +62,14 @@ vi.mock('monaco-editor', () => ({
         defineTheme: vi.fn(),
         setTheme: vi.fn(),
     },
-    KeyCode: { Enter: 3 },
+    KeyCode: { Enter: 3, KeyF: 36 },
     KeyMod: { CtrlCmd: 2048 },
 }));
 
 beforeEach(() => {
     mockTheme.value = 'dark';
     addAction.mockClear();
+    addCommand.mockClear();
     editor.dispose.mockClear();
     editor.focus.mockClear();
     editor.getValue.mockClear();
@@ -226,6 +229,20 @@ it('emits run when the Ctrl/Cmd+Enter action runs', () => {
             keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
         }),
     );
+});
+
+it('binds Cmd/Ctrl+F to a no-op so the find widget never opens', () => {
+    render(MonacoEditor, {
+        props: { initialValue: '<?php echo "initial";', project: 'my-project' },
+    });
+
+    const call = addCommand.mock.calls.find(
+        ([keybinding]) =>
+            keybinding === (monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF),
+    );
+
+    expect(call).toBeDefined();
+    expect(() => call?.[1]()).not.toThrow();
 });
 
 async function attachedHandles(): Promise<void> {
