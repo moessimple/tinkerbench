@@ -142,7 +142,33 @@ it('renders an exception with its type, message and de-emphasised vendor frames'
     expect(card?.textContent).toContain('RuntimeException');
     expect(card?.textContent).toContain('nope');
     expect(card?.querySelector('details')).not.toBeNull();
+    expect(card?.querySelector('summary')?.textContent?.trim()).toBe(
+        '2 stack frames',
+    );
     expect(card?.querySelector('[data-vendor="true"]')).not.toBeNull();
+});
+
+it('labels the stack trace disclosure with a singular noun for a lone frame', () => {
+    const { container } = renderFeed([
+        {
+            frames: [
+                {
+                    file: '/vendor/x.php',
+                    function: 'run',
+                    line: 1,
+                    snippet: false,
+                    vendor: true,
+                },
+            ],
+            kind: 'exception',
+            line: 1,
+            message: 'x',
+            type: 'RuntimeException',
+        },
+    ]);
+
+    const summary = container.querySelector('[data-label="Exception"] summary');
+    expect(summary?.textContent?.trim()).toBe('1 stack frame');
 });
 
 it('omits the stack trace disclosure when the only frame is the snippet itself', () => {

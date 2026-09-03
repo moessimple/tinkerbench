@@ -49,7 +49,7 @@ class ExceptionMapper
             ->applicationPath($this->applicationPath)
             ->frames();
 
-        return array_map($this->mapFrame(...), $this->stopAtHarness($frames));
+        return array_map($this->mapFrame(...), $this->stopAtHarness(array_values($frames)));
     }
 
     /**

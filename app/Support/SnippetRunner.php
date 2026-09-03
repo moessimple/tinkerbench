@@ -84,7 +84,9 @@ class SnippetRunner
         // such value makes json_encode() return false and the whole feed is lost for the run.
         $json = json_encode($recorder->snapshot(), JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
 
-        file_put_contents($debugPath, $json !== false ? $json : '{"items":[],"duration_str":"","peak_memory_str":""}');
+        $fallback = (string) json_encode(['items' => [], 'duration_str' => '', 'peak_memory_str' => '']);
+
+        file_put_contents($debugPath, $json !== false ? $json : $fallback);
 
         $this->persisted = true;
     }

@@ -37,6 +37,10 @@ function frameLocation(frame: ExceptionFrame): string {
         : `${frame.file}:${frame.line}`;
 }
 
+function frameCountLabel(frames: ExceptionFrame[]): string {
+    return `${frames.length} ${frames.length === 1 ? 'stack frame' : 'stack frames'}`;
+}
+
 watch(
     () => props.items,
     async () => {
@@ -116,7 +120,7 @@ watch(
                     <summary
                         class="cursor-pointer text-muted uppercase select-none"
                     >
-                        {{ row.entry.frames.length }} stack frames
+                        {{ frameCountLabel(row.entry.frames) }}
                     </summary>
                     <ul class="mt-1 flex flex-col gap-0.5">
                         <li
