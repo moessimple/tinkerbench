@@ -237,6 +237,21 @@ function toggleMaximize(): void {
                 <span class="text-muted">/</span>
                 {{ snippetName }}
             </h1>
+            <p
+                class="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 font-mono text-[11px] text-muted"
+            >
+                <span
+                    v-for="shortcut in shortcuts"
+                    :key="shortcut.id"
+                    class="flex items-center gap-1.5"
+                >
+                    <kbd
+                        class="rounded border border-line px-1 py-0.5 text-fg/70"
+                        >{{ shortcut.keys }}</kbd
+                    >
+                    {{ shortcut.description }}
+                </span>
+            </p>
         </div>
 
         <div

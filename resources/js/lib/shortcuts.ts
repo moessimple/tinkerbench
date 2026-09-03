@@ -6,5 +6,5 @@ export interface Shortcut {
 
 export const shortcuts: Shortcut[] = [
     { id: 'run', keys: '⌘Enter', description: 'Run snippet' },
-    { id: 'browse', keys: '⌘P', description: 'Browse snippets' },
+    { id: 'browse', keys: '⌘P', description: 'Search snippets & projects' },
 ];

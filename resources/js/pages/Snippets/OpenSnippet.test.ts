@@ -166,6 +166,18 @@ it('shows the running PHP and Laravel version', () => {
     screen.getByText('PHP 8.5.0 · Laravel 13.0.0');
 });
 
+it('surfaces the keyboard shortcuts as a visible legend, not only on hover', () => {
+    render(OpenSnippet, { props });
+
+    const legend = screen
+        .getByText('Run snippet', { exact: false })
+        .closest('p');
+
+    expect(legend?.textContent).toContain('⌘Enter');
+    expect(legend?.textContent).toContain('⌘P');
+    expect(legend?.textContent).toContain('Search snippets & projects');
+});
+
 it('pre-fills the editor with the snippet content from its props', () => {
     render(OpenSnippet, { props });
 
