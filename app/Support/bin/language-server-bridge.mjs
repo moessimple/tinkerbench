@@ -15,7 +15,13 @@ import { WebSocketServer } from 'ws';
 process.stdout.on('error', () => {});
 process.stderr.on('error', () => {});
 
-const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+// Only guards the window between "listening" (port reported to PHP) and the browser actually
+// opening its WebSocket: if that connection never comes (the editor page was closed again before
+// the socket opened, a stale port request), this reaps the otherwise orphaned process. It must
+// NOT keep running once a client is connected - the bridge then serves that one page for as long
+// as it stays open, however long the user goes without typing, and exits on 'close' below (tab
+// closed, reload, SPA navigation - all delivered promptly since the whole path is loopback).
+const NO_CLIENT_TIMEOUT_MS = 5 * 60 * 1000;
 
 // Safari (macOS 15+) blocks a plain ws:// connection from an https:// page as mixed content, even to
 // 127.0.0.1, unlike Chrome/Firefox. Reusing tinkerbench.test's own Herd-issued certificate (signed by the
@@ -40,25 +46,19 @@ export function runBridge({ serverName, spawnBin, spawnArgs, rewriteMessage }) {
         verifyClient: ({ origin }) => origin === 'https://tinkerbench.test',
     });
 
-    let idleTimer = null;
-
-    function resetIdleTimer() {
-        clearTimeout(idleTimer);
-        idleTimer = setTimeout(() => process.exit(0), IDLE_TIMEOUT_MS);
-    }
+    let noClientTimer = null;
 
     httpsServer.once('listening', () => {
         process.stdout.write(`${httpsServer.address().port}\n`);
-        resetIdleTimer();
+        noClientTimer = setTimeout(() => process.exit(0), NO_CLIENT_TIMEOUT_MS);
     });
 
     httpsServer.listen(0, '127.0.0.1');
 
     server.on('connection', (socket) => {
-        clearTimeout(idleTimer);
+        clearTimeout(noClientTimer);
 
         socket.on('close', () => process.exit(0));
-        socket.on('message', () => resetIdleTimer());
 
         const serverConnection = createServerProcess(serverName, spawnBin, spawnArgs);
 
