@@ -1,24 +1,18 @@
 <script setup lang="ts">
 import { Head, useHttp } from '@inertiajs/vue3';
-import {
-    computed,
-    nextTick,
-    onBeforeUnmount,
-    onMounted,
-    ref,
-    useTemplateRef,
-} from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
 import RunSnippetController from '@/actions/App/Http/Controllers/RunSnippetController';
 import UpdateSnippetContentController from '@/actions/App/Http/Controllers/UpdateSnippetContentController';
 import CommandPalette from '@/components/CommandPalette.vue';
-import DebugPanel from '@/components/DebugPanel.vue';
+import { FACET_KINDS } from '@/components/feed/kinds';
 import MonacoEditor from '@/components/MonacoEditor.vue';
+import OutputFeed from '@/components/OutputFeed.vue';
 import { useTheme } from '@/composables/useTheme';
 import { xsrfHeader } from '@/lib/csrf';
-import { detectOutput, executeScripts, highlightJson } from '@/lib/output';
-import type { OutputResult } from '@/lib/output';
+import { buildFeed } from '@/lib/feed';
+import type { FeedEntry, FeedFilter, FeedSort } from '@/lib/feed';
 import { shortcuts } from '@/lib/shortcuts';
-import type { SnippetDebugPayload } from '@/types';
+import type { FeedItem, SnippetDebugPayload } from '@/types';
 
 const props = defineProps<{
     content: string;
@@ -33,30 +27,56 @@ const pageTitle = computed(
     () => `${props.currentProject} / ${props.snippetName}`,
 );
 
-const lastResult = ref<OutputResult | null>(null);
+const rawOutput = ref('');
 const debug = ref<SnippetDebugPayload | null>(null);
-const activeTab = ref<'debug' | 'output'>('output');
 const errorMessage = ref('');
-const outputMode = ref<'raw' | 'rendered'>('raw');
 const isMaximized = ref(false);
-const outputEl = useTemplateRef('output');
+const activeFilter = ref<FeedFilter>('all');
+const querySort = ref<FeedSort>('recent');
+const editorRef = useTemplateRef<{ revealLine: (line: number) => void }>(
+    'editor',
+);
 
 const { theme, toggleTheme } = useTheme();
 
-const outputText = computed(() => lastResult.value?.raw ?? '');
-const renderedJson = computed(() =>
-    lastResult.value?.type === 'json'
-        ? highlightJson(lastResult.value.pretty)
-        : '',
-);
-const showsFrame = computed(
-    () => outputMode.value === 'rendered' && lastResult.value?.type === 'html',
-);
-const showsMarkup = computed(
-    () =>
-        outputMode.value === 'rendered' &&
-        (lastResult.value?.type === 'dump' ||
-            lastResult.value?.type === 'json'),
+const feedFilters: { label: string; value: FeedFilter }[] = [
+    { label: 'All', value: 'all' },
+    ...FACET_KINDS.map((kind) => ({
+        label: kind.facet,
+        value: kind.kind as FeedFilter,
+    })),
+];
+
+const querySorts: { label: string; value: FeedSort }[] = [
+    { label: 'Recent', value: 'recent' },
+    { label: 'Slowest', value: 'slowest' },
+];
+
+const kindCounts = computed(() => {
+    const counts = Object.fromEntries(
+        FACET_KINDS.map((kind) => [kind.kind, 0]),
+    ) as Record<FeedItem['kind'], number>;
+
+    for (const item of debug.value?.items ?? []) {
+        if (item.kind in counts) {
+            counts[item.kind] += 1;
+        }
+    }
+
+    return counts;
+});
+
+function filterCount(filter: FeedFilter): number {
+    return filter === 'all'
+        ? (debug.value?.items.length ?? 0)
+        : kindCounts.value[filter];
+}
+
+const feedEntries = computed<FeedEntry[]>(() =>
+    buildFeed(
+        debug.value ?? { items: [], duration_str: '', peak_memory_str: '' },
+        rawOutput.value,
+    ),
 );
 
 const http = useHttp<
@@ -138,30 +158,15 @@ onBeforeUnmount(() =>
     window.removeEventListener('keydown', onGlobalKeydown, { capture: true }),
 );
 
-async function executeDumpScripts(): Promise<void> {
-    await nextTick();
-
-    if (outputEl.value) {
-        executeScripts(outputEl.value);
-    }
-}
-
 function run(): void {
     errorMessage.value = '';
+    rawOutput.value = '';
     debug.value = null;
-    activeTab.value = 'output';
 
     http.post(RunSnippetController.url(props.currentProject), {
-        onSuccess: async (data) => {
-            lastResult.value = detectOutput(data.output);
+        onSuccess: (data) => {
+            rawOutput.value = data.output;
             debug.value = data.debug;
-
-            if (
-                outputMode.value === 'rendered' &&
-                lastResult.value.type === 'dump'
-            ) {
-                await executeDumpScripts();
-            }
         },
         onError: (errors) => {
             errorMessage.value = Object.values(errors).join(' ');
@@ -173,18 +178,15 @@ function run(): void {
 }
 
 function clearOutput(): void {
-    lastResult.value = null;
+    rawOutput.value = '';
     debug.value = null;
-    activeTab.value = 'output';
     errorMessage.value = '';
+    activeFilter.value = 'all';
+    querySort.value = 'recent';
 }
 
-async function toggleOutputMode(): Promise<void> {
-    outputMode.value = outputMode.value === 'raw' ? 'rendered' : 'raw';
-
-    if (outputMode.value === 'rendered' && lastResult.value?.type === 'dump') {
-        await executeDumpScripts();
-    }
+function revealEditorLine(line: number): void {
+    editorRef.value?.revealLine(line);
 }
 
 function toggleMaximize(): void {
@@ -227,9 +229,6 @@ function toggleMaximize(): void {
                 <span class="text-muted">/</span>
                 {{ snippetName }}
             </h1>
-            <p class="mt-2 font-mono text-xs text-muted">
-                PHP {{ phpVersion }} · Laravel {{ laravelVersion }}
-            </p>
         </div>
 
         <div
@@ -377,6 +376,7 @@ function toggleMaximize(): void {
                     </div>
                     <div class="min-h-0 min-w-0 flex-1">
                         <MonacoEditor
+                            ref="editor"
                             :initial-value="http.code"
                             :project="currentProject"
                             @change="onEditorChange"
@@ -387,104 +387,89 @@ function toggleMaximize(): void {
 
                 <div class="flex min-h-0 min-w-0 flex-2 flex-col">
                     <div
+                        class="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-b border-line px-4 py-2 font-mono text-xs text-muted"
+                    >
+                        <span>
+                            PHP {{ phpVersion }} · Laravel {{ laravelVersion }}
+                        </span>
+                        <template v-if="debug">
+                            <span aria-hidden="true">·</span>
+                            <span>{{ debug.duration_str }}</span>
+                            <span aria-hidden="true">·</span>
+                            <span>{{ debug.peak_memory_str }}</span>
+                        </template>
+                    </div>
+                    <div
+                        v-if="debug"
                         role="tablist"
-                        class="flex shrink-0 border-b border-line"
+                        aria-label="Filter output by kind"
+                        class="flex shrink-0 gap-0.5 overflow-x-auto border-b border-line px-3 py-1.5 font-mono text-[11px]"
                     >
                         <button
+                            v-for="filter in feedFilters"
+                            :key="filter.value"
                             type="button"
                             role="tab"
-                            :aria-selected="activeTab === 'output'"
-                            class="px-3 py-2 font-mono text-xs font-semibold tracking-widest uppercase"
+                            :aria-selected="activeFilter === filter.value"
+                            class="flex shrink-0 items-baseline gap-1 rounded px-1.5 py-0.5 tracking-wide whitespace-nowrap uppercase"
                             :class="
-                                activeTab === 'output'
-                                    ? 'border-b-2 border-accent text-fg'
-                                    : 'text-muted hover:text-fg'
+                                activeFilter === filter.value
+                                    ? 'bg-accent/10 text-accent'
+                                    : 'text-muted hover:bg-line/40 hover:text-fg'
                             "
-                            @click="activeTab = 'output'"
+                            @click="activeFilter = filter.value"
                         >
-                            Output
-                        </button>
-                        <button
-                            type="button"
-                            role="tab"
-                            :aria-selected="activeTab === 'debug'"
-                            class="px-3 py-2 font-mono text-xs font-semibold tracking-widest uppercase"
-                            :class="
-                                activeTab === 'debug'
-                                    ? 'border-b-2 border-accent text-fg'
-                                    : 'text-muted hover:text-fg'
-                            "
-                            @click="activeTab = 'debug'"
-                        >
-                            Debug
-                        </button>
-                        <button
-                            type="button"
-                            :title="
-                                outputMode === 'raw'
-                                    ? 'Show rendered output'
-                                    : 'Show raw output'
-                            "
-                            :aria-label="
-                                outputMode === 'raw'
-                                    ? 'Show rendered output'
-                                    : 'Show raw output'
-                            "
-                            :aria-pressed="outputMode === 'rendered'"
-                            class="ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded text-muted hover:bg-line/30 hover:text-fg"
-                            @click="toggleOutputMode"
-                        >
-                            <svg
-                                viewBox="0 0 16 16"
-                                width="16"
-                                height="16"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.5"
-                                stroke-linecap="round"
-                                aria-hidden="true"
+                            {{ filter.label }}
+                            <span
+                                class="tabular-nums"
+                                :class="
+                                    activeFilter === filter.value
+                                        ? 'text-accent/70'
+                                        : 'text-muted/70'
+                                "
                             >
-                                <template v-if="outputMode === 'raw'">
-                                    <path
-                                        d="M1 8s2.7-4.5 7-4.4S15 8 15 8s-2.7 4.5-7 4.4S1 8 1 8Z"
-                                    />
-                                    <circle cx="8" cy="8" r="1.6" />
-                                </template>
-                                <path v-else d="M5 4 2 8l3 4M11 4l3 4-3 4" />
-                            </svg>
+                                {{ filterCount(filter.value) }}
+                            </span>
                         </button>
                     </div>
                     <div
-                        v-show="activeTab === 'output' && !showsFrame"
-                        ref="output"
-                        role="status"
-                        aria-label="Snippet output"
-                        aria-live="polite"
-                        class="min-h-0 flex-1 overflow-auto p-4 font-mono text-base leading-6.5 whitespace-pre-wrap [font-variant-ligatures:none]"
+                        v-if="debug && activeFilter === 'query'"
+                        class="flex shrink-0 items-center gap-3 border-b border-line px-4 py-1.5 font-mono text-[11px] text-muted"
                     >
-                        <span
-                            v-if="showsMarkup"
-                            v-html="
-                                lastResult?.type === 'json'
-                                    ? renderedJson
-                                    : lastResult?.raw
-                            "
-                        />
-                        <template v-else>{{ outputText }}</template>
+                        <span>{{ kindCounts.query }} statements</span>
+                        <div class="ml-auto flex items-center gap-1">
+                            <span class="tracking-wide uppercase">Sort</span>
+                            <button
+                                v-for="option in querySorts"
+                                :key="option.value"
+                                type="button"
+                                :aria-pressed="querySort === option.value"
+                                class="rounded px-1.5 py-0.5 tracking-wide uppercase"
+                                :class="
+                                    querySort === option.value
+                                        ? 'bg-accent/10 text-accent'
+                                        : 'hover:bg-line/40 hover:text-fg'
+                                "
+                                @click="querySort = option.value"
+                            >
+                                {{ option.label }}
+                            </button>
+                        </div>
                     </div>
-                    <iframe
-                        v-show="activeTab === 'output' && showsFrame"
-                        class="min-h-0 flex-1 border-0 bg-white"
-                        sandbox="allow-scripts"
-                        title="Rendered HTML output"
-                        :srcdoc="
-                            lastResult?.type === 'html' ? lastResult.raw : ''
-                        "
-                    />
-                    <DebugPanel
-                        v-if="activeTab === 'debug'"
-                        :debug="debug ?? {}"
-                    />
+                    <div
+                        role="region"
+                        aria-label="Snippet output"
+                        class="min-h-0 flex-1 overflow-auto"
+                    >
+                        <OutputFeed
+                            :items="feedEntries"
+                            :filter="activeFilter"
+                            :sort="
+                                activeFilter === 'query' ? querySort : 'recent'
+                            "
+                            @navigate="revealEditorLine"
+                        />
+                    </div>
                 </div>
             </div>
         </div>

@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use App\Support\Herd;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
+use Illuminate\Support\Str;
 
 it('merges sites and parked into a project map', function (): void {
     config(['services.herd.bin' => '/tmp/herd-bin']);
@@ -294,17 +296,17 @@ it('lets two snippets that redeclare the same class both succeed', function (): 
         ->and($second->output)->toBe('second');
 });
 
-it('surfaces a thrown exception via the process error output', function (): void {
+it('does not crash the subprocess when the snippet throws', function (): void {
     $result = new Herd()->runSnippet("<?php\n\nthrow new RuntimeException('boom');", PHP_BINARY, base_path());
 
-    expect($result->output)->toContain('boom');
+    expect($result->output)->toBe('')
+        ->and($result->debug)->not->toBeNull();
 });
 
 it('keeps output printed before an uncaught exception instead of discarding it', function (): void {
     $result = new Herd()->runSnippet("<?php\n\necho 'partial output'; throw new RuntimeException('boom');", PHP_BINARY, base_path());
 
-    expect($result->output)->toContain('partial output')
-        ->and($result->output)->toContain('boom');
+    expect($result->output)->toContain('partial output');
 });
 
 it('echoes the snippet back verbatim when it has no opening tag', function (): void {
@@ -313,36 +315,44 @@ it('echoes the snippet back verbatim when it has no opening tag', function (): v
     expect($result->output)->toBe("return 'missing tag';");
 });
 
-it('formats dd()/dump() output as an HTML dump instead of plain CLI text', function (): void {
+it('captures dump() as an HTML dump item in the debug data', function (): void {
     $result = new Herd()->runSnippet("<?php\n\ndump('hello');", PHP_BINARY, base_path());
 
-    expect($result->output)->toContain('Sfdump(');
+    expect($result->output)->toBe('')
+        ->and(data_get($result->debug, 'items.0.kind'))->toBe('dump')
+        ->and(data_get($result->debug, 'items.0.html'))->toContain('Sfdump(');
 });
 
 it('cleans up the temp snippet file after running', function (): void {
-    $before = glob(sys_get_temp_dir().'/tinkerbench-snippet-*.php');
+    $scratch = sys_get_temp_dir().'/tinkerbench-herd-test-'.Str::random(16);
+    File::makeDirectory($scratch);
 
-    new Herd()->runSnippet("<?php\n\nreturn 'cleanup check';", PHP_BINARY, base_path());
+    try {
+        new Herd($scratch)->runSnippet("<?php\n\nreturn 'cleanup check';", PHP_BINARY, base_path());
 
-    $after = glob(sys_get_temp_dir().'/tinkerbench-snippet-*.php');
-
-    expect($after)->toBe($before);
+        expect(glob($scratch.'/tinkerbench-snippet-*.php'))->toBe([]);
+    } finally {
+        File::deleteDirectory($scratch);
+    }
 });
 
 it('cleans up the temp debug file after running', function (): void {
-    $before = glob(sys_get_temp_dir().'/tinkerbench-debug-*.json');
+    $scratch = sys_get_temp_dir().'/tinkerbench-herd-test-'.Str::random(16);
+    File::makeDirectory($scratch);
 
-    new Herd()->runSnippet("<?php\n\nreturn 'cleanup check';", PHP_BINARY, base_path());
+    try {
+        new Herd($scratch)->runSnippet("<?php\n\nreturn 'cleanup check';", PHP_BINARY, base_path());
 
-    $after = glob(sys_get_temp_dir().'/tinkerbench-debug-*.json');
-
-    expect($after)->toBe($before);
+        expect(glob($scratch.'/tinkerbench-debug-*.json'))->toBe([]);
+    } finally {
+        File::deleteDirectory($scratch);
+    }
 });
 
 it('returns the debug data collected by the subprocess', function (): void {
     $result = new Herd()->runSnippet("<?php\n\nreturn 'ok';", PHP_BINARY, base_path());
 
-    expect(data_get($result->debug, 'time.measures.0.label'))->toBe('snippet');
+    expect($result->debug)->toHaveKeys(['items', 'duration_str', 'peak_memory_str']);
 });
 
 it('kills a snippet that runs past its timeout and returns a graceful result instead of hanging', function (): void {
@@ -352,9 +362,9 @@ it('kills a snippet that runs past its timeout and returns a graceful result ins
         ->and($result->debug)->toBeNull();
 });
 
-it('returns debug data collected before an uncaught exception', function (): void {
+it('returns an exception item in the debug data for an uncaught throw', function (): void {
     $result = new Herd()->runSnippet("<?php\n\nthrow new RuntimeException('boom');", PHP_BINARY, base_path());
 
-    expect(data_get($result->debug, 'exceptions.count'))->toBe(1)
-        ->and(data_get($result->debug, 'exceptions.exceptions.0.message'))->toBe('boom');
+    expect(data_get($result->debug, 'items.0.kind'))->toBe('exception')
+        ->and(data_get($result->debug, 'items.0.message'))->toBe('boom');
 });

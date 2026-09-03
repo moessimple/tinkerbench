@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Support\Herd;
+use Composer\Autoload\ClassLoader;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Routing\MiddlewareNameResolver;
 use Illuminate\Routing\Router;
@@ -12,6 +13,25 @@ use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Assert;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
+
+/*
+|--------------------------------------------------------------------------
+| App\ namespace ownership
+|--------------------------------------------------------------------------
+|
+| laravel/pint and laravel/lsp are Laravel Zero CLI tools that register their own App\ PSR-4
+| directories (vendor/laravel/{pint,lsp}/app) into the shared autoloader, colliding with this
+| project's App\ namespace. Non-parallel, pest-plugin-arch's preset scans tolerate the duplicate
+| classes; under `pest --parallel` a worker resolves e.g. App\Providers\AppServiceProvider to the
+| path-less vendor copy and crashes with "$path must not be accessed before initialization".
+| Nothing in the suite loads those vendor App\ classes (both tools run as subprocesses), so point
+| App\ back at this project's app/ for the whole test run, workers included.
+|
+*/
+
+/** @var ClassLoader $loader */
+$loader = require dirname(__DIR__).'/vendor/autoload.php';
+$loader->setPsr4('App\\', [dirname(__DIR__).'/app']);
 
 /*
 |--------------------------------------------------------------------------

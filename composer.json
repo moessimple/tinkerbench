@@ -13,13 +13,13 @@
     "license": "MIT",
     "require": {
         "php": "^8.5",
-        "fruitcake/laravel-debugbar": "^4.4.2",
         "inertiajs/inertia-laravel": "^3.0",
         "laravel/framework": "^13.26.1",
         "laravel/lsp": "^0.0.31",
         "laravel/tinker": "^3.0",
         "laravel/wayfinder": "^0.1.14",
-        "nunomaduro/essentials": "^1.2"
+        "nunomaduro/essentials": "^1.2",
+        "spatie/backtrace": "^1.8"
     },
     "require-dev": {
         "driftingly/rector-laravel": "^2.5",
@@ -83,7 +83,7 @@
             "npm run test:lint"
         ],
         "test:unit": [
-            "sh -c 'pest=\"vendor/bin/pest --coverage --exactly=100.0\"; command -v herd >/dev/null 2>&1 && herd coverage $pest || XDEBUG_MODE=coverage $pest'",
+            "sh -c 'pest=\"vendor/bin/pest --parallel --coverage --exactly=100.0\"; command -v herd >/dev/null 2>&1 && herd coverage $pest || XDEBUG_MODE=coverage $pest'",
             "npm run test:unit"
         ],
         "test:types": [
@@ -121,13 +121,7 @@
             "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
         ]
     },
-    "extra": {
-        "laravel": {
-            "dont-discover": [
-                "fruitcake/laravel-debugbar"
-            ]
-        }
-    },
+    "extra": {},
     "config": {
         "optimize-autoloader": true,
         "preferred-install": "dist",

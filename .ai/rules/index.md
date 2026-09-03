@@ -16,3 +16,4 @@ Before planning or editing, find the row whose globs match the file's path and r
 | routes/** | .ai/rules/routes.md |
 | app/Support/** | .ai/rules/support.md |
 | tests/** | .ai/rules/tests.md |
+| app/Support/Watchers/** | .ai/rules/watchers.md |
