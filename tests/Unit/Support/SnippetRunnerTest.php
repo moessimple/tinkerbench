@@ -18,14 +18,13 @@ function fixtureSnapshot(): array
 }
 
 // An in-process run() leaves the process-wide state its watchers install and never restore: the
-// VarDumper handler (DumpWatcher), and preventLazyLoading plus automatic eager loading off
+// VarDumper handler (DumpWatcher), and preventLazyLoading plus the violation callback
 // (LazyLoadWatcher). Without this reset a dump() in a later test is swallowed by the finished
 // run's recorder, and a later test that lazy-loads a relation hits the stale violation handler.
 afterEach(function (): void {
     VarDumper::setHandler(null);
     Model::preventLazyLoading(false);
     Model::handleLazyLoadingViolationUsing(null);
-    Model::automaticallyEagerLoadRelationships();
 });
 
 /**
@@ -157,8 +156,13 @@ it('synthesizes an exception item for a hard fatal via the shutdown handler', fu
         ->and($exceptions[0]['message'])->toContain('memory');
 });
 
-it('aggregates a lazy-loaded relation from a real run into one n_plus_one item', function (): void {
-    $code = <<<'PHP'
+/**
+ * A snippet that defines an in-memory NPlusOneAuthor hasMany NPlusOneBook pair, seeds three
+ * author/book rows, then runs $accessLoop (the relation-access code under test).
+ */
+function nPlusOneSnippet(string $accessLoop): string
+{
+    $setup = <<<'PHP'
     <?php
 
     use Illuminate\Database\Eloquent\Model;
@@ -179,11 +183,8 @@ it('aggregates a lazy-loaded relation from a real run into one n_plus_one item',
     class NPlusOneAuthor extends Model
     {
         protected $connection = 'nplus';
-
         protected $table = 'n_plus_one_authors';
-
         protected $guarded = [];
-
         public $timestamps = false;
 
         public function books()
@@ -195,11 +196,8 @@ it('aggregates a lazy-loaded relation from a real run into one n_plus_one item',
     class NPlusOneBook extends Model
     {
         protected $connection = 'nplus';
-
         protected $table = 'n_plus_one_books';
-
         protected $guarded = [];
-
         public $timestamps = false;
     }
 
@@ -207,13 +205,22 @@ it('aggregates a lazy-loaded relation from a real run into one n_plus_one item',
         NPlusOneAuthor::create(['id' => $id]);
         NPlusOneBook::create(['id' => $id, 'author_id' => $id]);
     }
+    PHP;
+
+    return $setup."\n\n".$accessLoop."\n";
+}
+
+it('aggregates a lazy-loaded relation from a real run into one n_plus_one item', function (): void {
+    // automaticallyEagerLoadRelationships(false): stand in for a project that does not batch lazy
+    // loads, so each $author->books is a genuine lazy load. tinkerbench itself boots with
+    // nunomaduro/essentials, which does batch, so the snippet opts out to exercise the standard path.
+    $result = runSnippetSubprocess(nPlusOneSnippet(<<<'PHP'
+    Model::automaticallyEagerLoadRelationships(false);
 
     foreach (NPlusOneAuthor::all() as $author) {
         $author->books->count();
     }
-    PHP;
-
-    $result = runSnippetSubprocess($code);
+    PHP));
 
     $findings = array_values(array_filter(
         $result['debug']['items'] ?? [],
@@ -226,6 +233,24 @@ it('aggregates a lazy-loaded relation from a real run into one n_plus_one item',
         ->and($findings[0]['relation'])->toBe('books')
         ->and($findings[0]['count'])->toBe(3)
         ->and($findings[0]['line'])->toBeInt();
+});
+
+it('reports no n_plus_one when the project batches lazy loads with automatic eager loading', function (): void {
+    // Taken as-is: a project that opts into automatic eager loading has no relation-access N+1 to
+    // find, because Laravel batch-loads books for the whole set on first access. The run does not
+    // override this.
+    $result = runSnippetSubprocess(nPlusOneSnippet(<<<'PHP'
+    Model::automaticallyEagerLoadRelationships(true);
+
+    foreach (NPlusOneAuthor::all() as $author) {
+        $author->books->count();
+    }
+    PHP));
+
+    $kinds = array_column($result['debug']['items'] ?? [], 'kind');
+
+    expect($result['exitCode'])->toBe(0)
+        ->and($kinds)->not->toContain('n_plus_one');
 });
 
 // In-process runs exercise run()'s own wiring against tinkerbench itself. The shutdown handler
