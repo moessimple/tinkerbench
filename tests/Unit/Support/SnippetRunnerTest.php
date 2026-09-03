@@ -235,6 +235,20 @@ it('aggregates a lazy-loaded relation from a real run into one n_plus_one item',
         ->and($findings[0]['line'])->toBeInt();
 });
 
+it('does not flag a relation the snippet lazy-loads only once', function (): void {
+    // One lazy load is a single extra query, not an N+1, so it produces no finding.
+    $result = runSnippetSubprocess(nPlusOneSnippet(<<<'PHP'
+    Model::automaticallyEagerLoadRelationships(false);
+
+    NPlusOneAuthor::first()->books->count();
+    PHP));
+
+    $kinds = array_column($result['debug']['items'] ?? [], 'kind');
+
+    expect($result['exitCode'])->toBe(0)
+        ->and($kinds)->not->toContain('n_plus_one');
+});
+
 it('reports no n_plus_one when the project batches lazy loads with automatic eager loading', function (): void {
     // Taken as-is: a project that opts into automatic eager loading has no relation-access N+1 to
     // find, because Laravel batch-loads books for the whole set on first access. The run does not

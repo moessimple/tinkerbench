@@ -76,10 +76,29 @@ class SnippetRunRecorder
     public function snapshot(): array
     {
         return [
-            'items' => $this->items,
+            'items' => $this->itemsWithoutSingleLazyLoads(),
             'duration_str' => Duration::format($this->elapsedMilliseconds()),
             'peak_memory_str' => Number::fileSize(memory_get_peak_usage(true), precision: 2),
         ];
+    }
+
+    /**
+     * A relation lazy-loaded exactly once is a single extra query, not an N+1. The folded finding
+     * is only reported once the same relation has been lazy-loaded at least twice in the run.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function itemsWithoutSingleLazyLoads(): array
+    {
+        return array_values(array_filter($this->items, function (array $item): bool {
+            if (($item['kind'] ?? null) !== 'n_plus_one') {
+                return true;
+            }
+
+            $count = $item['count'] ?? 0;
+
+            return is_int($count) && $count >= 2;
+        }));
     }
 
     /**

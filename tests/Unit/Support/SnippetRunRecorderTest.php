@@ -85,11 +85,24 @@ it('keeps a separate count per relation on the same model', function (): void {
         $emit(['kind' => 'n_plus_one', 'model' => User::class, 'relation' => 'posts', 'line' => 4]);
         $emit(['kind' => 'n_plus_one', 'model' => User::class, 'relation' => 'comments', 'line' => 5]);
         $emit(['kind' => 'n_plus_one', 'model' => User::class, 'relation' => 'posts', 'line' => 4]);
+        $emit(['kind' => 'n_plus_one', 'model' => User::class, 'relation' => 'comments', 'line' => 5]);
     });
 
     expect($recorder->snapshot()['items'])->toBe([
         ['kind' => 'n_plus_one', 'model' => User::class, 'relation' => 'posts', 'line' => 4, 'count' => 2],
-        ['kind' => 'n_plus_one', 'model' => User::class, 'relation' => 'comments', 'line' => 5, 'count' => 1],
+        ['kind' => 'n_plus_one', 'model' => User::class, 'relation' => 'comments', 'line' => 5, 'count' => 2],
+    ]);
+});
+
+it('drops a relation lazy-loaded only once, since a single lazy load is not an N+1', function (): void {
+    $recorder = runRecorder(function (callable $emit): void {
+        $emit(['kind' => 'n_plus_one', 'model' => User::class, 'relation' => 'posts', 'line' => 4]);
+        $emit(['kind' => 'n_plus_one', 'model' => User::class, 'relation' => 'comments', 'line' => 5]);
+        $emit(['kind' => 'n_plus_one', 'model' => User::class, 'relation' => 'comments', 'line' => 5]);
+    });
+
+    expect($recorder->snapshot()['items'])->toBe([
+        ['kind' => 'n_plus_one', 'model' => User::class, 'relation' => 'comments', 'line' => 5, 'count' => 2],
     ]);
 });
 
