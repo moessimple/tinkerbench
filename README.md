@@ -5,19 +5,20 @@
 
 [![tests](https://github.com/moessimple/tinkerbench/actions/workflows/tests.yml/badge.svg)](https://github.com/moessimple/tinkerbench/actions/workflows/tests.yml)
 
-tinkerbench is a browser based REPL for any project linked in [Laravel Herd](https://herd.laravel.com).
+tinkerbench is a browser based REPL for any Laravel project linked in [Laravel Herd](https://herd.laravel.com).
 Write a PHP snippet, run it against that project's own app context, and see the output immediately, no separate setup per project.
 A take on Laravel's [`tinker`](https://github.com/laravel/tinker), inspired by [Tinkerwell](https://tinkerwell.app).
 
 ## Features
 
-* Runs snippets against any Herd linked Laravel 12+ project, switch projects without leaving the page.
+* Runs snippets against any Herd linked Laravel project, switch projects without leaving the page.
 * Saves multiple named snippets per project. Create, rename, and delete them as needed.
 * Command palette (`⌘P`) to jump between snippets and projects, similar to an editor's quick open.
 * Monaco based editor with PHP syntax highlighting, autosave, and a run shortcut (`⌘Enter`).
 * PHP autocompletion, hover documentation, and signature help for the target project's own code, powered by intelephense (the same language server VS Code uses).
 * Output rendering adapts to the value: `dump()`/`dd()` calls use Symfony's interactive VarDumper, JSON is syntax highlighted, and HTML output renders in a sandboxed frame.
-* A single chronological feed of everything a run touched: each dump, database query, log entry, and exception as its own card, in execution order. Filter the feed by kind with live counts. Queries that ran three or more times or slower than 100ms are flagged and can be sorted slowest first. A card's line reference jumps the editor to that line. Query cards pretty-print and syntax-highlight their SQL, and every card has a button to copy its contents.
+* A single chronological feed of everything a run touched: each dump, database query, log entry, and exception as its own card, in execution order. Filter by kind with live counts, and jump the editor to a card's source line.
+* Query cards pretty-print and syntax-highlight their SQL, flag queries that ran more than once or slower than 100ms, and can be sorted slowest first. Every card has a button to copy its contents.
 * Light and dark theme, switchable from the sidebar, defaulting to your system preference.
 
 **tinkerbench runs locally on your own machine through Herd. It's a personal dev tool.**
@@ -25,7 +26,7 @@ A take on Laravel's [`tinker`](https://github.com/laravel/tinker), inspired by [
 ## Requirements
 
 * [Laravel Herd](https://herd.laravel.com)
-* Target projects need Laravel 12 or newer, on the PHP version Laravel itself currently supports (PHP 8.2+, `herd isolate` per project). The snippet runner ships as its own low-PHP-floor package, so tinkerbench's own stack doesn't dictate what the target project runs.
+* Target projects need PHP 8.2 or newer (`herd isolate` per project). The snippet runner ships as its own low-PHP-floor package, so tinkerbench's own PHP 8.5 stack doesn't dictate what the target project runs.
 
 ## Installation
 
