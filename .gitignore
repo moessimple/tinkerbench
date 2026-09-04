@@ -12,6 +12,7 @@
 /storage/app/snippets
 /storage/pail
 /vendor
+packages/runner/vendor
 .env
 .env.backup
 .env.production

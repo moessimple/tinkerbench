@@ -1,0 +1,72 @@
+{
+    "$schema": "https://getcomposer.org/schema.json",
+    "name": "tinkerbench/runner",
+    "type": "library",
+    "description": "The subprocess runner tinkerbench spawns under a target project's own PHP binary to execute a snippet in-process.",
+    "license": "MIT",
+    "require": {
+        "php": "^8.2",
+        "spatie/backtrace": "^1.8",
+        "symfony/var-dumper": "^7.0"
+    },
+    "require-dev": {
+        "driftingly/rector-laravel": "^2.5",
+        "laravel/pint": "^1.27",
+        "mockery/mockery": "^1.6.15",
+        "orchestra/testbench": "^10.11",
+        "pestphp/pest": "^3.8",
+        "pestphp/pest-plugin-type-coverage": "^3.6",
+        "phpstan/phpstan-mockery": "^2.0",
+        "rector/rector": "^2.6.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "Tinkerbench\\Runner\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tinkerbench\\Runner\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "lint": [
+            "rector",
+            "pint --parallel"
+        ],
+        "test:type-coverage": [
+            "php -d memory_limit=512M vendor/bin/pest --type-coverage --min=100"
+        ],
+        "test:lint": [
+            "pint --parallel --test",
+            "rector --dry-run"
+        ],
+        "test:unit": [
+            "sh -c 'pest=\"vendor/bin/pest --parallel --coverage --exactly=100.0\"; command -v herd >/dev/null 2>&1 && herd coverage $pest || XDEBUG_MODE=coverage $pest'"
+        ],
+        "test:types": [
+            "phpstan analyse --memory-limit=512M"
+        ],
+        "test": [
+            "@test:type-coverage",
+            "@test:unit",
+            "@test:lint",
+            "@test:types"
+        ]
+    },
+    "extra": {},
+    "config": {
+        "optimize-autoloader": true,
+        "platform": {
+            "php": "8.2.0"
+        },
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "php-http/discovery": true
+        },
+        "autoloader-suffix": "TinkerbenchRunner"
+    },
+    "minimum-stability": "stable"
+}

@@ -149,7 +149,7 @@ class Herd
             // plain text and rendered as an interactive dump.
             $result = Process::timeout($timeoutSeconds)->env(['VAR_DUMPER_FORMAT' => 'html'])->run([
                 $phpBinary,
-                base_path('app/Support/bin/run-snippet.php'),
+                base_path('packages/runner/bin/run-snippet.php'),
                 $projectPath,
                 $snippetPath,
                 $debugPath,

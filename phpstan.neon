@@ -14,4 +14,5 @@ parameters:
         - routes/
 
     level: max
+    phpVersion: 80500
     tmpDir: /tmp/phpstan
