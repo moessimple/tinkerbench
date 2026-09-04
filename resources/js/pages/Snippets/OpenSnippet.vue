@@ -160,6 +160,18 @@ function onGlobalKeydown(event: KeyboardEvent): void {
         event.preventDefault();
         flushSave();
     }
+
+    // Bound on window, like Cmd/Ctrl+P, so it runs the snippet from anywhere on the page,
+    // not just while the editor has focus. event.repeat guards against a held chord
+    // stacking requests.
+    if (
+        (event.metaKey || event.ctrlKey) &&
+        event.key === 'Enter' &&
+        !event.repeat
+    ) {
+        event.preventDefault();
+        run();
+    }
 }
 
 onMounted(() =>
@@ -215,14 +227,14 @@ function toggleMaximize(): void {
             v-if="!isMaximized"
             class="mx-auto hidden w-full max-w-358 shrink-0 items-center justify-between gap-4 px-4 pt-4 pb-3 min-[900px]:flex"
         >
-            <div class="flex items-baseline gap-2">
+            <div class="flex items-center gap-2">
                 <span
                     class="flex items-center gap-1.5 font-mono text-xs font-semibold tracking-widest text-muted uppercase"
                 >
                     <svg
                         viewBox="0 0 16 16"
-                        width="13"
-                        height="13"
+                        width="11"
+                        height="11"
                         fill="none"
                         stroke="currentColor"
                         stroke-width="1.4"
@@ -419,7 +431,6 @@ function toggleMaximize(): void {
                             :initial-value="http.code"
                             :project="currentProject"
                             @change="onEditorChange"
-                            @run="run"
                         />
                     </div>
                 </div>

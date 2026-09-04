@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/vue';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { reactive, ref } from 'vue';
+import { nextTick, reactive, ref } from 'vue';
 import type { SnippetDebugPayload } from '@/types';
 
 let capturedPost: {
@@ -59,17 +59,16 @@ vi.mock('@inertiajs/vue3', () => ({
 }));
 
 // MonacoEditor has its own test (MonacoEditor.test.ts) proving it renders the editor,
-// emits `change`/`run`, and exposes `revealLine`; here it's replaced with a plain textarea
-// plus a button, and revealLine is a spy so this test can prove OpenSnippet.vue calls it.
+// emits `change`, and exposes `revealLine`; here it's replaced with a plain textarea, and
+// revealLine is a spy so this test can prove OpenSnippet.vue calls it.
 vi.mock('@/components/MonacoEditor.vue', () => ({
     default: {
         props: ['initialValue'],
-        emits: ['change', 'run'],
+        emits: ['change'],
         methods: { revealLine: revealLineSpy },
         template: `
             <div>
                 <textarea aria-label="Snippet code" :value="initialValue" @input="$emit('change', $event.target.value)" />
-                <button type="button" @click="$emit('run')">Emit run</button>
             </div>
         `,
     },
@@ -242,14 +241,41 @@ it('shows a generic error message when the server request fails', async () => {
     await screen.findByText('Request failed (500).');
 });
 
-it('runs the snippet when the editor emits run', async () => {
+it('runs the snippet on Ctrl/Cmd+Enter from anywhere on the page', async () => {
     render(OpenSnippet, { props });
+    await fireEvent.update(screen.getByLabelText('Snippet code'), "echo 'hi';");
 
-    await fireEvent.click(screen.getByRole('button', { name: 'Emit run' }));
+    document.dispatchEvent(
+        new KeyboardEvent('keydown', {
+            key: 'Enter',
+            metaKey: true,
+            cancelable: true,
+            bubbles: true,
+        }),
+    );
+    await nextTick();
 
     expect(capturedPost?.url).toBe(
         '/api/projects/my-project/snippets/executions',
     );
+    expect(httpState.code).toBe("echo 'hi';");
+});
+
+it('ignores an auto-repeating Ctrl/Cmd+Enter so a held chord does not stack runs', async () => {
+    render(OpenSnippet, { props });
+
+    document.dispatchEvent(
+        new KeyboardEvent('keydown', {
+            key: 'Enter',
+            metaKey: true,
+            repeat: true,
+            cancelable: true,
+            bubbles: true,
+        }),
+    );
+    await nextTick();
+
+    expect(capturedPost).toBeNull();
 });
 
 it('shows the run shortcut in the button tooltip', () => {

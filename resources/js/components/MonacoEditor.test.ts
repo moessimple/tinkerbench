@@ -38,12 +38,8 @@ vi.mock('@/lib/languageServer', () => ({
 }));
 
 const onDidChangeModelContent = vi.fn();
-const addAction = vi.fn();
-const addCommand = vi.fn();
 const model = {};
 const editor = {
-    addAction,
-    addCommand,
     dispose: vi.fn(),
     focus: vi.fn(),
     getModel: vi.fn(() => model),
@@ -62,14 +58,10 @@ vi.mock('monaco-editor', () => ({
         defineTheme: vi.fn(),
         setTheme: vi.fn(),
     },
-    KeyCode: { Enter: 3, KeyF: 36 },
-    KeyMod: { CtrlCmd: 2048 },
 }));
 
 beforeEach(() => {
     mockTheme.value = 'dark';
-    addAction.mockClear();
-    addCommand.mockClear();
     editor.dispose.mockClear();
     editor.focus.mockClear();
     editor.getValue.mockClear();
@@ -92,16 +84,6 @@ beforeEach(() => {
                 : intelephenseHandle,
         );
 });
-
-function actionRun(id: string): () => void {
-    const action = addAction.mock.calls.find((call) => call[0].id === id)?.[0];
-
-    if (!action) {
-        throw new Error(`No action registered with id "${id}"`);
-    }
-
-    return action.run;
-}
 
 it('creates the editor with PHP syntax highlighting and the github-dark theme', () => {
     render(MonacoEditor, {
@@ -216,33 +198,42 @@ it('disposes the editor when unmounted', () => {
     expect(editor.dispose).toHaveBeenCalledOnce();
 });
 
-it('emits run when the Ctrl/Cmd+Enter action runs', () => {
-    const rendered = render(MonacoEditor, {
-        props: { initialValue: '<?php echo "initial";', project: 'my-project' },
-    });
+function editorContainer(): HTMLElement {
+    return vi.mocked(monaco.editor.create).mock.calls[0]![0] as HTMLElement;
+}
 
-    actionRun('tinkerbench.run')();
-
-    expect(rendered.emitted().run).toHaveLength(1);
-    expect(addAction).toHaveBeenCalledWith(
-        expect.objectContaining({
-            keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
-        }),
+function dispatchKeydown(init: KeyboardEventInit): boolean {
+    const reachedDocument = vi.fn();
+    document.addEventListener('keydown', reachedDocument);
+    editorContainer().dispatchEvent(
+        new KeyboardEvent('keydown', { bubbles: true, ...init }),
     );
-});
+    document.removeEventListener('keydown', reachedDocument);
 
-it('binds Cmd/Ctrl+F to a no-op so the find widget never opens', () => {
+    return reachedDocument.mock.calls.length > 0;
+}
+
+it('stops every modifier and function-key chord from reaching Monaco while the editor is focused', () => {
     render(MonacoEditor, {
         props: { initialValue: '<?php echo "initial";', project: 'my-project' },
     });
 
-    const call = addCommand.mock.calls.find(
-        ([keybinding]) =>
-            keybinding === (monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF),
-    );
+    expect(dispatchKeydown({ key: 'f', metaKey: true })).toBe(false);
+    expect(dispatchKeydown({ key: 'z', ctrlKey: true })).toBe(false);
+    expect(dispatchKeydown({ key: 'Enter', metaKey: true })).toBe(false);
+    expect(dispatchKeydown({ key: 'ArrowLeft', altKey: true })).toBe(false);
+    expect(dispatchKeydown({ key: 'F1' })).toBe(false);
+});
 
-    expect(call).toBeDefined();
-    expect(() => call?.[1]()).not.toThrow();
+it('lets bare keys reach Monaco', () => {
+    render(MonacoEditor, {
+        props: { initialValue: '<?php echo "initial";', project: 'my-project' },
+    });
+
+    expect(dispatchKeydown({ key: 'a' })).toBe(true);
+    expect(dispatchKeydown({ key: 'Enter' })).toBe(true);
+    expect(dispatchKeydown({ key: 'Tab' })).toBe(true);
+    expect(dispatchKeydown({ key: 'Backspace' })).toBe(true);
 });
 
 async function attachedHandles(): Promise<void> {

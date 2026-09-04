@@ -11,7 +11,6 @@ import { createEditorWorker } from '@/lib/monacoEditorWorker';
 const props = defineProps<{ initialValue: string; project: string }>();
 const emit = defineEmits<{
     change: [content: string];
-    run: [];
 }>();
 
 const editorElement = useTemplateRef('editorElement');
@@ -36,6 +35,24 @@ function revealLine(lineNumber: number): void {
 }
 
 defineExpose({ revealLine });
+
+// Monaco owns no shortcuts in Tinkerbench: the run and snippet-search chords are bound on
+// window (OpenSnippet.vue / CommandPalette.vue) so they work regardless of focus, and every
+// other Monaco keybinding (find, command palette, multi-cursor, folding, go-to, undo,
+// clipboard) is noise in a single-file scratch editor. Monaco's keybinding service listens
+// on a node inside editorElement, so this capture-phase listener stops every modifier or
+// function-key chord before that service sees it. Bare keys pass through untouched, so
+// typing, Enter, Tab, Backspace and cursor movement keep working.
+function suppressEditorShortcuts(event: KeyboardEvent): void {
+    if (
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey ||
+        /^F\d{1,2}$/.test(event.key)
+    ) {
+        event.stopPropagation();
+    }
+}
 
 onMounted(() => {
     // Monaco resolves language-service workers through this global lookup at the moment
@@ -79,7 +96,9 @@ onMounted(() => {
         return;
     }
 
-    editor = monaco.editor.create(editorElement.value, {
+    const container = editorElement.value;
+
+    editor = monaco.editor.create(container, {
         value: props.initialValue,
         language: 'php',
         theme: monacoThemeName(),
@@ -118,15 +137,9 @@ onMounted(() => {
         intelephenseServer?.notifyContentChanged(value);
         laravelLspServer?.notifyContentChanged(value);
     });
-    editor.addAction({
-        id: 'tinkerbench.run',
-        label: 'Tinkerbench: Run Snippet',
-        keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
-        run: () => emit('run'),
+    container.addEventListener('keydown', suppressEditorShortcuts, {
+        capture: true,
     });
-    // A single-snippet scratch editor has nothing to search; swallow Cmd/Ctrl+F so it
-    // neither opens Monaco's find widget nor bubbles to the browser's page search.
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF, () => {});
     editor.focus();
 
     watch(theme, () => monaco.editor.setTheme(monacoThemeName()));
@@ -179,6 +192,11 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
     unmounted = true;
+    editorElement.value?.removeEventListener(
+        'keydown',
+        suppressEditorShortcuts,
+        { capture: true },
+    );
     editor?.dispose();
     intelephenseServer?.dispose();
     laravelLspServer?.dispose();
