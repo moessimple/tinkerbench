@@ -108,7 +108,7 @@ onMounted(() => {
         fontSize: 16,
         lineHeight: 28,
         minimap: { enabled: false },
-        wordWrap: 'on',
+        wordWrap: 'off',
         padding: { top: 16, bottom: 16 },
         fixedOverflowWidgets: true,
         // Editor rendering/interaction options carried over from the user's VS Code

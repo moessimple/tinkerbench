@@ -52,11 +52,12 @@ Laravel only: operate on the Collection you already have (`->sum()`, `->flatMap`
 
 ### Traps
 
-- Modifier and function-key chords are swallowed inside Monaco
-  (`suppressEditorShortcuts`): no Cmd+A / Cmd+V / Cmd+Enter in the editor. Use the
-  toolbar buttons.
+- Cmd/Ctrl+Enter, Cmd/Ctrl+F and the function keys are swallowed inside Monaco
+  (`suppressEditorShortcuts`), so the snippet can't be run with a keyboard chord from
+  the editor. Use the toolbar buttons. Other editing chords (Cmd+A, Cmd+V, undo) do
+  reach the editor.
 - Tool output is rendered as GitHub markdown, which **collapses runs of spaces**, so
   `cat -A`, `echo` and `json_encode` all make indentation look like a single space.
   Verify indent numerically instead: `strlen($l) - strlen(ltrim($l, " "))`.
-- Keep snippet lines <= ~48 chars. The editor has `wordWrap: 'on'` and longer lines
-  wrap in the shot.
+- Keep snippet lines <= ~48 chars. The editor has `wordWrap: 'off'` and longer lines
+  run off the right edge (no horizontal scrollbar) in the shot.

@@ -1,6 +1,7 @@
 ---
 paths:
   - '**/*'
+  - composer.json
 ---
 
 # General
@@ -44,3 +45,6 @@ When hunting for dead code, a file having no caller is not enough to call it dea
 Grey zone (ask before removing, don't just delete): resources/js/lib/utils.ts cn() helper from laravel/vue-starter-kit - currently unused, and clsx + tailwind-merge are its only consumers.
 
 Only propose removing code that was written for this app's own logic and lost its last caller.
+
+## Never remove config.autoloader-suffix
+composer.json pins `config.autoloader-suffix` to `TinkerbenchInternal`. app/Support/bin/run-snippet.php loads tinkerbench's own vendor/autoload.php and then the target project's vendor/autoload.php in the same PHP process (see App\Support\SnippetRun\SnippetRunner::run()). Both define a class named ComposerAutoloaderInit<suffix>; without a pinned, distinctive suffix, a target project scaffolded from the same starter kit as tinkerbench can end up with the identical Composer-generated suffix, and running a snippet against it fatals with "Cannot redeclare class ComposerAutoloaderInit...". Fixing this in the target project isn't an option (tinkerbench must run against any Herd-linked project unmodified), so the suffix is pinned here instead. Never remove or let this config key drift without keeping it unique.

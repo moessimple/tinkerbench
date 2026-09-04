@@ -104,6 +104,20 @@ it('creates the editor with PHP syntax highlighting and the github-dark theme', 
     );
 });
 
+it('leaves long lines unwrapped while keeping vertical scrolling without a visible scrollbar', () => {
+    render(MonacoEditor, {
+        props: { initialValue: '<?php echo "initial";', project: 'my-project' },
+    });
+
+    expect(monaco.editor.create).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+            wordWrap: 'off',
+            scrollbar: { vertical: 'hidden', horizontal: 'hidden' },
+        }),
+    );
+});
+
 it('hides diagnostic markers from the overview ruler, keeping only the inline squiggly underline', () => {
     render(MonacoEditor, {
         props: { initialValue: '<?php echo "initial";', project: 'my-project' },
