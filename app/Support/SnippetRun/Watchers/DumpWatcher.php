@@ -21,7 +21,10 @@ class DumpWatcher implements Watcher
         unset($_SERVER['VAR_DUMPER_FORMAT']);
 
         VarDumper::setHandler(function (mixed $value, ?string $label = null) use ($emit): void {
-            $emit(new DumpFeedItem($this->renderer->render($value, $label)));
+            $emit(new DumpFeedItem(
+                $this->renderer->render($value, $label),
+                $this->renderer->renderText($value, $label),
+            ));
         });
     }
 }

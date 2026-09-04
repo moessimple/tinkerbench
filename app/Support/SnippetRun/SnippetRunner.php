@@ -65,7 +65,10 @@ class SnippetRunner
         // `return;`, so both count as "no result". A literal `return 1;` is indistinguishable from
         // the no-return case and likewise shows nothing.
         if ($returned !== null && $returned !== 1) {
-            $recorder->appendResult($valueRenderer->render($returned));
+            $recorder->appendResult(
+                $valueRenderer->render($returned),
+                $valueRenderer->renderText($returned),
+            );
         }
 
         $this->persist($recorder, $source, $debugPath, null);

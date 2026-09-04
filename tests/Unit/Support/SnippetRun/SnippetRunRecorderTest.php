@@ -46,15 +46,15 @@ function runRecorder(Closure $run, ?ExceptionMapper $mapper = null, ?SourceLocat
 
 it('collects emitted items in order and assembles a snapshot', function (): void {
     $recorder = runRecorder(function (callable $emit): void {
-        $emit(new DumpFeedItem('<a/>'));
+        $emit(new DumpFeedItem('<a/>', 'a'));
         $emit(new LogFeedItem('info', 'hi', []));
     });
 
     $snapshot = $recorder->snapshot();
 
     expect($snapshot['items'])->toBe([
-        ['kind' => 'dump', 'html' => '<a/>', 'line' => 99],
-        ['kind' => 'log', 'label' => 'info', 'message' => 'hi', 'context' => null, 'line' => 99],
+        ['kind' => 'dump', 'html' => '<a/>', 'text' => 'a', 'line' => 99],
+        ['kind' => 'log', 'label' => 'info', 'message' => 'hi', 'context_html' => null, 'context_text' => null, 'line' => 99],
     ])
         ->and($snapshot['duration_str'])->toMatch('/^\d+\.\d{2}(ms|s)$/')
         ->and($snapshot['peak_memory_str'])->toMatch('/^[\d,]+\.\d{2} MB$/');
@@ -65,13 +65,13 @@ it('stamps each emitted item with the line the source locator resolves', functio
     $source->shouldReceive('snippetLine')->andReturn(3, 8);
 
     $recorder = runRecorder(function (callable $emit): void {
-        $emit(new DumpFeedItem('<a/>'));
-        $emit(new DumpFeedItem('<b/>'));
+        $emit(new DumpFeedItem('<a/>', 'a'));
+        $emit(new DumpFeedItem('<b/>', 'b'));
     }, source: $source);
 
     expect($recorder->snapshot()['items'])->toBe([
-        ['kind' => 'dump', 'html' => '<a/>', 'line' => 3],
-        ['kind' => 'dump', 'html' => '<b/>', 'line' => 8],
+        ['kind' => 'dump', 'html' => '<a/>', 'text' => 'a', 'line' => 3],
+        ['kind' => 'dump', 'html' => '<b/>', 'text' => 'b', 'line' => 8],
     ]);
 });
 
@@ -80,7 +80,7 @@ it('leaves the line null when the source has no snippet frame', function (): voi
     $source->shouldReceive('snippetLine')->andReturn(null);
 
     $recorder = runRecorder(function (callable $emit): void {
-        $emit(new DumpFeedItem('<a/>'));
+        $emit(new DumpFeedItem('<a/>', 'a'));
     }, source: $source);
 
     expect($recorder->snapshot()['items'][0]['line'])->toBeNull();
@@ -174,27 +174,27 @@ it('appends an exception item mapped from the throwable', function (): void {
     $mapper->shouldReceive('toItem')->once()->with($throwable, 5, true)->andReturn($mapped);
 
     $recorder = runRecorder(function (callable $emit): void {
-        $emit(new DumpFeedItem('<a/>'));
+        $emit(new DumpFeedItem('<a/>', 'a'));
     }, $mapper);
 
     $recorder->appendException($throwable, 5);
 
     expect($recorder->snapshot()['items'])->toBe([
-        ['kind' => 'dump', 'html' => '<a/>', 'line' => 99],
+        ['kind' => 'dump', 'html' => '<a/>', 'text' => 'a', 'line' => 99],
         ['kind' => 'exception', 'type' => RuntimeException::class, 'message' => 'boom', 'line' => 5, 'frames' => []],
     ]);
 });
 
 it('appends the rendered return value as a result item after the captured items', function (): void {
     $recorder = runRecorder(function (callable $emit): void {
-        $emit(new DumpFeedItem('<a/>'));
+        $emit(new DumpFeedItem('<a/>', 'a'));
     });
 
-    $recorder->appendResult('<pre>the value</pre>');
+    $recorder->appendResult('<pre>the value</pre>', 'the value');
 
     expect($recorder->snapshot()['items'])->toBe([
-        ['kind' => 'dump', 'html' => '<a/>', 'line' => 99],
-        ['kind' => 'result', 'html' => '<pre>the value</pre>'],
+        ['kind' => 'dump', 'html' => '<a/>', 'text' => 'a', 'line' => 99],
+        ['kind' => 'result', 'html' => '<pre>the value</pre>', 'text' => 'the value'],
     ]);
 });
 

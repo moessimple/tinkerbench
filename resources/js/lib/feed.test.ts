@@ -8,8 +8,15 @@ function payload(items: SnippetDebugPayload['items']): SnippetDebugPayload {
 
 it('passes the payload items through in order', () => {
     const items: SnippetDebugPayload['items'] = [
-        { html: '<a/>', kind: 'dump', line: 1 },
-        { context: null, kind: 'log', label: 'info', line: 2, message: 'hi' },
+        { html: '<a/>', kind: 'dump', line: 1, text: 'a' },
+        {
+            context_html: null,
+            context_text: null,
+            kind: 'log',
+            label: 'info',
+            line: 2,
+            message: 'hi',
+        },
     ];
 
     expect(buildFeed(payload(items), '')).toEqual(items);
@@ -27,25 +34,39 @@ it('omits the output entry when the raw output is blank', () => {
 
 it('moves the result entry to the very end, after captured items and output', () => {
     const items: SnippetDebugPayload['items'] = [
-        { html: '<r/>', kind: 'result' },
-        { html: '<a/>', kind: 'dump', line: 1 },
+        { html: '<r/>', kind: 'result', text: 'r' },
+        { html: '<a/>', kind: 'dump', line: 1, text: 'a' },
     ];
 
     expect(buildFeed(payload(items), 'printed text')).toEqual([
-        { html: '<a/>', kind: 'dump', line: 1 },
+        { html: '<a/>', kind: 'dump', line: 1, text: 'a' },
         { kind: 'output', text: 'printed text' },
-        { html: '<r/>', kind: 'result' },
+        { html: '<r/>', kind: 'result', text: 'r' },
     ]);
 });
 
 it('keeps the result entry last when the run produced no stdout', () => {
     const items: SnippetDebugPayload['items'] = [
-        { html: '<r/>', kind: 'result' },
-        { context: null, kind: 'log', label: 'info', line: 1, message: 'hi' },
+        { html: '<r/>', kind: 'result', text: 'r' },
+        {
+            context_html: null,
+            context_text: null,
+            kind: 'log',
+            label: 'info',
+            line: 1,
+            message: 'hi',
+        },
     ];
 
     expect(buildFeed(payload(items), '')).toEqual([
-        { context: null, kind: 'log', label: 'info', line: 1, message: 'hi' },
-        { html: '<r/>', kind: 'result' },
+        {
+            context_html: null,
+            context_text: null,
+            kind: 'log',
+            label: 'info',
+            line: 1,
+            message: 'hi',
+        },
+        { html: '<r/>', kind: 'result', text: 'r' },
     ]);
 });

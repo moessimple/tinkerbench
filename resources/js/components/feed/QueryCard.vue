@@ -1,9 +1,13 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+import { formatSql, highlightSql } from '@/lib/sql';
 import type { FeedItem } from '@/types';
 import Card from '../Card.vue';
 
-defineProps<{ entry: Extract<FeedItem, { kind: 'query' }> }>();
+const props = defineProps<{ entry: Extract<FeedItem, { kind: 'query' }> }>();
 defineEmits<{ navigate: [line: number] }>();
+
+const formatted = computed(() => formatSql(props.entry.sql));
 </script>
 
 <template>
@@ -11,9 +15,10 @@ defineEmits<{ navigate: [line: number] }>();
         label="Query"
         :variant="entry.slow ? 'warning' : 'default'"
         :line="entry.line"
+        :copy="formatted"
         @navigate="$emit('navigate', $event)"
     >
-        <code class="block break-all">{{ entry.sql }}</code>
+        <pre class="whitespace-pre" v-html="highlightSql(formatted)" />
         <template #footer>
             <span
                 v-if="entry.slow"

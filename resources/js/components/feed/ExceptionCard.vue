@@ -1,9 +1,27 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import type { ExceptionFrame, FeedItem } from '@/types';
 import Card from '../Card.vue';
 
-defineProps<{ entry: Extract<FeedItem, { kind: 'exception' }> }>();
+const props = defineProps<{
+    entry: Extract<FeedItem, { kind: 'exception' }>;
+}>();
 defineEmits<{ navigate: [line: number] }>();
+
+// Clipboard form of the exception: a titled header, the message, then a numbered trace.
+const copyText = computed(() => {
+    const header = `# Exception - ${props.entry.type}\n\n${props.entry.message}`;
+
+    if (props.entry.frames.length === 0) {
+        return header;
+    }
+
+    const trace = props.entry.frames
+        .map((frame, index) => `${index} - ${frameLocation(frame)}`)
+        .join('\n');
+
+    return `${header}\n\n## Stack Trace\n\n${trace}`;
+});
 
 // A lone snippet frame adds nothing the card header (line N) doesn't already show.
 function hasTrace(frames: ExceptionFrame[]): boolean {
@@ -26,6 +44,7 @@ function frameCountLabel(frames: ExceptionFrame[]): string {
         label="Exception"
         :line="entry.line"
         variant="danger"
+        :copy="copyText"
         @navigate="$emit('navigate', $event)"
     >
         <p>

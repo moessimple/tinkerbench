@@ -7,7 +7,7 @@ defineEmits<{ navigate: [line: number] }>();
 </script>
 
 <template>
-    <Card label="Result" :line="null">
+    <Card label="Result" :line="null" :copy="entry.text">
         <div class="min-w-0" v-html="entry.html" />
     </Card>
 </template>

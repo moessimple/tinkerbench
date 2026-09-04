@@ -12,13 +12,21 @@ use App\Enums\FeedItemKind;
  */
 class ResultFeedItem extends FeedItem
 {
-    public function __construct(public string $html) {}
+    /**
+     * @param  string  $html  Interactive VarDumper HTML for display.
+     * @param  string  $text  Plain-text form of the same value, for the copy-to-clipboard button.
+     */
+    public function __construct(
+        public string $html,
+        public string $text,
+    ) {}
 
     public function toArray(): array
     {
         return [
             'kind' => FeedItemKind::Result->value,
             'html' => $this->html,
+            'text' => $this->text,
         ];
     }
 }

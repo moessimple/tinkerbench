@@ -37,6 +37,7 @@ const dump = (line: number): FeedEntry => ({
     html: '<i>x</i>',
     kind: 'dump',
     line,
+    text: 'x',
 });
 const query = (sql: string, ms: number): FeedEntry => ({
     connection: 'sqlite',
@@ -56,7 +57,14 @@ function renderFeed(items: FeedEntry[], props: Record<string, unknown> = {}) {
 it('renders one card per entry, dispatched to the component for its kind', () => {
     const { container } = renderFeed([
         dump(1),
-        { context: null, kind: 'log', label: 'info', line: 2, message: 'hi' },
+        {
+            context_html: null,
+            context_text: null,
+            kind: 'log',
+            label: 'info',
+            line: 2,
+            message: 'hi',
+        },
         { kind: 'exception', line: 3, message: 'boom', type: 'E', frames: [] },
         {
             count: 4,
@@ -65,7 +73,7 @@ it('renders one card per entry, dispatched to the component for its kind', () =>
             model: 'App\\Models\\User',
             relation: 'posts',
         },
-        { html: '<i>v</i>', kind: 'result' },
+        { html: '<i>v</i>', kind: 'result', text: 'v' },
     ]);
 
     const kinds = [...container.querySelectorAll('[data-kind]')].map((el) =>

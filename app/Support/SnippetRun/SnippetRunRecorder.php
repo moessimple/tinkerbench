@@ -68,11 +68,12 @@ class SnippetRunRecorder
     }
 
     /**
-     * Records the snippet's own return value, already rendered to VarDumper HTML by the caller.
+     * Records the snippet's own return value, already rendered by the caller: $html is the
+     * interactive VarDumper dump, $text its plain-text form for the copy button.
      */
-    public function appendResult(string $html): void
+    public function appendResult(string $html, string $text): void
     {
-        $this->items[] = new ResultFeedItem($html);
+        $this->items[] = new ResultFeedItem($html, $text);
     }
 
     /**

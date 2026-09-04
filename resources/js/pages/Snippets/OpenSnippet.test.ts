@@ -379,7 +379,7 @@ it('labels each filter tab with its live entry count', async () => {
                     slow: false,
                     sql: 'select 1',
                 },
-                { html: '<i>x</i>', kind: 'dump', line: 1 },
+                { html: '<i>x</i>', kind: 'dump', line: 1, text: 'x' },
             ],
         }),
     });
@@ -397,7 +397,7 @@ it('counts the raw stdout Output card in the All tab total', async () => {
     capturedPost?.onSuccess({
         output: 'printed line',
         debug: payload({
-            items: [{ html: '<i>x</i>', kind: 'dump', line: 1 }],
+            items: [{ html: '<i>x</i>', kind: 'dump', line: 1, text: 'x' }],
         }),
     });
 
@@ -413,8 +413,8 @@ it('counts a result entry under All but gives it no facet tab of its own', async
         output: '',
         debug: payload({
             items: [
-                { html: '<i>x</i>', kind: 'dump', line: 1 },
-                { html: '<i>the value</i>', kind: 'result' },
+                { html: '<i>x</i>', kind: 'dump', line: 1, text: 'x' },
+                { html: '<i>the value</i>', kind: 'result', text: 'the value' },
             ],
         }),
     });
@@ -441,7 +441,7 @@ it('tells the feed which kind to show when a filter tab is selected', async () =
                     slow: false,
                     sql: 'select 1',
                 },
-                { html: '<i>x</i>', kind: 'dump', line: 1 },
+                { html: '<i>x</i>', kind: 'dump', line: 1, text: 'x' },
             ],
         }),
     });
@@ -494,7 +494,7 @@ it('filters the feed to N+1 findings when the N+1 tab is selected', async () => 
         output: '',
         debug: payload({
             items: [
-                { html: '<i>x</i>', kind: 'dump', line: 1 },
+                { html: '<i>x</i>', kind: 'dump', line: 1, text: 'x' },
                 {
                     count: 8,
                     kind: 'n_plus_one',

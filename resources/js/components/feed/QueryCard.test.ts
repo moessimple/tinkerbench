@@ -6,9 +6,9 @@ import QueryCard from './QueryCard.vue';
 // Card has its own test (Card.test.ts); stubbed so this test only proves QueryCard's own content.
 vi.mock('../Card.vue', () => ({
     default: {
-        props: ['label', 'line', 'variant'],
+        props: ['label', 'line', 'variant', 'copy'],
         emits: ['navigate'],
-        template: `<article :data-label="label" :data-line="line" :data-variant="variant">
+        template: `<article :data-label="label" :data-line="line" :data-variant="variant" :data-copy="copy">
             <slot /><slot name="footer" />
             <button class="nav" @click="$emit('navigate', line)">nav</button>
         </article>`,
@@ -34,11 +34,42 @@ it('shows the sql, duration and connection for a routine query', () => {
 
     const card = container.querySelector('[data-label="Query"]');
     expect(card?.getAttribute('data-variant')).toBe('default');
-    expect(card?.textContent).toContain('select 1');
+    expect(card?.textContent).toContain('select');
     expect(card?.textContent).toContain('2.00ms');
     expect(card?.textContent).toContain('sqlite');
     expect(card?.textContent?.toLowerCase()).not.toContain('slow');
     expect(card?.textContent?.toLowerCase()).not.toContain('duplicate');
+});
+
+it('formats the sql across lines and highlights its keywords', () => {
+    const { container } = render(QueryCard, {
+        props: {
+            entry: query({
+                sql: "select id from users where email = 'a@b.com'",
+            }),
+        },
+    });
+
+    const code = container.querySelector('pre');
+    expect(code?.textContent).toContain('\n');
+    expect(code?.innerHTML).toContain(
+        '<span class="text-accent">select</span>',
+    );
+    expect(code?.innerHTML).toContain(
+        `<span class="text-warn">'a@b.com'</span>`,
+    );
+});
+
+it('hands Card the formatted sql for copying', () => {
+    const { container } = render(QueryCard, {
+        props: { entry: query({ sql: 'select 1 from users' }) },
+    });
+
+    const copy = container
+        .querySelector('[data-label="Query"]')
+        ?.getAttribute('data-copy');
+    expect(copy).toContain('\n');
+    expect(copy).toContain('from');
 });
 
 it('marks a slow query as a warning and shows the slow chip', () => {

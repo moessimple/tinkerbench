@@ -6,9 +6,9 @@ import ExceptionCard from './ExceptionCard.vue';
 // Card has its own test (Card.test.ts); stubbed so this test only proves ExceptionCard's content.
 vi.mock('../Card.vue', () => ({
     default: {
-        props: ['label', 'line', 'variant'],
+        props: ['label', 'line', 'variant', 'copy'],
         emits: ['navigate'],
-        template: `<article :data-label="label" :data-line="line" :data-variant="variant">
+        template: `<article :data-label="label" :data-line="line" :data-variant="variant" :data-copy="copy">
             <slot />
             <button class="nav" @click="$emit('navigate', line)">nav</button>
         </article>`,
@@ -36,6 +36,49 @@ it('shows the type and message on the danger variant', () => {
     expect(card?.getAttribute('data-variant')).toBe('danger');
     expect(card?.textContent).toContain('RuntimeException');
     expect(card?.textContent).toContain('nope');
+});
+
+it('hands Card a copy string with a titled header and numbered trace', () => {
+    const { container } = render(ExceptionCard, {
+        props: {
+            entry: exception([
+                {
+                    file: '/app/Foo.php',
+                    function: 'handle',
+                    line: 10,
+                    snippet: false,
+                    vendor: false,
+                },
+                {
+                    file: '/tmp/snippet.php',
+                    function: null,
+                    line: 3,
+                    snippet: true,
+                    vendor: false,
+                },
+            ]),
+        },
+    });
+
+    expect(
+        container
+            .querySelector('[data-label="Exception"]')
+            ?.getAttribute('data-copy'),
+    ).toBe(
+        '# Exception - RuntimeException\n\nnope\n\n## Stack Trace\n\n0 - /app/Foo.php:10\n1 - snippet:3',
+    );
+});
+
+it('omits the stack-trace section from the copy string when there are no frames', () => {
+    const { container } = render(ExceptionCard, {
+        props: { entry: exception([]) },
+    });
+
+    expect(
+        container
+            .querySelector('[data-label="Exception"]')
+            ?.getAttribute('data-copy'),
+    ).toBe('# Exception - RuntimeException\n\nnope');
 });
 
 it('renders the trace disclosure with de-emphasised vendor frames', () => {

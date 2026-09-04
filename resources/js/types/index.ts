@@ -9,8 +9,8 @@ export interface ExceptionFrame {
 }
 
 export type FeedItem =
-    | { html: string; kind: 'dump'; line: number | null }
-    | { html: string; kind: 'result' }
+    | { html: string; kind: 'dump'; line: number | null; text: string }
+    | { html: string; kind: 'result'; text: string }
     | {
           connection: string;
           duplicate: boolean;
@@ -22,7 +22,8 @@ export type FeedItem =
           sql: string;
       }
     | {
-          context: string | null;
+          context_html: string | null;
+          context_text: string | null;
           kind: 'log';
           label: string;
           line: number | null;

@@ -1,9 +1,18 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import type { FeedItem } from '@/types';
 import Card from '../Card.vue';
 
-defineProps<{ entry: Extract<FeedItem, { kind: 'n_plus_one' }> }>();
+const props = defineProps<{
+    entry: Extract<FeedItem, { kind: 'n_plus_one' }>;
+}>();
 defineEmits<{ navigate: [line: number] }>();
+
+const copyText = computed(
+    () =>
+        `${props.entry.model}::${props.entry.relation} lazy-loaded ${props.entry.count}×\n` +
+        `Eager-load with ->with('${props.entry.relation}')`,
+);
 </script>
 
 <template>
@@ -11,6 +20,7 @@ defineEmits<{ navigate: [line: number] }>();
         label="N+1"
         :line="entry.line"
         variant="warning"
+        :copy="copyText"
         @navigate="$emit('navigate', $event)"
     >
         <p>

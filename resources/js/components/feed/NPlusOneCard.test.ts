@@ -6,9 +6,9 @@ import NPlusOneCard from './NPlusOneCard.vue';
 // Card has its own test (Card.test.ts); stubbed so this test only proves NPlusOneCard's content.
 vi.mock('../Card.vue', () => ({
     default: {
-        props: ['label', 'line', 'variant'],
+        props: ['label', 'line', 'variant', 'copy'],
         emits: ['navigate'],
-        template: `<article :data-label="label" :data-line="line" :data-variant="variant">
+        template: `<article :data-label="label" :data-line="line" :data-variant="variant" :data-copy="copy">
             <slot />
             <button class="nav" @click="$emit('navigate', line)">nav</button>
         </article>`,
@@ -39,6 +39,18 @@ it('spells out the eager-load fix for the relation', () => {
     const { container } = render(NPlusOneCard, { props: { entry: finding() } });
 
     expect(container.textContent).toContain("->with('posts')");
+});
+
+it('hands Card a copy string naming the finding and the fix', () => {
+    const { container } = render(NPlusOneCard, { props: { entry: finding() } });
+
+    expect(
+        container
+            .querySelector('[data-label="N+1"]')
+            ?.getAttribute('data-copy'),
+    ).toBe(
+        "App\\Models\\User::posts lazy-loaded 12×\nEager-load with ->with('posts')",
+    );
 });
 
 it('re-emits navigate with the entry line', async () => {

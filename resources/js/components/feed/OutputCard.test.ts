@@ -5,8 +5,8 @@ import OutputCard from './OutputCard.vue';
 // Card has its own test (Card.test.ts); output.ts helpers are leaf/pure and run for real.
 vi.mock('../Card.vue', () => ({
     default: {
-        props: ['label', 'line'],
-        template: `<article :data-label="label"><slot /></article>`,
+        props: ['label', 'line', 'copy'],
+        template: `<article :data-label="label" :data-copy="copy"><slot /></article>`,
     },
 }));
 
@@ -18,6 +18,18 @@ it('renders plain stdout as text', () => {
     const card = container.querySelector('[data-label="Output"]');
     expect(card?.querySelector('pre')?.textContent).toBe('plain printed line');
     expect(card?.querySelector('iframe')).toBeNull();
+});
+
+it('hands Card the raw stdout for copying', () => {
+    const { container } = render(OutputCard, {
+        props: { entry: { kind: 'output', text: 'plain printed line' } },
+    });
+
+    expect(
+        container
+            .querySelector('[data-label="Output"]')
+            ?.getAttribute('data-copy'),
+    ).toBe('plain printed line');
 });
 
 it('renders a JSON object as a highlighted block', () => {

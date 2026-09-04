@@ -11,7 +11,7 @@ const output = computed(() => detectOutput(props.entry.text));
 </script>
 
 <template>
-    <Card label="Output" :line="null">
+    <Card label="Output" :line="null" :copy="entry.text">
         <iframe
             v-if="output.type === 'html'"
             class="h-64 w-full border-0 bg-white"

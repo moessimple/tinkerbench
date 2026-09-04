@@ -7,7 +7,12 @@ defineEmits<{ navigate: [line: number] }>();
 </script>
 
 <template>
-    <Card label="Dump" :line="entry.line" @navigate="$emit('navigate', $event)">
+    <Card
+        label="Dump"
+        :line="entry.line"
+        :copy="entry.text"
+        @navigate="$emit('navigate', $event)"
+    >
         <div class="min-w-0" v-html="entry.html" />
     </Card>
 </template>
