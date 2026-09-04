@@ -280,132 +280,138 @@ function toggleMaximize(): void {
                     class="flex min-h-0 min-w-0 flex-3 border-b border-line min-[900px]:border-r min-[900px]:border-b-0"
                 >
                     <div
-                        class="flex w-12 shrink-0 flex-col items-center gap-1 border-r border-line py-3"
+                        class="flex w-12 shrink-0 flex-col items-center border-r border-line py-3"
                     >
-                        <button
-                            type="button"
-                            :title="
-                                http.processing
-                                    ? 'Running…'
-                                    : `Run snippet (${runShortcut})`
-                            "
-                            :aria-label="
-                                http.processing ? 'Running…' : 'Run snippet'
-                            "
-                            :disabled="http.processing"
-                            class="flex h-8 w-8 items-center justify-center rounded text-muted hover:bg-line/30 hover:text-fg disabled:opacity-50"
-                            @click="run"
-                        >
-                            <svg
-                                viewBox="0 0 16 16"
-                                width="16"
-                                height="16"
-                                fill="currentColor"
-                                aria-hidden="true"
+                        <div class="flex flex-col items-center gap-1">
+                            <button
+                                type="button"
+                                :title="
+                                    http.processing
+                                        ? 'Running…'
+                                        : `Run snippet (${runShortcut})`
+                                "
+                                :aria-label="
+                                    http.processing ? 'Running…' : 'Run snippet'
+                                "
+                                :disabled="http.processing"
+                                class="flex h-8 w-8 items-center justify-center rounded text-muted hover:bg-line/30 hover:text-fg disabled:opacity-50"
+                                @click="run"
                             >
-                                <path
-                                    d="M3 2.5a.5.5 0 0 1 .77-.42l9 5.5a.5.5 0 0 1 0 .84l-9 5.5A.5.5 0 0 1 3 13.5v-11Z"
-                                />
-                            </svg>
-                        </button>
-                        <button
-                            type="button"
-                            title="Clear output"
-                            aria-label="Clear output"
-                            class="flex h-8 w-8 items-center justify-center rounded text-muted hover:bg-line/30 hover:text-fg"
-                            @click="clearOutput"
-                        >
-                            <svg
-                                viewBox="0 0 16 16"
-                                width="16"
-                                height="16"
-                                fill="currentColor"
-                                aria-hidden="true"
-                            >
-                                <path
-                                    fill-rule="evenodd"
-                                    d="M4 1.75V3H1.75a.75.75 0 0 0 0 1.5h.6l.63 9.44A2 2 0 0 0 4.98 16h6.04a2 2 0 0 0 1.99-1.86l.63-9.44h.6a.75.75 0 0 0 0-1.5H12V1.75A1.75 1.75 0 0 0 10.25 0h-4.5A1.75 1.75 0 0 0 4 1.75Zm1.5 0a.25.25 0 0 1 .25-.25h4.5a.25.25 0 0 1 .25.25V3h-5V1.75ZM4.5 4.5h7l-.62 9.32a.5.5 0 0 1-.5.43H5.62a.5.5 0 0 1-.5-.43L4.5 4.5Z"
-                                />
-                            </svg>
-                        </button>
-                        <CommandPalette
-                            :current-project="currentProject"
-                            :current-snippet="snippetName"
-                        />
-                        <button
-                            type="button"
-                            :title="
-                                isMaximized
-                                    ? 'Exit fullscreen'
-                                    : 'Toggle fullscreen'
-                            "
-                            :aria-label="
-                                isMaximized
-                                    ? 'Exit fullscreen'
-                                    : 'Toggle fullscreen'
-                            "
-                            :aria-pressed="isMaximized"
-                            class="flex h-8 w-8 items-center justify-center rounded text-muted hover:bg-line/30 hover:text-fg"
-                            @click="toggleMaximize"
-                        >
-                            <svg
-                                viewBox="0 0 16 16"
-                                width="16"
-                                height="16"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.5"
-                                stroke-linecap="round"
-                                aria-hidden="true"
-                            >
-                                <path
-                                    v-if="isMaximized"
-                                    d="M6 2v4H2M10 14v-4h4M14 6h-4V2M2 10h4v4"
-                                />
-                                <path
-                                    v-else
-                                    d="M2 6V2h4M14 10v4h-4M10 2h4v4M2 10v4h4"
-                                />
-                            </svg>
-                        </button>
-                        <button
-                            type="button"
-                            :title="
-                                theme === 'dark'
-                                    ? 'Switch to light theme'
-                                    : 'Switch to dark theme'
-                            "
-                            :aria-label="
-                                theme === 'dark'
-                                    ? 'Switch to light theme'
-                                    : 'Switch to dark theme'
-                            "
-                            class="flex h-8 w-8 items-center justify-center rounded text-muted hover:bg-line/30 hover:text-fg"
-                            @click="toggleTheme"
-                        >
-                            <svg
-                                viewBox="0 0 16 16"
-                                width="16"
-                                height="16"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.5"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                aria-hidden="true"
-                            >
-                                <template v-if="theme === 'dark'">
-                                    <circle cx="8" cy="8" r="3" />
+                                <svg
+                                    viewBox="0 0 16 16"
+                                    width="16"
+                                    height="16"
+                                    fill="currentColor"
+                                    aria-hidden="true"
+                                >
                                     <path
-                                        d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"
+                                        d="M3 2.5a.5.5 0 0 1 .77-.42l9 5.5a.5.5 0 0 1 0 .84l-9 5.5A.5.5 0 0 1 3 13.5v-11Z"
                                     />
-                                </template>
-                                <path
-                                    v-else
-                                    d="M13.5 9.5A6 6 0 1 1 6.5 2.5a5 5 0 0 0 7 7Z"
-                                />
-                            </svg>
-                        </button>
+                                </svg>
+                            </button>
+                            <button
+                                type="button"
+                                title="Clear output"
+                                aria-label="Clear output"
+                                class="flex h-8 w-8 items-center justify-center rounded text-muted hover:bg-line/30 hover:text-fg"
+                                @click="clearOutput"
+                            >
+                                <svg
+                                    viewBox="0 0 16 16"
+                                    width="16"
+                                    height="16"
+                                    fill="currentColor"
+                                    aria-hidden="true"
+                                >
+                                    <path
+                                        fill-rule="evenodd"
+                                        d="M4 1.75V3H1.75a.75.75 0 0 0 0 1.5h.6l.63 9.44A2 2 0 0 0 4.98 16h6.04a2 2 0 0 0 1.99-1.86l.63-9.44h.6a.75.75 0 0 0 0-1.5H12V1.75A1.75 1.75 0 0 0 10.25 0h-4.5A1.75 1.75 0 0 0 4 1.75Zm1.5 0a.25.25 0 0 1 .25-.25h4.5a.25.25 0 0 1 .25.25V3h-5V1.75ZM4.5 4.5h7l-.62 9.32a.5.5 0 0 1-.5.43H5.62a.5.5 0 0 1-.5-.43L4.5 4.5Z"
+                                    />
+                                </svg>
+                            </button>
+                            <CommandPalette
+                                :current-project="currentProject"
+                                :current-snippet="snippetName"
+                            />
+                        </div>
+                        <div
+                            class="mt-auto flex w-full flex-col items-center gap-1 border-t border-line pt-2"
+                        >
+                            <button
+                                type="button"
+                                :title="
+                                    isMaximized
+                                        ? 'Exit fullscreen'
+                                        : 'Toggle fullscreen'
+                                "
+                                :aria-label="
+                                    isMaximized
+                                        ? 'Exit fullscreen'
+                                        : 'Toggle fullscreen'
+                                "
+                                :aria-pressed="isMaximized"
+                                class="flex h-8 w-8 items-center justify-center rounded text-muted hover:bg-line/30 hover:text-fg"
+                                @click="toggleMaximize"
+                            >
+                                <svg
+                                    viewBox="0 0 16 16"
+                                    width="16"
+                                    height="16"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="1.5"
+                                    stroke-linecap="round"
+                                    aria-hidden="true"
+                                >
+                                    <path
+                                        v-if="isMaximized"
+                                        d="M6 2v4H2M10 14v-4h4M14 6h-4V2M2 10h4v4"
+                                    />
+                                    <path
+                                        v-else
+                                        d="M2 6V2h4M14 10v4h-4M10 2h4v4M2 10v4h4"
+                                    />
+                                </svg>
+                            </button>
+                            <button
+                                type="button"
+                                :title="
+                                    theme === 'dark'
+                                        ? 'Switch to light theme'
+                                        : 'Switch to dark theme'
+                                "
+                                :aria-label="
+                                    theme === 'dark'
+                                        ? 'Switch to light theme'
+                                        : 'Switch to dark theme'
+                                "
+                                class="flex h-8 w-8 items-center justify-center rounded text-muted hover:bg-line/30 hover:text-fg"
+                                @click="toggleTheme"
+                            >
+                                <svg
+                                    viewBox="0 0 16 16"
+                                    width="16"
+                                    height="16"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="1.5"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    aria-hidden="true"
+                                >
+                                    <template v-if="theme === 'dark'">
+                                        <circle cx="8" cy="8" r="3" />
+                                        <path
+                                            d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"
+                                        />
+                                    </template>
+                                    <path
+                                        v-else
+                                        d="M13.5 9.5A6 6 0 1 1 6.5 2.5a5 5 0 0 0 7 7Z"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                     <div class="min-h-0 min-w-0 flex-1">
                         <MonacoEditor
