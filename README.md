@@ -11,7 +11,7 @@ A take on Laravel's [`tinker`](https://github.com/laravel/tinker), inspired by [
 
 ## Features
 
-* Runs snippets against any Herd linked project, switch projects without leaving the page.
+* Runs snippets against any Herd linked project on PHP 8.5+, switch projects without leaving the page.
 * Saves multiple named snippets per project. Create, rename, and delete them as needed.
 * Command palette (`⌘P`) to jump between snippets and projects, similar to an editor's quick open.
 * Monaco based editor with PHP syntax highlighting, autosave, and a run shortcut (`⌘Enter`).
@@ -25,6 +25,7 @@ A take on Laravel's [`tinker`](https://github.com/laravel/tinker), inspired by [
 ## Requirements
 
 * [Laravel Herd](https://herd.laravel.com)
+* Target projects need PHP 8.5 or newer (`herd isolate` per project). tinkerbench boots its own PHP 8.5 code in the same process as the target project's Herd-pinned PHP, so anything older fails to run.
 
 ## Installation
 
