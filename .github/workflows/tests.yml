@@ -116,7 +116,13 @@ jobs:
     # proves it under this repo's own PHP 8.5, which is not the same guarantee — a syntax feature
     # that only exists on PHP 8.4+ (e.g. `new Foo()->bar()` without wrapping parens) parses fine
     # under 8.5 and is invisible to PHPStan's phpVersion checks, but is a hard parse error on a
-    # real 8.2 target. This job is the only thing that actually proves the ^8.2 floor.
+    # real 8.2 target. This job runs `composer test:php82` instead of the full `composer test`:
+    # SnippetRunnerTest's tinkerbench-as-target-project group needs a target that boots on
+    # whatever PHP is currently running the suite, and tinkerbench itself requires PHP 8.5+, so
+    # that group self-skips under 8.2 (see the ->skip() there). That leaves no path to the 100%
+    # line coverage `test:unit` demands, so `test:php82` runs the same suite without the coverage
+    # gate: it still proves every other behavior parses and passes on a real 8.2 interpreter, just
+    # not SnippetRunner::run() itself, which is proven only by the `ci` job's PHP 8.5 run above.
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -131,7 +137,7 @@ jobs:
         with:
           php-version: '8.2'
           tools: composer:v2
-          coverage: xdebug
+          coverage: none
 
       - name: Cache packages/runner Composer dependencies
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -144,4 +150,4 @@ jobs:
         run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress --working-dir=packages/runner
 
       - name: Test packages/runner under real PHP 8.2
-        run: composer test --working-dir=packages/runner
+        run: composer test:php82 --working-dir=packages/runner

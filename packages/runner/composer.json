@@ -44,12 +44,21 @@
         "test:unit": [
             "sh -c 'pest=\"vendor/bin/pest --parallel --coverage --exactly=100.0\"; command -v herd >/dev/null 2>&1 && herd coverage $pest || XDEBUG_MODE=coverage $pest'"
         ],
+        "test:unit:no-coverage": [
+            "pest --parallel"
+        ],
         "test:types": [
             "phpstan analyse --memory-limit=512M"
         ],
         "test": [
             "@test:type-coverage",
             "@test:unit",
+            "@test:lint",
+            "@test:types"
+        ],
+        "test:php82": [
+            "@test:type-coverage",
+            "@test:unit:no-coverage",
             "@test:lint",
             "@test:types"
         ]
