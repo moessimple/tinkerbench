@@ -10,7 +10,11 @@ namespace App\Support\FeedItems;
  */
 abstract class FeedItem
 {
-    /** Snippet line that produced this entry, or null when no snippet frame was on the stack. */
+    /**
+     * Snippet line that produced this entry, or null: either no snippet frame was on the stack, or the
+     * item never went through SnippetRunRecorder::append() (ExceptionFeedItem sets its own line;
+     * ResultFeedItem has none).
+     */
     public ?int $line = null;
 
     /**
