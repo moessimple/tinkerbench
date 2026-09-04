@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use App\Actions\StartLaravelLanguageServerAction;
 use App\Support\Herd;
-use App\Support\LaravelLspBridge;
+use App\Support\LanguageServer\LaravelLspBridge;
 use Mockery\MockInterface;
 
 it('starts the laravel lsp bridge for the given project', function (): void {

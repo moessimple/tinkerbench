@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Support\SnippetRunner;
+use App\Support\SnippetRun\SnippetRunner;
 
 // This is not a web endpoint. The guard also prevents accidental invocation outside the CLI process.
 if (PHP_SAPI !== 'cli') {

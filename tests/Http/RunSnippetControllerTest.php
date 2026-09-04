@@ -7,7 +7,7 @@ use App\Http\Controllers\RunSnippetController;
 use App\Http\Middleware\EnsureKnownProject;
 use App\Http\Requests\RunSnippetRequest;
 use App\Support\Herd;
-use App\Support\SnippetRunResult;
+use App\Support\SnippetRun\SnippetRunResult;
 use Illuminate\Process\Exceptions\ProcessFailedException;
 use Illuminate\Process\FakeProcessResult;
 use Mockery\MockInterface;

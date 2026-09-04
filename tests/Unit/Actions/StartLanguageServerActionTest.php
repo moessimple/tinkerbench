@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use App\Actions\StartLanguageServerAction;
 use App\Support\Herd;
-use App\Support\LanguageServerBridge;
+use App\Support\LanguageServer\LanguageServerBridge;
 use Mockery\MockInterface;
 
 it('starts the language server bridge for the given project', function (): void {

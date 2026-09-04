@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use App\Actions\RunSnippetAction;
 use App\Support\Herd;
-use App\Support\SnippetRunResult;
+use App\Support\SnippetRun\SnippetRunResult;
 use Mockery\MockInterface;
 
 it('runs the code against the given project', function (): void {

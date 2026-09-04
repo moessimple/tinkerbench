@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Actions;
 
 use App\Support\Herd;
-use App\Support\LaravelLspBridge;
+use App\Support\LanguageServer\LaravelLspBridge;
 
 class StartLaravelLanguageServerAction
 {
