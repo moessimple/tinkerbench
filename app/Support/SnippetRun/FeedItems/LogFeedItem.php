@@ -5,30 +5,28 @@ declare(strict_types=1);
 namespace App\Support\SnippetRun\FeedItems;
 
 use App\Enums\FeedItemKind;
-use App\Support\SnippetRun\ValueRenderer;
 
 class LogFeedItem extends FeedItem
 {
     /**
-     * @param  array<array-key, mixed>  $context  Monolog context, rendered to a VarDumper tree for the feed.
+     * @param  string|null  $contextHtml  Monolog context as an interactive VarDumper tree, null when the context is empty.
+     * @param  string|null  $contextText  Plain-text form of the same context, for the copy-to-clipboard button.
      */
     public function __construct(
         public string $label,
         public string $message,
-        public array $context,
-        private ValueRenderer $renderer = new ValueRenderer(),
+        public ?string $contextHtml,
+        public ?string $contextText,
     ) {}
 
     public function toArray(): array
     {
-        $hasContext = $this->context !== [];
-
         return [
             'kind' => FeedItemKind::Log->value,
             'label' => $this->label,
             'message' => $this->message,
-            'context_html' => $hasContext ? $this->renderer->render($this->context) : null,
-            'context_text' => $hasContext ? $this->renderer->renderText($this->context) : null,
+            'context_html' => $this->contextHtml,
+            'context_text' => $this->contextText,
             'line' => $this->line,
         ];
     }

@@ -8,6 +8,7 @@ const props = defineProps<{ entry: Extract<FeedItem, { kind: 'query' }> }>();
 defineEmits<{ navigate: [line: number] }>();
 
 const formatted = computed(() => formatSql(props.entry.sql));
+const highlighted = computed(() => highlightSql(formatted.value));
 </script>
 
 <template>
@@ -18,7 +19,7 @@ const formatted = computed(() => formatSql(props.entry.sql));
         :copy="formatted"
         @navigate="$emit('navigate', $event)"
     >
-        <pre class="whitespace-pre" v-html="highlightSql(formatted)" />
+        <pre class="whitespace-pre" v-html="highlighted" />
         <template #footer>
             <span
                 v-if="entry.slow"

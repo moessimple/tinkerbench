@@ -47,7 +47,7 @@ function runRecorder(Closure $run, ?ExceptionMapper $mapper = null, ?SourceLocat
 it('collects emitted items in order and assembles a snapshot', function (): void {
     $recorder = runRecorder(function (callable $emit): void {
         $emit(new DumpFeedItem('<a/>', 'a'));
-        $emit(new LogFeedItem('info', 'hi', []));
+        $emit(new LogFeedItem('info', 'hi', null, null));
     });
 
     $snapshot = $recorder->snapshot();

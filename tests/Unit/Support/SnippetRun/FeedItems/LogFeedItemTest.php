@@ -3,14 +3,9 @@
 declare(strict_types=1);
 
 use App\Support\SnippetRun\FeedItems\LogFeedItem;
-use App\Support\SnippetRun\ValueRenderer;
 
-it('serializes to the log feed-item shape with the context rendered to html and text', function (): void {
-    $renderer = Mockery::mock(ValueRenderer::class);
-    $renderer->shouldReceive('render')->once()->with(['free' => '2%'])->andReturn('<tree/>');
-    $renderer->shouldReceive('renderText')->once()->with(['free' => '2%'])->andReturn('array:1 [ …');
-
-    $item = new LogFeedItem('warning', 'disk almost full', ['free' => '2%'], $renderer);
+it('serializes to the log feed-item shape', function (): void {
+    $item = new LogFeedItem('warning', 'disk almost full', '<tree/>', 'array:1 [ …');
     $item->line = 7;
 
     expect($item->toArray())->toBe([
@@ -23,12 +18,8 @@ it('serializes to the log feed-item shape with the context rendered to html and 
     ]);
 });
 
-it('emits null context and never renders when the context is empty', function (): void {
-    $renderer = Mockery::mock(ValueRenderer::class);
-    $renderer->shouldNotReceive('render');
-    $renderer->shouldNotReceive('renderText');
-
-    $shape = new LogFeedItem('info', 'started', [], $renderer)->toArray();
+it('serializes a null context when there is none', function (): void {
+    $shape = new LogFeedItem('info', 'started', null, null)->toArray();
 
     expect($shape['context_html'])->toBeNull()
         ->and($shape['context_text'])->toBeNull();

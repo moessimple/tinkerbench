@@ -40,7 +40,7 @@ class SnippetRunner
             [
                 new DumpWatcher($valueRenderer),
                 new QueryWatcher(),
-                new LogWatcher(),
+                new LogWatcher($valueRenderer),
                 new LazyLoadWatcher(),
             ],
             new ExceptionMapper($projectPath, $source->path()),

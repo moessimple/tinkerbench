@@ -40,3 +40,10 @@ it('renders a value as plain text for the clipboard, without VarDumper html or s
 it('prefixes the plain-text render with the given label', function (): void {
     expect(new ValueRenderer()->renderText(42, 'the answer'))->toContain('the answer');
 });
+
+it('truncates an oversized plain-text render so the clipboard stays bounded', function (): void {
+    $text = new ValueRenderer()->renderText(str_repeat('a', 50_000));
+
+    expect(mb_strlen($text))->toBeLessThan(21_000)
+        ->and($text)->toEndWith('...');
+});

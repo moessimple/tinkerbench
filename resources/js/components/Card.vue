@@ -22,7 +22,13 @@ async function copyToClipboard(): Promise<void> {
         return;
     }
 
-    await navigator.clipboard.writeText(props.copy);
+    // A rejected write (denied permission, unfocused document) must not surface as an
+    // unhandled rejection; the button just stays unconfirmed.
+    try {
+        await navigator.clipboard.writeText(props.copy);
+    } catch {
+        return;
+    }
 
     copied.value = true;
     clearTimeout(resetTimer);

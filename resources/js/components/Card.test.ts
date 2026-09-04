@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/vue';
-import { beforeEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import Card from './Card.vue';
 
 const writeText = vi.fn();
@@ -10,6 +10,10 @@ beforeEach(() => {
         value: { writeText },
         configurable: true,
     });
+});
+
+afterEach(() => {
+    vi.useRealTimers();
 });
 
 it('renders the label', () => {
@@ -84,4 +88,30 @@ it('confirms the copy by relabelling the button', async () => {
     await fireEvent.click(screen.getByRole('button', { name: /copy/i }));
 
     expect(await screen.findByRole('button', { name: /copied/i })).toBeTruthy();
+});
+
+it('reverts the button to Copy after the confirmation delay', async () => {
+    vi.useFakeTimers();
+    render(Card, { props: { label: 'Query', line: null, copy: 'select 1' } });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
+    expect(screen.getByRole('button', { name: 'Copied' })).toBeTruthy();
+
+    await vi.advanceTimersByTimeAsync(2000);
+
+    expect(screen.getByRole('button', { name: 'Copy' })).toBeTruthy();
+});
+
+it('does nothing on click when the clipboard API is unavailable', async () => {
+    Object.defineProperty(navigator, 'clipboard', {
+        value: undefined,
+        configurable: true,
+    });
+
+    render(Card, { props: { label: 'Query', line: null, copy: 'select 1' } });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
+
+    expect(writeText).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Copy' })).toBeTruthy();
 });

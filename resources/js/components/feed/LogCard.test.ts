@@ -85,6 +85,18 @@ it('hands Card a copy string of the message and the context text', () => {
     ).toBe('ctx\narray:1 [ "user" => 1 ]');
 });
 
+it('hands Card a copy string of the message alone when there is no context', () => {
+    const { container } = render(LogCard, {
+        props: { entry: log({ message: 'cache warmed' }) },
+    });
+
+    expect(
+        container
+            .querySelector('[data-label="Log"]')
+            ?.getAttribute('data-copy'),
+    ).toBe('cache warmed');
+});
+
 it('re-emits navigate with the entry line', async () => {
     const { emitted } = render(LogCard, {
         props: { entry: log({ line: 8, message: 'x' }) },
