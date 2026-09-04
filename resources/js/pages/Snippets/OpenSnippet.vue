@@ -213,37 +213,42 @@ function toggleMaximize(): void {
     <div class="flex h-full flex-col bg-canvas text-fg">
         <div
             v-if="!isMaximized"
-            class="mx-auto hidden max-w-358 shrink-0 px-4 pt-10 pb-8 text-center min-[900px]:block"
+            class="mx-auto hidden w-full max-w-358 shrink-0 items-center justify-between gap-4 px-4 pt-4 pb-3 min-[900px]:flex"
         >
-            <div
-                class="mb-6 flex items-center justify-center gap-2 font-mono text-xs font-semibold tracking-widest text-muted uppercase"
-            >
-                <svg
-                    viewBox="0 0 16 16"
-                    width="14"
-                    height="14"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.4"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    class="text-accent"
-                    aria-hidden="true"
+            <div class="flex items-baseline gap-2">
+                <span
+                    class="flex items-center gap-1.5 font-mono text-xs font-semibold tracking-widest text-muted uppercase"
                 >
-                    <path d="M5.5 5.2c0-1.8 1.1-3.2 2.5-3.2s2.5 1.4 2.5 3.2" />
-                    <path
-                        d="M3.8 5.2h8.4l-1.3 7.4a1 1 0 0 1-1 .8H6.1a1 1 0 0 1-1-.8L3.8 5.2Z"
-                    />
-                </svg>
-                tinkerbench
+                    <svg
+                        viewBox="0 0 16 16"
+                        width="13"
+                        height="13"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.4"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="text-accent"
+                        aria-hidden="true"
+                    >
+                        <path
+                            d="M5.5 5.2c0-1.8 1.1-3.2 2.5-3.2s2.5 1.4 2.5 3.2"
+                        />
+                        <path
+                            d="M3.8 5.2h8.4l-1.3 7.4a1 1 0 0 1-1 .8H6.1a1 1 0 0 1-1-.8L3.8 5.2Z"
+                        />
+                    </svg>
+                    tinkerbench
+                </span>
+                <span class="text-line" aria-hidden="true">/</span>
+                <h1 class="font-mono text-sm font-semibold text-fg">
+                    {{ currentProject }}
+                    <span class="text-muted">/</span>
+                    {{ snippetName }}
+                </h1>
             </div>
-            <h1 class="font-mono text-2xl font-semibold text-fg">
-                {{ currentProject }}
-                <span class="text-muted">/</span>
-                {{ snippetName }}
-            </h1>
             <p
-                class="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted"
+                class="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-xs text-muted"
             >
                 <span
                     v-for="shortcut in shortcuts"
