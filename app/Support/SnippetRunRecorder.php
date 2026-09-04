@@ -18,6 +18,14 @@ class SnippetRunRecorder
     /** @var array<string, true> */
     private array $seenQueries = [];
 
+    /**
+     * "Model::relation" => index of that finding's item in $items. A repeat access folds into the
+     * first item's count instead of appending, so one N+1 shows as one card.
+     *
+     * @var array<string, int>
+     */
+    private array $nPlusOneIndex = [];
+
     private ?float $startedAt = null;
 
     private ?float $finishedAt = null;
@@ -68,10 +76,29 @@ class SnippetRunRecorder
     public function snapshot(): array
     {
         return [
-            'items' => $this->items,
+            'items' => $this->itemsWithoutSingleLazyLoads(),
             'duration_str' => Duration::format($this->elapsedMilliseconds()),
             'peak_memory_str' => Number::fileSize(memory_get_peak_usage(true), precision: 2),
         ];
+    }
+
+    /**
+     * A relation lazy-loaded exactly once is a single extra query, not an N+1. The folded finding
+     * is only reported once the same relation has been lazy-loaded at least twice in the run.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function itemsWithoutSingleLazyLoads(): array
+    {
+        return array_values(array_filter($this->items, function (array $item): bool {
+            if (($item['kind'] ?? null) !== 'n_plus_one') {
+                return true;
+            }
+
+            $count = $item['count'] ?? 0;
+
+            return is_int($count) && $count >= 2;
+        }));
     }
 
     /**
@@ -89,6 +116,22 @@ class SnippetRunRecorder
             }
 
             $this->seenQueries[$item['sql']] = true;
+        }
+
+        if (($item['kind'] ?? null) === 'n_plus_one' && is_string($item['model'] ?? null) && is_string($item['relation'] ?? null)) {
+            $key = $item['model'].'::'.$item['relation'];
+
+            if (isset($this->nPlusOneIndex[$key])) {
+                $existing = $this->items[$this->nPlusOneIndex[$key]];
+                $count = $existing['count'] ?? 0;
+                $existing['count'] = (is_int($count) ? $count : 0) + 1;
+                $this->items[$this->nPlusOneIndex[$key]] = $existing;
+
+                return;
+            }
+
+            $item['count'] = 1;
+            $this->nPlusOneIndex[$key] = count($this->items);
         }
 
         $this->items[] = $item;

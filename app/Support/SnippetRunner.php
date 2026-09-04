@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Support;
 
 use App\Support\Watchers\DumpWatcher;
+use App\Support\Watchers\LazyLoadWatcher;
 use App\Support\Watchers\LogWatcher;
 use App\Support\Watchers\QueryWatcher;
 use ErrorException;
@@ -40,6 +41,7 @@ class SnippetRunner
                 new DumpWatcher($source, $valueRenderer),
                 new QueryWatcher($source),
                 new LogWatcher($source),
+                new LazyLoadWatcher($source),
             ],
             new ExceptionMapper($projectPath, $source->path()),
         );

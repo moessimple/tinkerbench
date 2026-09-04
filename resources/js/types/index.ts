@@ -34,6 +34,13 @@ export type FeedItem =
           line: number | null;
           message: string;
           type: string;
+      }
+    | {
+          count: number;
+          kind: 'n_plus_one';
+          line: number | null;
+          model: string;
+          relation: string;
       };
 
 export interface SnippetDebugPayload {

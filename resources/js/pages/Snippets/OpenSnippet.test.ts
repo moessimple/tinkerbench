@@ -409,6 +409,62 @@ it('tells the feed which kind to show when a filter tab is selected', async () =
     expect(feed.getAttribute('data-filter')).toBe('all');
 });
 
+it('gives N+1 findings their own facet tab counted by finding, not by query', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({
+        output: '',
+        debug: payload({
+            items: [
+                {
+                    count: 8,
+                    kind: 'n_plus_one',
+                    line: 4,
+                    model: 'App\\Models\\User',
+                    relation: 'posts',
+                },
+                {
+                    count: 3,
+                    kind: 'n_plus_one',
+                    line: 7,
+                    model: 'App\\Models\\User',
+                    relation: 'roles',
+                },
+            ],
+        }),
+    });
+
+    await screen.findByRole('tab', { name: 'N+1 2' });
+    screen.getByRole('tab', { name: 'All 2' });
+});
+
+it('filters the feed to N+1 findings when the N+1 tab is selected', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({
+        output: '',
+        debug: payload({
+            items: [
+                { html: '<i>x</i>', kind: 'dump', line: 1 },
+                {
+                    count: 8,
+                    kind: 'n_plus_one',
+                    line: 4,
+                    model: 'App\\Models\\User',
+                    relation: 'posts',
+                },
+            ],
+        }),
+    });
+
+    const feed = await screen.findByTestId('feed');
+
+    await fireEvent.click(screen.getByRole('tab', { name: 'N+1 1' }));
+    expect(feed.getAttribute('data-filter')).toBe('n_plus_one');
+});
+
 it('offers the query sort control only while the queries facet is active', async () => {
     render(OpenSnippet, { props });
 

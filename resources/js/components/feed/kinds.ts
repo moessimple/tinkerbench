@@ -3,6 +3,7 @@ import type { FeedEntry } from '@/lib/feed';
 import DumpCard from './DumpCard.vue';
 import ExceptionCard from './ExceptionCard.vue';
 import LogCard from './LogCard.vue';
+import NPlusOneCard from './NPlusOneCard.vue';
 import OutputCard from './OutputCard.vue';
 import QueryCard from './QueryCard.vue';
 import ResultCard from './ResultCard.vue';
@@ -28,6 +29,7 @@ export const FEED_KINDS: readonly FeedKind[] = [
     { kind: 'query', facet: 'Queries', component: QueryCard },
     { kind: 'log', facet: 'Logs', component: LogCard },
     { kind: 'exception', facet: 'Exceptions', component: ExceptionCard },
+    { kind: 'n_plus_one', facet: 'N+1', component: NPlusOneCard },
     { kind: 'result', facet: null, component: ResultCard },
     { kind: 'output', facet: null, component: OutputCard },
 ];

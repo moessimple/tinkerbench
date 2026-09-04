@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\User;
 use App\Support\ExceptionMapper;
 use App\Support\SnippetRunRecorder;
 use App\Support\Watchers\Watcher;
@@ -64,6 +65,67 @@ it('flags an identical repeated query as a duplicate, leaving the first untouche
     expect($items[0]['duplicate'])->toBeFalse()
         ->and($items[1]['duplicate'])->toBeTrue()
         ->and($items[2]['duplicate'])->toBeFalse();
+});
+
+it('folds repeated lazy-loads of the same relation into one item with a count', function (): void {
+    $recorder = runRecorder(function (callable $emit): void {
+        $emit(['kind' => 'query', 'sql' => 'select * from users', 'duration_str' => '1.00ms', 'connection' => 'sqlite', 'slow' => false, 'duplicate' => false, 'line' => 1]);
+        $emit(['kind' => 'n_plus_one', 'model' => User::class, 'relation' => 'posts', 'line' => 4]);
+        $emit(['kind' => 'n_plus_one', 'model' => User::class, 'relation' => 'posts', 'line' => 9]);
+    });
+
+    expect($recorder->snapshot()['items'])->toBe([
+        ['kind' => 'query', 'sql' => 'select * from users', 'duration_str' => '1.00ms', 'connection' => 'sqlite', 'slow' => false, 'duplicate' => false, 'line' => 1],
+        ['kind' => 'n_plus_one', 'model' => User::class, 'relation' => 'posts', 'line' => 4, 'count' => 2],
+    ]);
+});
+
+it('keeps a separate count per relation on the same model', function (): void {
+    $recorder = runRecorder(function (callable $emit): void {
+        $emit(['kind' => 'n_plus_one', 'model' => User::class, 'relation' => 'posts', 'line' => 4]);
+        $emit(['kind' => 'n_plus_one', 'model' => User::class, 'relation' => 'comments', 'line' => 5]);
+        $emit(['kind' => 'n_plus_one', 'model' => User::class, 'relation' => 'posts', 'line' => 4]);
+        $emit(['kind' => 'n_plus_one', 'model' => User::class, 'relation' => 'comments', 'line' => 5]);
+    });
+
+    expect($recorder->snapshot()['items'])->toBe([
+        ['kind' => 'n_plus_one', 'model' => User::class, 'relation' => 'posts', 'line' => 4, 'count' => 2],
+        ['kind' => 'n_plus_one', 'model' => User::class, 'relation' => 'comments', 'line' => 5, 'count' => 2],
+    ]);
+});
+
+it('drops a relation lazy-loaded only once, since a single lazy load is not an N+1', function (): void {
+    $recorder = runRecorder(function (callable $emit): void {
+        $emit(['kind' => 'n_plus_one', 'model' => User::class, 'relation' => 'posts', 'line' => 4]);
+        $emit(['kind' => 'n_plus_one', 'model' => User::class, 'relation' => 'comments', 'line' => 5]);
+        $emit(['kind' => 'n_plus_one', 'model' => User::class, 'relation' => 'comments', 'line' => 5]);
+    });
+
+    expect($recorder->snapshot()['items'])->toBe([
+        ['kind' => 'n_plus_one', 'model' => User::class, 'relation' => 'comments', 'line' => 5, 'count' => 2],
+    ]);
+});
+
+it('does not let lazy-load folding touch the duplicate-query bookkeeping', function (): void {
+    $query = fn (string $sql): array => [
+        'kind' => 'query', 'sql' => $sql, 'duration_str' => '1.00ms',
+        'connection' => 'sqlite', 'slow' => false, 'duplicate' => false, 'line' => null,
+    ];
+
+    $recorder = runRecorder(function (callable $emit) use ($query): void {
+        $emit($query('select * from posts where user_id = 1'));
+        $emit(['kind' => 'n_plus_one', 'model' => User::class, 'relation' => 'posts', 'line' => 4]);
+        $emit($query('select * from posts where user_id = 1'));
+        $emit(['kind' => 'n_plus_one', 'model' => User::class, 'relation' => 'posts', 'line' => 4]);
+    });
+
+    $items = $recorder->snapshot()['items'];
+
+    expect($items)->toHaveCount(3)
+        ->and($items[0]['duplicate'])->toBeFalse()
+        ->and($items[1])->toBe(['kind' => 'n_plus_one', 'model' => User::class, 'relation' => 'posts', 'line' => 4, 'count' => 2])
+        ->and($items[2]['kind'])->toBe('query')
+        ->and($items[2]['duplicate'])->toBeTrue();
 });
 
 it('reports a zero duration when snapshot is taken before a run', function (): void {
