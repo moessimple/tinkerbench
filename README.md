@@ -17,7 +17,7 @@ A take on Laravel's [`tinker`](https://github.com/laravel/tinker), inspired by [
 * Monaco based editor with PHP syntax highlighting, autosave, and a run shortcut (`⌘Enter`).
 * PHP autocompletion, hover documentation, and signature help for the target project's own code, powered by intelephense (the same language server VS Code uses).
 * Output rendering adapts to the value: `dump()`/`dd()` calls use Symfony's interactive VarDumper, JSON is syntax highlighted, and HTML output renders in a sandboxed frame.
-* A single chronological feed of everything a run touched: each dump, database query, log entry, and exception as its own card, in execution order. Filter the feed by kind with live counts. Queries that ran three or more times or slower than 100ms are flagged and can be sorted slowest first. A card's line reference jumps the editor to that line.
+* A single chronological feed of everything a run touched: each dump, database query, log entry, and exception as its own card, in execution order. Filter the feed by kind with live counts. Queries that ran three or more times or slower than 100ms are flagged and can be sorted slowest first. A card's line reference jumps the editor to that line. Query cards pretty-print and syntax-highlight their SQL, and every card has a button to copy its contents.
 * Light and dark theme, switchable from the sidebar, defaulting to your system preference.
 
 **tinkerbench runs locally on your own machine through Herd. It's a personal dev tool.**
