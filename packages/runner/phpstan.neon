@@ -1,0 +1,13 @@
+includes:
+    - vendor/nesbot/carbon/extension.neon
+    - vendor/phpstan/phpstan-mockery/extension.neon
+    - phar://phpstan.phar/conf/bleedingEdge.neon
+
+parameters:
+    paths:
+        - bin/
+        - src/
+
+    level: max
+    phpVersion: 80200
+    tmpDir: /tmp/phpstan-runner

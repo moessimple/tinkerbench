@@ -20,11 +20,6 @@
         <include>
             <directory>app</directory>
         </include>
-        <exclude>
-            <!-- Only ever runs inside a subprocess spawned by App\Support\Herd, which coverage tooling can't
-                 instrument; its behavior is proven by tests/Unit/Support/HerdTest.php instead. -->
-            <file>app/Support/bin/run-snippet.php</file>
-        </exclude>
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>

@@ -61,6 +61,13 @@ jobs:
           key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
 
+      - name: Cache packages/runner Composer dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: packages/runner/vendor
+          key: ${{ runner.os }}-composer-runner-${{ hashFiles('packages/runner/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-runner-
+
       - name: Cache npm dependencies
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -85,6 +92,9 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress
 
+      - name: Install packages/runner Composer dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress --working-dir=packages/runner
+
       - name: Copy environment file
         run: cp .env.example .env
 
@@ -99,3 +109,45 @@ jobs:
 
       - name: Tests
         run: composer test
+
+  runner-php82:
+    # packages/runner declares php: ^8.2 (the whole point of the package is to run on a target
+    # project's Laravel-12-supported PHP, not tinkerbench's own ^8.5). The `ci` job above only
+    # proves it under this repo's own PHP 8.5, which is not the same guarantee — a syntax feature
+    # that only exists on PHP 8.4+ (e.g. `new Foo()->bar()` without wrapping parens) parses fine
+    # under 8.5 and is invisible to PHPStan's phpVersion checks, but is a hard parse error on a
+    # real 8.2 target. This job runs `composer test:php82` instead of the full `composer test`:
+    # SnippetRunnerTest's tinkerbench-as-target-project group needs a target that boots on
+    # whatever PHP is currently running the suite, and tinkerbench itself requires PHP 8.5+, so
+    # that group self-skips under 8.2 (see the ->skip() there). That leaves no path to the 100%
+    # line coverage `test:unit` demands, so `test:php82` runs the same suite without the coverage
+    # gate: it still proves every other behavior parses and passes on a real 8.2 interpreter, just
+    # not SnippetRunner::run() itself, which is proven only by the `ci` job's PHP 8.5 run above.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP 8.2
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache packages/runner Composer dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: packages/runner/vendor
+          key: ${{ runner.os }}-composer-runner-php82-${{ hashFiles('packages/runner/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-runner-php82-
+
+      - name: Install packages/runner Composer dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress --working-dir=packages/runner
+
+      - name: Test packages/runner under real PHP 8.2
+        run: composer test:php82 --working-dir=packages/runner

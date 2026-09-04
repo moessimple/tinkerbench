@@ -336,6 +336,15 @@ it('surfaces the process error when the given php binary does not exist', functi
     expect($result->output)->not->toBe('');
 });
 
+it('invokes the runner package bin script, not the old app/Support path', function (): void {
+    Process::fake();
+
+    new Herd()->runSnippet("<?php\n\nreturn 'unreachable';", PHP_BINARY, base_path());
+
+    Process::assertRan(fn ($process): bool => in_array(base_path('packages/runner/bin/run-snippet.php'), $process->command, true)
+        && ! in_array(base_path('app/Support/bin/run-snippet.php'), $process->command, true));
+});
+
 it('runs a snippet in a subprocess and returns its return value as a result item', function (): void {
     $result = new Herd()->runSnippet("<?php\n\nreturn 'from the subprocess';", PHP_BINARY, base_path());
 

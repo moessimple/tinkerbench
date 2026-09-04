@@ -18,8 +18,7 @@
         "laravel/lsp": "^0.0.31",
         "laravel/tinker": "^3.0",
         "laravel/wayfinder": "^0.1.14",
-        "nunomaduro/essentials": "^1.2",
-        "spatie/backtrace": "^1.8"
+        "nunomaduro/essentials": "^1.2"
     },
     "require-dev": {
         "driftingly/rector-laravel": "^2.6.2",
@@ -57,6 +56,7 @@
     "scripts": {
         "setup": [
             "composer install",
+            "composer install --working-dir=packages/runner",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
             "@php artisan key:generate",
             "@php artisan migrate --force",
@@ -72,6 +72,7 @@
         "lint": [
             "rector",
             "pint --parallel",
+            "composer lint --working-dir=packages/runner",
             "npm run lint"
         ],
         "test:type-coverage": [
@@ -90,12 +91,16 @@
             "phpstan analyse --memory-limit=512M",
             "npm run test:types"
         ],
+        "test:runner": [
+            "composer test --working-dir=packages/runner"
+        ],
         "test": [
             "@php artisan config:clear --ansi",
             "@test:type-coverage",
             "@test:unit",
             "@test:lint",
-            "@test:types"
+            "@test:types",
+            "@test:runner"
         ],
         "update:dependencies": [
             "@composer update --bump-after-update",
