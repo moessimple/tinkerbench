@@ -30,6 +30,9 @@ const pageTitle = computed(
 const rawOutput = ref('');
 const debug = ref<SnippetDebugPayload | null>(null);
 const errorMessage = ref('');
+// True from the first run onward, so the pre-run hint doesn't flash back each time run()
+// clears the previous output before the next response arrives. Reset only by clearOutput().
+const hasRun = ref(false);
 const isMaximized = ref(false);
 const activeFilter = ref<FeedFilter>('all');
 const querySort = ref<FeedSort>('recent');
@@ -170,6 +173,7 @@ function run(): void {
     errorMessage.value = '';
     rawOutput.value = '';
     debug.value = null;
+    hasRun.value = true;
 
     http.post(RunSnippetController.url(props.currentProject), {
         onSuccess: (data) => {
@@ -189,6 +193,7 @@ function clearOutput(): void {
     rawOutput.value = '';
     debug.value = null;
     errorMessage.value = '';
+    hasRun.value = false;
     activeFilter.value = 'all';
     querySort.value = 'recent';
 }
@@ -238,7 +243,7 @@ function toggleMaximize(): void {
                 {{ snippetName }}
             </h1>
             <p
-                class="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 font-mono text-[11px] text-muted"
+                class="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted"
             >
                 <span
                     v-for="shortcut in shortcuts"
@@ -246,7 +251,7 @@ function toggleMaximize(): void {
                     class="flex items-center gap-1.5"
                 >
                     <kbd
-                        class="rounded border border-line px-1 py-0.5 text-fg/70"
+                        class="rounded border border-line px-1 py-0.5 font-mono text-fg"
                         >{{ shortcut.keys }}</kbd
                     >
                     {{ shortcut.description }}
@@ -410,7 +415,7 @@ function toggleMaximize(): void {
 
                 <div class="flex min-h-0 min-w-0 flex-2 flex-col">
                     <div
-                        class="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-b border-line px-4 py-2 font-mono text-xs text-muted"
+                        class="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-b border-line px-4 py-2 text-xs text-muted"
                     >
                         <span
                             class="flex items-center gap-x-2"
@@ -428,16 +433,20 @@ function toggleMaximize(): void {
                         </span>
                         <template v-if="debug">
                             <span aria-hidden="true">·</span>
-                            <span>{{ debug.duration_str }}</span>
+                            <span class="font-medium text-fg">{{
+                                debug.duration_str
+                            }}</span>
                             <span aria-hidden="true">·</span>
-                            <span>{{ debug.peak_memory_str }}</span>
+                            <span class="font-medium text-fg">{{
+                                debug.peak_memory_str
+                            }}</span>
                         </template>
                     </div>
                     <div
                         v-if="debug"
                         role="tablist"
                         aria-label="Filter output by kind"
-                        class="flex shrink-0 gap-0.5 overflow-x-auto border-b border-line px-3 py-1.5 font-mono text-[11px]"
+                        class="flex shrink-0 gap-0.5 overflow-x-auto border-b border-line px-3 py-1 text-xs"
                     >
                         <button
                             v-for="filter in feedFilters"
@@ -445,7 +454,7 @@ function toggleMaximize(): void {
                             type="button"
                             role="tab"
                             :aria-selected="activeFilter === filter.value"
-                            class="flex shrink-0 items-baseline gap-1 rounded px-1.5 py-0.5 tracking-wide whitespace-nowrap uppercase"
+                            class="flex shrink-0 items-baseline gap-1 rounded px-2 py-1 tracking-wide whitespace-nowrap uppercase"
                             :class="
                                 activeFilter === filter.value
                                     ? 'bg-accent/10 text-accent'
@@ -468,7 +477,7 @@ function toggleMaximize(): void {
                     </div>
                     <div
                         v-if="debug && activeFilter === 'query'"
-                        class="flex shrink-0 items-center justify-end gap-3 border-b border-line px-4 py-1.5 font-mono text-[11px] text-muted"
+                        class="flex shrink-0 items-center justify-end gap-3 border-b border-line px-4 py-1 text-xs text-muted"
                     >
                         <div class="flex items-center gap-1">
                             <span class="tracking-wide uppercase">Sort</span>
@@ -477,7 +486,7 @@ function toggleMaximize(): void {
                                 :key="option.value"
                                 type="button"
                                 :aria-pressed="querySort === option.value"
-                                class="rounded px-1.5 py-0.5 tracking-wide uppercase"
+                                class="rounded px-2 py-1 tracking-wide uppercase"
                                 :class="
                                     querySort === option.value
                                         ? 'bg-accent/10 text-accent'
@@ -495,8 +504,23 @@ function toggleMaximize(): void {
                         class="min-h-0 flex-1 overflow-auto"
                     >
                         <p
-                            v-if="ranWithoutOutput && activeFilter === 'all'"
-                            class="px-4 py-8 text-center font-mono text-xs text-muted"
+                            v-if="!hasRun"
+                            class="mx-auto max-w-xs px-4 py-10 text-center text-xs text-muted"
+                        >
+                            Run the snippet to see queries, dumps, logs and
+                            timing here.
+                            <span class="mt-2 block">
+                                <kbd
+                                    class="rounded border border-line px-1 py-0.5 font-mono text-fg"
+                                    >{{ runShortcut }}</kbd
+                                >
+                            </span>
+                        </p>
+                        <p
+                            v-else-if="
+                                ranWithoutOutput && activeFilter === 'all'
+                            "
+                            class="px-4 py-8 text-center text-xs text-muted"
                         >
                             No output. Return a value or call dump() to see it
                             here.
@@ -518,14 +542,14 @@ function toggleMaximize(): void {
         <p
             v-if="errorMessage"
             role="alert"
-            class="fixed right-4 bottom-4 rounded-md border border-red-500/40 bg-surface px-4 py-3 font-mono text-sm text-red-400 shadow-2xl"
+            class="fixed right-4 bottom-4 rounded-md border border-danger/40 bg-surface px-4 py-3 font-mono text-sm text-danger shadow-2xl"
         >
             {{ errorMessage }}
         </p>
         <p
             v-if="saveError"
             role="alert"
-            class="fixed top-4 right-4 rounded-md border border-red-500/40 bg-surface px-4 py-3 font-mono text-sm text-red-400 shadow-2xl"
+            class="fixed top-4 right-4 rounded-md border border-danger/40 bg-surface px-4 py-3 font-mono text-sm text-danger shadow-2xl"
         >
             {{ saveError }}
         </p>

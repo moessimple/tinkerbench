@@ -31,6 +31,14 @@ it('marks the card with its variant for danger styling', () => {
     expect(container.querySelector('[data-variant="danger"]')).not.toBeNull();
 });
 
+it('marks the card with its variant for warning styling', () => {
+    const { container } = render(Card, {
+        props: { label: 'N+1', line: null, variant: 'warning' },
+    });
+
+    expect(container.querySelector('[data-variant="warning"]')).not.toBeNull();
+});
+
 it('renders body content passed to the default slot', () => {
     render(Card, {
         props: { label: 'Dump', line: null },

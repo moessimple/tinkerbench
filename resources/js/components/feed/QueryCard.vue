@@ -9,7 +9,7 @@ defineEmits<{ navigate: [line: number] }>();
 <template>
     <Card
         label="Query"
-        :variant="entry.slow ? 'danger' : 'default'"
+        :variant="entry.slow ? 'warning' : 'default'"
         :line="entry.line"
         @navigate="$emit('navigate', $event)"
     >
@@ -17,13 +17,13 @@ defineEmits<{ navigate: [line: number] }>();
         <template #footer>
             <span
                 v-if="entry.slow"
-                class="rounded bg-danger/10 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-danger uppercase"
+                class="rounded bg-warn/10 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-warn uppercase"
             >
                 slow
             </span>
             <span
                 v-if="entry.duplicate"
-                class="rounded bg-danger/10 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-danger uppercase"
+                class="rounded bg-warn/10 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-warn uppercase"
             >
                 duplicate
             </span>

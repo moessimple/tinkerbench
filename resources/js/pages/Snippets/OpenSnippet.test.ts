@@ -304,6 +304,53 @@ it('shows no no-output note before the first run', () => {
     expect(screen.queryByText(/no output/i)).toBeNull();
 });
 
+it('guides the user to run the snippet before the first run', () => {
+    render(OpenSnippet, { props });
+
+    const region = screen.getByRole('region', { name: 'Snippet output' });
+
+    expect(region.textContent).toContain('Run the snippet to see');
+    expect(region.textContent).toContain('⌘Enter');
+});
+
+it('replaces the run hint with the feed once a run has finished', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: 'hi', debug: null });
+
+    await screen.findByText('hi');
+    expect(
+        screen.queryByText('Run the snippet to see', { exact: false }),
+    ).toBeNull();
+});
+
+it('keeps the run hint hidden while a re-run clears the previous output', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: 'first', debug: null });
+    await screen.findByText('first');
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+
+    expect(
+        screen.queryByText('Run the snippet to see', { exact: false }),
+    ).toBeNull();
+});
+
+it('restores the run hint after the output is cleared', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: 'hi', debug: null });
+    await screen.findByText('hi');
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Clear output' }));
+
+    screen.getByText('Run the snippet to see', { exact: false });
+});
+
 it('labels each filter tab with its live entry count', async () => {
     render(OpenSnippet, { props });
 

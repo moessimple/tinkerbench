@@ -10,11 +10,11 @@ defineEmits<{ navigate: [line: number] }>();
     <Card
         label="N+1"
         :line="entry.line"
-        variant="danger"
+        variant="warning"
         @navigate="$emit('navigate', $event)"
     >
         <p>
-            <strong class="text-danger">{{ entry.model }}</strong
+            <strong class="text-warn">{{ entry.model }}</strong
             >::{{ entry.relation }} lazy-loaded {{ entry.count }}×
         </p>
         <p class="mt-1.5 text-xs text-muted">

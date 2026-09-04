@@ -25,11 +25,11 @@ function finding(): Extract<FeedItem, { kind: 'n_plus_one' }> {
     };
 }
 
-it('names the model, relation and access count on the danger variant', () => {
+it('names the model, relation and access count on the warning variant', () => {
     const { container } = render(NPlusOneCard, { props: { entry: finding() } });
 
     const card = container.querySelector('[data-label="N+1"]');
-    expect(card?.getAttribute('data-variant')).toBe('danger');
+    expect(card?.getAttribute('data-variant')).toBe('warning');
     expect(card?.textContent).toContain('App\\Models\\User');
     expect(card?.textContent).toContain('posts');
     expect(card?.textContent).toContain('12×');

@@ -41,13 +41,13 @@ it('shows the sql, duration and connection for a routine query', () => {
     expect(card?.textContent?.toLowerCase()).not.toContain('duplicate');
 });
 
-it('marks a slow query danger and shows the slow chip', () => {
+it('marks a slow query as a warning and shows the slow chip', () => {
     const { container } = render(QueryCard, {
         props: { entry: query({ slow: true }) },
     });
 
     const card = container.querySelector('[data-label="Query"]');
-    expect(card?.getAttribute('data-variant')).toBe('danger');
+    expect(card?.getAttribute('data-variant')).toBe('warning');
     expect(card?.textContent?.toLowerCase()).toContain('slow');
 });
 

@@ -16,6 +16,7 @@
     --color-muted: var(--muted);
     --color-accent: var(--accent);
     --color-danger: var(--danger);
+    --color-warn: var(--warn);
 }
 
 :root {
@@ -26,6 +27,7 @@
     --muted: #59636e;
     --accent: #0969da;
     --danger: #cf222e;
+    --warn: #9a6700;
 }
 
 .dark {
@@ -36,6 +38,24 @@
     --muted: #7d8590;
     --accent: #4493f8;
     --danger: #f85149;
+    --warn: #d29922;
+}
+
+/* Keyboard focus needs a consistent, high-contrast ring: the app styles hover on every control
+   but defines no focus state, so keyboard users would otherwise fall back to the inconsistent
+   UA outline. Scoped to :focus-visible so pointer clicks stay ring-free. */
+:where(
+    a,
+    button,
+    input,
+    select,
+    textarea,
+    [role='tab'],
+    [tabindex]
+):focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 2px;
 }
 
 /* Inertia's <x-inertia::app /> renders a bare <div id="app"> with no way to attach a Tailwind
