@@ -36,18 +36,18 @@ function revealLine(lineNumber: number): void {
 
 defineExpose({ revealLine });
 
-// Monaco owns no shortcuts in Tinkerbench: the run and snippet-search chords are bound on
-// window (OpenSnippet.vue / CommandPalette.vue) so they work regardless of focus, and every
-// other Monaco keybinding (find, command palette, multi-cursor, folding, go-to, undo,
-// clipboard) is noise in a single-file scratch editor. Monaco's keybinding service listens
-// on a node inside editorElement, so this capture-phase listener stops every modifier or
-// function-key chord before that service sees it. Bare keys pass through untouched, so
-// typing, Enter, Tab, Backspace and cursor movement keep working.
+// Monaco keeps its editing keybindings (cursor and word motion, selection, undo/redo,
+// clipboard, line moves, indentation) so the scratch editor behaves like a normal editor.
+// Monaco's keybinding service listens on a node inside editorElement, so this capture-phase
+// listener only keeps three things away from it: Cmd/Ctrl+F, so neither Monaco's find widget
+// nor the browser's page search opens; the function keys, so F1 doesn't open Monaco's command
+// palette; and Cmd/Ctrl+Enter, which the window listener owns for running the snippet.
 function suppressEditorShortcuts(event: KeyboardEvent): void {
+    const chord = event.metaKey || event.ctrlKey;
+
     if (
-        event.metaKey ||
-        event.ctrlKey ||
-        event.altKey ||
+        (chord && event.key.toLowerCase() === 'f') ||
+        (chord && event.key === 'Enter') ||
         /^F\d{1,2}$/.test(event.key)
     ) {
         event.stopPropagation();

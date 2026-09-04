@@ -213,19 +213,19 @@ function dispatchKeydown(init: KeyboardEventInit): boolean {
     return reachedDocument.mock.calls.length > 0;
 }
 
-it('stops every modifier and function-key chord from reaching Monaco while the editor is focused', () => {
+it('keeps the find widget, command palette and run chords away from Monaco', () => {
     render(MonacoEditor, {
         props: { initialValue: '<?php echo "initial";', project: 'my-project' },
     });
 
     expect(dispatchKeydown({ key: 'f', metaKey: true })).toBe(false);
-    expect(dispatchKeydown({ key: 'z', ctrlKey: true })).toBe(false);
+    expect(dispatchKeydown({ key: 'f', ctrlKey: true })).toBe(false);
     expect(dispatchKeydown({ key: 'Enter', metaKey: true })).toBe(false);
-    expect(dispatchKeydown({ key: 'ArrowLeft', altKey: true })).toBe(false);
+    expect(dispatchKeydown({ key: 'Enter', ctrlKey: true })).toBe(false);
     expect(dispatchKeydown({ key: 'F1' })).toBe(false);
 });
 
-it('lets bare keys reach Monaco', () => {
+it('lets typing and editing shortcuts reach Monaco', () => {
     render(MonacoEditor, {
         props: { initialValue: '<?php echo "initial";', project: 'my-project' },
     });
@@ -234,6 +234,12 @@ it('lets bare keys reach Monaco', () => {
     expect(dispatchKeydown({ key: 'Enter' })).toBe(true);
     expect(dispatchKeydown({ key: 'Tab' })).toBe(true);
     expect(dispatchKeydown({ key: 'Backspace' })).toBe(true);
+    expect(dispatchKeydown({ key: 'ArrowLeft', metaKey: true })).toBe(true);
+    expect(dispatchKeydown({ key: 'ArrowRight', altKey: true })).toBe(true);
+    expect(dispatchKeydown({ key: 'z', metaKey: true })).toBe(true);
+    expect(dispatchKeydown({ key: 'z', ctrlKey: true, shiftKey: true })).toBe(
+        true,
+    );
 });
 
 async function attachedHandles(): Promise<void> {
