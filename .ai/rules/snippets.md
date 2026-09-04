@@ -31,6 +31,8 @@ isn't specifically about the editor UI.
    one, confirm first, and treat it as the deliverable, not a side effect.
 2. The snippet named `agent-scratch` in any project is the agent sandbox — free to create, edit, run, and
    delete. Nothing else.
+3. `demo/scratch` is the screenshot fixture for `images/**`. You may edit and run it any time to regenerate
+   those PNGs, without asking first. See images.md. This covers only `demo/scratch`.
 
 ## If you mutated one by accident
 

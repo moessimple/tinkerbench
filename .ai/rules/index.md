@@ -10,6 +10,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Enums/** | .ai/rules/enums.md |
 | app/Support/SnippetRun/FeedItems/** | .ai/rules/feed-items.md |
 | **/* | .ai/rules/general.md |
+| images/** | .ai/rules/images.md |
 | resources/js/** | .ai/rules/js.md |
 | app/Http/Middleware/** | .ai/rules/middleware.md |
 | app/Models/** | .ai/rules/models.md |
