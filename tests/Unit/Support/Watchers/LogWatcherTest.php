@@ -2,56 +2,27 @@
 
 declare(strict_types=1);
 
-use App\Support\SourceLocator;
+use App\Support\FeedItems\FeedItem;
+use App\Support\FeedItems\LogFeedItem;
 use App\Support\Watchers\LogWatcher;
 use Illuminate\Log\Events\MessageLogged;
 
-/**
- * @return list<array<string, mixed>>
- */
-function captureLogItems(SourceLocator $source, MessageLogged $event): array
-{
+it('emits a log item built from the logged message, without a line of its own', function (): void {
     $emitted = [];
 
-    new LogWatcher($source)->register(app(), function (array $item) use (&$emitted): void {
+    new LogWatcher()->register(app(), function (FeedItem $item) use (&$emitted): void {
         $emitted[] = $item;
     });
 
-    event($event);
+    event(new MessageLogged('warning', 'disk almost full', ['free' => '2%']));
 
-    return $emitted;
-}
-
-it('emits a log item with the documented shape', function (): void {
-    $source = Mockery::mock(SourceLocator::class);
-    $source->shouldReceive('snippetLine')->andReturn(7);
-
-    $items = captureLogItems($source, new MessageLogged('warning', 'disk almost full', ['free' => '2%']));
-
-    expect($items)->toHaveCount(1)
-        ->and($items[0])->toBe([
+    expect($emitted)->toHaveCount(1)
+        ->and($emitted[0])->toBeInstanceOf(LogFeedItem::class)
+        ->and($emitted[0]->toArray())->toBe([
             'kind' => 'log',
             'label' => 'warning',
             'message' => 'disk almost full',
             'context' => '{"free":"2%"}',
-            'line' => 7,
+            'line' => null,
         ]);
-});
-
-it('sets context to null when the log carries none', function (): void {
-    $source = Mockery::mock(SourceLocator::class);
-    $source->shouldReceive('snippetLine')->andReturn(1);
-
-    $items = captureLogItems($source, new MessageLogged('info', 'started', []));
-
-    expect($items[0]['context'])->toBeNull();
-});
-
-it('leaves the line null when the source has no snippet frame', function (): void {
-    $source = Mockery::mock(SourceLocator::class);
-    $source->shouldReceive('snippetLine')->andReturn(null);
-
-    $items = captureLogItems($source, new MessageLogged('debug', 'x', []));
-
-    expect($items[0]['line'])->toBeNull();
 });

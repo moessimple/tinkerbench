@@ -38,12 +38,13 @@ class SnippetRunner
 
         $recorder = new SnippetRunRecorder(
             [
-                new DumpWatcher($source, $valueRenderer),
-                new QueryWatcher($source),
-                new LogWatcher($source),
-                new LazyLoadWatcher($source),
+                new DumpWatcher($valueRenderer),
+                new QueryWatcher(),
+                new LogWatcher(),
+                new LazyLoadWatcher(),
             ],
             new ExceptionMapper($projectPath, $source->path()),
+            $source,
         );
 
         // Safety net for the exit paths run() can't return from: dd()/die()/exit() and fatals.

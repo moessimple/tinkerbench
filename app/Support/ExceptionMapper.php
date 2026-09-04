@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use App\Support\FeedItems\ExceptionFeedItem;
 use Spatie\Backtrace\Backtrace;
 use Spatie\Backtrace\Frame;
 use Throwable;
@@ -27,17 +28,18 @@ class ExceptionMapper
     /**
      * @param  bool  $includeFrames  Pass false for a synthesized fatal (memory exhaustion, timeout):
      *                               its backtrace points at the runner internals, not the snippet.
-     * @return array{kind: 'exception', type: string, message: string, line: int|null, frames: list<array{file: string, line: int, function: string|null, vendor: bool, snippet: bool}>}
      */
-    public function toItem(Throwable $throwable, ?int $line, bool $includeFrames = true): array
+    public function toItem(Throwable $throwable, ?int $line, bool $includeFrames = true): ExceptionFeedItem
     {
-        return [
-            'kind' => 'exception',
-            'type' => $throwable::class,
-            'message' => $throwable->getMessage(),
-            'line' => $line,
-            'frames' => $includeFrames ? $this->frames($throwable) : [],
-        ];
+        $item = new ExceptionFeedItem(
+            $throwable::class,
+            $throwable->getMessage(),
+            $includeFrames ? $this->frames($throwable) : [],
+        );
+
+        $item->line = $line;
+
+        return $item;
     }
 
     /**

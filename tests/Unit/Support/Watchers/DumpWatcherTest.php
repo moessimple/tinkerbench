@@ -2,7 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Support\SourceLocator;
+use App\Support\FeedItems\DumpFeedItem;
+use App\Support\FeedItems\FeedItem;
 use App\Support\ValueRenderer;
 use App\Support\Watchers\DumpWatcher;
 use Illuminate\Contracts\Foundation\Application;
@@ -12,38 +13,32 @@ afterEach(function (): void {
     VarDumper::setHandler(null);
 });
 
-it('emits a dump item with the rendered html and the snippet line', function (): void {
-    $source = Mockery::mock(SourceLocator::class);
-    $source->shouldReceive('snippetLine')->andReturn(42);
-
+it('emits a dump item built from the rendered value, without a line of its own', function (): void {
     $renderer = Mockery::mock(ValueRenderer::class);
     $renderer->shouldReceive('render')->with('hello', null)->andReturn('<rendered/>');
 
     $emitted = [];
-    new DumpWatcher($source, $renderer)->register(
+    new DumpWatcher($renderer)->register(
         Mockery::mock(Application::class),
-        function (array $item) use (&$emitted): void {
+        function (FeedItem $item) use (&$emitted): void {
             $emitted[] = $item;
         },
     );
 
     dump('hello');
 
-    expect($emitted)->toBe([
-        ['kind' => 'dump', 'html' => '<rendered/>', 'line' => 42],
-    ]);
+    expect($emitted)->toHaveCount(1)
+        ->and($emitted[0])->toBeInstanceOf(DumpFeedItem::class)
+        ->and($emitted[0]->toArray())->toBe(['kind' => 'dump', 'html' => '<rendered/>', 'line' => null]);
 });
 
 it('does not write the dump to stdout', function (): void {
-    $source = Mockery::mock(SourceLocator::class);
-    $source->shouldReceive('snippetLine')->andReturn(null);
-
     $renderer = Mockery::mock(ValueRenderer::class);
     $renderer->shouldReceive('render')->andReturn('<rendered/>');
 
-    new DumpWatcher($source, $renderer)->register(
+    new DumpWatcher($renderer)->register(
         Mockery::mock(Application::class),
-        function (array $item): void {},
+        function (FeedItem $item): void {},
     );
 
     ob_start();

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Support\ExceptionMapper;
+use App\Support\FeedItems\ExceptionFeedItem;
 
 /**
  * A RuntimeException thrown through a framework (vendor) call, so the trace carries both
@@ -27,8 +28,12 @@ function mapper(): ExceptionMapper
     return new ExceptionMapper(base_path(), (string) realpath(__FILE__));
 }
 
+it('returns an ExceptionFeedItem', function (): void {
+    expect(mapper()->toItem(nestedRuntimeException(), 7))->toBeInstanceOf(ExceptionFeedItem::class);
+});
+
 it('maps a throwable to the exception feed-item shape', function (): void {
-    $item = mapper()->toItem(nestedRuntimeException(), 7);
+    $item = mapper()->toItem(nestedRuntimeException(), 7)->toArray();
 
     expect($item['kind'])->toBe('exception')
         ->and($item['type'])->toBe(RuntimeException::class)
@@ -38,7 +43,7 @@ it('maps a throwable to the exception feed-item shape', function (): void {
 });
 
 it('gives every frame the same flat shape without an inline code excerpt', function (): void {
-    $item = mapper()->toItem(nestedRuntimeException(), null);
+    $item = mapper()->toItem(nestedRuntimeException(), null)->toArray();
 
     foreach ($item['frames'] as $frame) {
         expect(array_keys($frame))->toBe(['file', 'line', 'function', 'vendor', 'snippet'])
@@ -48,7 +53,7 @@ it('gives every frame the same flat shape without an inline code excerpt', funct
 });
 
 it('flags frames outside the application as vendor frames', function (): void {
-    $item = mapper()->toItem(nestedRuntimeException(), null);
+    $item = mapper()->toItem(nestedRuntimeException(), null)->toArray();
 
     $vendor = array_filter($item['frames'], fn (array $frame): bool => $frame['vendor']);
 
@@ -56,7 +61,7 @@ it('flags frames outside the application as vendor frames', function (): void {
 });
 
 it('marks the frame that sits in the snippet file', function (): void {
-    $item = mapper()->toItem(nestedRuntimeException(), null);
+    $item = mapper()->toItem(nestedRuntimeException(), null)->toArray();
 
     $snippetFrames = array_values(array_filter($item['frames'], fn (array $frame): bool => $frame['snippet']));
 
@@ -66,7 +71,7 @@ it('marks the frame that sits in the snippet file', function (): void {
 });
 
 it('omits frames entirely when frame collection is disabled', function (): void {
-    $item = mapper()->toItem(nestedRuntimeException(), null, false);
+    $item = mapper()->toItem(nestedRuntimeException(), null, false)->toArray();
 
     expect($item['frames'])->toBe([])
         ->and($item['kind'])->toBe('exception')

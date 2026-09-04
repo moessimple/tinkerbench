@@ -2,7 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Support\SourceLocator;
+use App\Support\FeedItems\FeedItem;
+use App\Support\FeedItems\NPlusOneFeedItem;
 use App\Support\Watchers\LazyLoadWatcher;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\Eloquent\Model;
@@ -32,15 +33,15 @@ function triggerLazyLoadViolation(Model $model, string $relation): void
 }
 
 /**
- * @return list<array<string, mixed>>
+ * @return list<FeedItem>
  */
-function captureLazyLoadItems(SourceLocator $source, Closure $trigger): array
+function captureLazyLoadItems(Closure $trigger): array
 {
     $emitted = [];
 
-    new LazyLoadWatcher($source)->register(
+    new LazyLoadWatcher()->register(
         Mockery::mock(Application::class),
-        function (array $item) use (&$emitted): void {
+        function (FeedItem $item) use (&$emitted): void {
             $emitted[] = $item;
         },
     );
@@ -51,53 +52,32 @@ function captureLazyLoadItems(SourceLocator $source, Closure $trigger): array
 }
 
 it('turns lazy loading prevention on', function (): void {
-    $source = Mockery::mock(SourceLocator::class);
-    $source->shouldReceive('snippetLine')->andReturn(null);
-
-    new LazyLoadWatcher($source)->register(
+    new LazyLoadWatcher()->register(
         Mockery::mock(Application::class),
-        function (array $item): void {},
+        function (FeedItem $item): void {},
     );
 
     expect(Model::preventsLazyLoading())->toBeTrue();
 });
 
-it('emits one n_plus_one item with the model, relation and snippet line', function (): void {
-    $source = Mockery::mock(SourceLocator::class);
-    $source->shouldReceive('snippetLine')->andReturn(17);
-
-    $model = new Pivot();
-
-    $items = captureLazyLoadItems($source, function () use ($model): void {
-        triggerLazyLoadViolation($model, 'posts');
+it('emits one n_plus_one item with the model and relation, without a line of its own', function (): void {
+    $items = captureLazyLoadItems(function (): void {
+        triggerLazyLoadViolation(new Pivot(), 'posts');
     });
 
-    expect($items)->toBe([
-        [
+    expect($items)->toHaveCount(1)
+        ->and($items[0])->toBeInstanceOf(NPlusOneFeedItem::class)
+        ->and($items[0]->toArray())->toBe([
             'kind' => 'n_plus_one',
             'model' => Pivot::class,
             'relation' => 'posts',
-            'line' => 17,
-        ],
-    ]);
-});
-
-it('leaves the line null when the source has no snippet frame', function (): void {
-    $source = Mockery::mock(SourceLocator::class);
-    $source->shouldReceive('snippetLine')->andReturn(null);
-
-    $items = captureLazyLoadItems($source, function (): void {
-        triggerLazyLoadViolation(new Pivot(), 'comments');
-    });
-
-    expect($items[0]['line'])->toBeNull();
+            'count' => 1,
+            'line' => null,
+        ]);
 });
 
 it('does not throw when a violation happens', function (): void {
-    $source = Mockery::mock(SourceLocator::class);
-    $source->shouldReceive('snippetLine')->andReturn(null);
-
-    captureLazyLoadItems($source, function (): void {
+    captureLazyLoadItems(function (): void {
         triggerLazyLoadViolation(new Pivot(), 'posts');
     });
 })->throwsNoExceptions();

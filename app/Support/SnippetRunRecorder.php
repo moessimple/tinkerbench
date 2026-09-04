@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use App\Support\FeedItems\FeedItem;
+use App\Support\FeedItems\NPlusOneFeedItem;
+use App\Support\FeedItems\QueryFeedItem;
+use App\Support\FeedItems\ResultFeedItem;
 use App\Support\Watchers\Watcher;
 use Closure;
 use Illuminate\Contracts\Foundation\Application;
@@ -12,19 +16,19 @@ use Throwable;
 
 class SnippetRunRecorder
 {
-    /** @var list<array<string, mixed>> */
+    /** @var list<FeedItem> */
     private array $items = [];
 
     /** @var array<string, true> */
     private array $seenQueries = [];
 
     /**
-     * "Model::relation" => index of that finding's item in $items. A repeat access folds into the
-     * first item's count instead of appending, so one N+1 shows as one card.
+     * "Model::relation" => the folded item for that finding. A repeat lazy load increments its
+     * count instead of appending, so one N+1 shows as one card.
      *
-     * @var array<string, int>
+     * @var array<string, NPlusOneFeedItem>
      */
-    private array $nPlusOneIndex = [];
+    private array $foldedNPlusOne = [];
 
     private ?float $startedAt = null;
 
@@ -38,6 +42,7 @@ class SnippetRunRecorder
     public function __construct(
         private array $watchers,
         private ExceptionMapper $exceptionMapper,
+        private SourceLocator $source,
     ) {}
 
     public function record(Application $app, Closure $run): void
@@ -67,7 +72,7 @@ class SnippetRunRecorder
      */
     public function appendResult(string $html): void
     {
-        $this->items[] = ['kind' => 'result', 'html' => $html];
+        $this->items[] = new ResultFeedItem($html);
     }
 
     /**
@@ -76,7 +81,10 @@ class SnippetRunRecorder
     public function snapshot(): array
     {
         return [
-            'items' => $this->itemsWithoutSingleLazyLoads(),
+            'items' => array_map(
+                static fn (FeedItem $item): array => $item->toArray(),
+                $this->itemsWithoutSingleLazyLoads(),
+            ),
             'duration_str' => Duration::format($this->elapsedMilliseconds()),
             'peak_memory_str' => Number::fileSize(memory_get_peak_usage(true), precision: 2),
         ];
@@ -86,52 +94,41 @@ class SnippetRunRecorder
      * A relation lazy-loaded exactly once is a single extra query, not an N+1. The folded finding
      * is only reported once the same relation has been lazy-loaded at least twice in the run.
      *
-     * @return list<array<string, mixed>>
+     * @return list<FeedItem>
      */
     private function itemsWithoutSingleLazyLoads(): array
     {
-        return array_values(array_filter($this->items, function (array $item): bool {
-            if (($item['kind'] ?? null) !== 'n_plus_one') {
-                return true;
-            }
-
-            $count = $item['count'] ?? 0;
-
-            return is_int($count) && $count >= 2;
-        }));
+        return array_values(array_filter(
+            $this->items,
+            static fn (FeedItem $item): bool => ! $item instanceof NPlusOneFeedItem || $item->count >= 2,
+        ));
     }
 
     /**
-     * A query counts as a duplicate only when the identical statement and bindings ran before,
-     * matching Laravel Debugbar's rule (bindings are already inlined into `sql`). The same
-     * statement with different bindings is an N+1, which this flag deliberately does not cover.
-     *
-     * @param  array<string, mixed>  $item
+     * Stamps the snippet line on the item, then folds it into the run: an identical repeated query
+     * is flagged as a duplicate (bindings are inlined into the SQL, so the same statement with
+     * different bindings is an N+1 this flag deliberately ignores), and a repeated lazy load of the
+     * same relation increments the first finding's count instead of appending a second card.
      */
-    private function append(array $item): void
+    private function append(FeedItem $item): void
     {
-        if (($item['kind'] ?? null) === 'query' && is_string($item['sql'] ?? null)) {
-            if (isset($this->seenQueries[$item['sql']])) {
-                $item['duplicate'] = true;
-            }
+        $item->line = $this->source->snippetLine();
 
-            $this->seenQueries[$item['sql']] = true;
+        if ($item instanceof QueryFeedItem) {
+            $item->duplicate = isset($this->seenQueries[$item->sql]);
+            $this->seenQueries[$item->sql] = true;
         }
 
-        if (($item['kind'] ?? null) === 'n_plus_one' && is_string($item['model'] ?? null) && is_string($item['relation'] ?? null)) {
-            $key = $item['model'].'::'.$item['relation'];
+        if ($item instanceof NPlusOneFeedItem) {
+            $key = $item->model.'::'.$item->relation;
 
-            if (isset($this->nPlusOneIndex[$key])) {
-                $existing = $this->items[$this->nPlusOneIndex[$key]];
-                $count = $existing['count'] ?? 0;
-                $existing['count'] = (is_int($count) ? $count : 0) + 1;
-                $this->items[$this->nPlusOneIndex[$key]] = $existing;
+            if (isset($this->foldedNPlusOne[$key])) {
+                $this->foldedNPlusOne[$key]->count++;
 
                 return;
             }
 
-            $item['count'] = 1;
-            $this->nPlusOneIndex[$key] = count($this->items);
+            $this->foldedNPlusOne[$key] = $item;
         }
 
         $this->items[] = $item;

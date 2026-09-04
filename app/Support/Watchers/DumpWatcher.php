@@ -4,21 +4,15 @@ declare(strict_types=1);
 
 namespace App\Support\Watchers;
 
-use App\Support\SourceLocator;
+use App\Support\FeedItems\DumpFeedItem;
 use App\Support\ValueRenderer;
 use Illuminate\Contracts\Foundation\Application;
 use Symfony\Component\VarDumper\VarDumper;
 
 class DumpWatcher implements Watcher
 {
-    public function __construct(
-        private SourceLocator $source,
-        private ValueRenderer $renderer,
-    ) {}
+    public function __construct(private ValueRenderer $renderer) {}
 
-    /**
-     * @param  callable(array{kind: 'dump', html: string, line: int|null}): void  $emit
-     */
     public function register(Application $app, callable $emit): void
     {
         // Herd::runSnippet() sets VAR_DUMPER_FORMAT=html, which turns VarDumper::setHandler() into a
@@ -27,11 +21,7 @@ class DumpWatcher implements Watcher
         unset($_SERVER['VAR_DUMPER_FORMAT']);
 
         VarDumper::setHandler(function (mixed $value, ?string $label = null) use ($emit): void {
-            $emit([
-                'kind' => 'dump',
-                'html' => $this->renderer->render($value, $label),
-                'line' => $this->source->snippetLine(),
-            ]);
+            $emit(new DumpFeedItem($this->renderer->render($value, $label)));
         });
     }
 }
