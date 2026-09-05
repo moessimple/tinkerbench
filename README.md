@@ -6,12 +6,13 @@
 [![tests](https://github.com/moessimple/tinkerbench/actions/workflows/tests.yml/badge.svg)](https://github.com/moessimple/tinkerbench/actions/workflows/tests.yml)
 
 tinkerbench is a browser based REPL for any Laravel project linked in [Laravel Herd](https://herd.laravel.com).
+A Composer project that isn't Laravel works too, with a reduced feed (dumps, return values, and exceptions, but no query/log/N+1 capture).
 Write a PHP snippet, run it against that project's own app context, and see the output immediately, no separate setup per project.
 A take on Laravel's [`tinker`](https://github.com/laravel/tinker), inspired by [Tinkerwell](https://tinkerwell.app).
 
 ## Features
 
-* Runs snippets against any Herd linked Laravel project, switch projects without leaving the page.
+* Runs snippets against any Herd linked Composer project, switch projects without leaving the page. Laravel 12 and 13 targets get the full feed below; other Composer projects get a basic feed of dumps, return values, and exceptions.
 * Saves multiple named snippets per project. Create, rename, and delete them as needed.
 * Command palette (`⌘P`) to jump between snippets and projects, similar to an editor's quick open.
 * Monaco based editor with PHP syntax highlighting, autosave, and a run shortcut (`⌘Enter`).
@@ -26,7 +27,7 @@ A take on Laravel's [`tinker`](https://github.com/laravel/tinker), inspired by [
 ## Requirements
 
 * [Laravel Herd](https://herd.laravel.com)
-* Target projects need PHP 8.2 or newer (`herd isolate` per project). The snippet runner ships as its own low-PHP-floor package, so tinkerbench's own PHP 8.5 stack doesn't dictate what the target project runs.
+* Target projects need PHP 8.2 or newer (`herd isolate` per project). Laravel 12 and 13 get the full feed (dumps, queries, logs, exceptions, return values, N+1 detection); a Composer project that isn't Laravel gets a basic feed (dumps, return values, exceptions). The snippet runner ships as its own low-PHP-floor package, so tinkerbench's own PHP 8.5 stack doesn't dictate what the target project runs.
 
 ## Installation
 
