@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\Widget;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Process;
 use Symfony\Component\VarDumper\VarDumper;
@@ -373,6 +374,105 @@ it('never emits query, log, or n_plus_one items for a plain Composer PHP fixture
     expect($kinds)->not->toContain('query')
         ->and($kinds)->not->toContain('log')
         ->and($kinds)->not->toContain('n_plus_one');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Against a committed Laravel 12 fixture (real subprocess)
+|--------------------------------------------------------------------------
+|
+| laravel-12 is a real, minimal Laravel 12 application: the documented lower bound of the full
+| (Laravel) feed. It boots on whatever PHP runs the suite (Laravel 12's own floor is PHP 8.2), so
+| these prove the existing Laravel pipeline still produces the whole feed there, and are not gated
+| on PHP 8.5.
+|
+*/
+
+/**
+ * Snippet preamble for the Laravel 12 fixture: an in-memory SQLite connection the fixture's
+ * App\Models\Widget / App\Models\WidgetPart bind to, with their tables created and three
+ * widget/part rows seeded.
+ */
+function laravel12Preamble(): string
+{
+    return <<<'PHP'
+    <?php
+
+    use App\Models\Widget;
+    use App\Models\WidgetPart;
+    use Illuminate\Database\Schema\Blueprint;
+    use Illuminate\Support\Facades\Schema;
+
+    config(['database.connections.fixture' => ['driver' => 'sqlite', 'database' => ':memory:']]);
+
+    Schema::connection('fixture')->create('widgets', function (Blueprint $table): void {
+        $table->increments('id');
+        $table->string('name');
+    });
+
+    Schema::connection('fixture')->create('widget_parts', function (Blueprint $table): void {
+        $table->increments('id');
+        $table->unsignedInteger('widget_id');
+    });
+
+    foreach (range(1, 3) as $id) {
+        Widget::create(['id' => $id, 'name' => "widget {$id}"]);
+        WidgetPart::create(['id' => $id, 'widget_id' => $id]);
+    }
+    PHP;
+}
+
+it('captures dump, log, query, and result against a Laravel 12 fixture', function (): void {
+    $result = runSnippetSubprocessAgainst(fixtureTargetPath('laravel-12'), laravel12Preamble()."\n".<<<'PHP'
+    dump('from laravel 12');
+
+    Log::info('hello from the fixture');
+
+    $widget = Widget::query()->where('id', 2)->first();
+
+    return $widget->name;
+    PHP);
+
+    $items = collect($result['debug']['items']);
+
+    expect($result['exitCode'])->toBe(0)
+        ->and($result['output'])->toBe('')
+        ->and(array_column($result['debug']['items'], 'kind'))->toContain('dump', 'log', 'query', 'result')
+        ->and($items->pluck('sql')->filter())->toContain('select * from "widgets" where "id" = 2 limit 1')
+        ->and($items->firstWhere('kind', 'result')['html'])->toContain('widget 2')
+        ->and($items->firstWhere('kind', 'log')['message'])->toBe('hello from the fixture')
+        ->and($items->firstWhere('kind', 'dump')['html'])->toContain('from laravel 12');
+});
+
+it('classifies the snippet frame of an uncaught exception from a Laravel 12 fixture', function (): void {
+    $result = runSnippetSubprocessAgainst(
+        fixtureTargetPath('laravel-12'),
+        "<?php\n\nthrow new RuntimeException('laravel 12 boom');",
+    );
+
+    $item = $result['debug']['items'][0];
+
+    expect($result['exitCode'])->toBe(0)
+        ->and($item['kind'])->toBe('exception')
+        ->and($item['message'])->toBe('laravel 12 boom')
+        ->and($item['line'])->toBe(3)
+        ->and($item['frames'][0]['snippet'])->toBeTrue();
+});
+
+it('detects an N+1 lazy load against a Laravel 12 fixture', function (): void {
+    $result = runSnippetSubprocessAgainst(fixtureTargetPath('laravel-12'), laravel12Preamble()."\n".<<<'PHP'
+    foreach (Widget::all() as $widget) {
+        $widget->parts->count();
+    }
+    PHP);
+
+    $finding = collect($result['debug']['items'] ?? [])->firstWhere('kind', 'n_plus_one');
+
+    expect($result['exitCode'])->toBe(0)
+        ->and($finding)->not->toBeNull()
+        ->and($finding['model'])->toBe(Widget::class)
+        ->and($finding['relation'])->toBe('parts')
+        ->and($finding['count'])->toBe(3);
 });
 
 // In-process runs exercise run()'s own wiring against tinkerbench itself. The shutdown handler
