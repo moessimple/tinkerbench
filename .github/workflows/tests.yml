@@ -68,6 +68,13 @@ jobs:
           key: ${{ runner.os }}-composer-runner-${{ hashFiles('packages/runner/composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-runner-
 
+      - name: Cache Laravel 12 fixture Composer dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: packages/runner/tests/fixtures/laravel-12/vendor
+          key: ${{ runner.os }}-composer-fixture-laravel12-${{ hashFiles('packages/runner/tests/fixtures/laravel-12/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-fixture-laravel12-
+
       - name: Cache npm dependencies
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -94,6 +101,11 @@ jobs:
 
       - name: Install packages/runner Composer dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress --working-dir=packages/runner
+
+      - name: Install runner test-fixture Composer dependencies
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress --working-dir=packages/runner/tests/fixtures/plain-composer-php
+          composer install --no-interaction --prefer-dist --no-progress --working-dir=packages/runner/tests/fixtures/laravel-12
 
       - name: Copy environment file
         run: cp .env.example .env
@@ -146,8 +158,20 @@ jobs:
           key: ${{ runner.os }}-composer-runner-php82-${{ hashFiles('packages/runner/composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-runner-php82-
 
+      - name: Cache Laravel 12 fixture Composer dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: packages/runner/tests/fixtures/laravel-12/vendor
+          key: ${{ runner.os }}-composer-fixture-laravel12-php82-${{ hashFiles('packages/runner/tests/fixtures/laravel-12/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-fixture-laravel12-php82-
+
       - name: Install packages/runner Composer dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress --working-dir=packages/runner
+
+      - name: Install runner test-fixture Composer dependencies
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress --working-dir=packages/runner/tests/fixtures/plain-composer-php
+          composer install --no-interaction --prefer-dist --no-progress --working-dir=packages/runner/tests/fixtures/laravel-12
 
       - name: Test packages/runner under real PHP 8.2
         run: composer test:php82 --working-dir=packages/runner
