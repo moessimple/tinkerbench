@@ -378,6 +378,57 @@ it('never emits query, log, or n_plus_one items for a plain Composer PHP fixture
 
 /*
 |--------------------------------------------------------------------------
+| Against a committed plain-PHP fixture with no Composer at all (real subprocess)
+|--------------------------------------------------------------------------
+|
+| vanilla-php has no composer.json and no vendor/. The snippet require()s the one fixture class
+| by absolute path, since there is no autoloader. Proves T6's is_file() guard end to end.
+|
+*/
+
+it('runs a snippet against a plain-PHP fixture with no Composer', function (): void {
+    $snippet = str_replace('__CALC__', fixtureTargetPath('vanilla-php').'/src/Calculator.php', <<<'PHP'
+    <?php
+
+    require '__CALC__';
+
+    $sum = (new VanillaPhp\Calculator())->add(2, 3);
+
+    dump($sum);
+
+    return ['sum' => $sum];
+    PHP);
+
+    $result = runSnippetSubprocessAgainst(fixtureTargetPath('vanilla-php'), $snippet);
+
+    expect($result['exitCode'])->toBe(0)
+        ->and($result['output'])->toBe('')
+        ->and(array_column($result['debug']['items'], 'kind'))->toBe(['dump', 'result'])
+        ->and($result['debug']['items'][0]['html'])->toContain('5')
+        ->and($result['debug']['items'][1]['html'])->toContain('sum');
+})->expectOutputString('');
+
+it('captures an uncaught exception from a plain-PHP fixture with no Composer', function (): void {
+    $result = runSnippetSubprocessAgainst(
+        fixtureTargetPath('vanilla-php'),
+        "<?php\n\nthrow new RuntimeException('vanilla fixture boom');",
+    );
+
+    $item = $result['debug']['items'][0];
+    $kinds = array_column($result['debug']['items'], 'kind');
+
+    expect($result['exitCode'])->toBe(0)
+        ->and($item['kind'])->toBe('exception')
+        ->and($item['message'])->toBe('vanilla fixture boom')
+        ->and($item['line'])->toBe(3)
+        ->and($item['frames'][0]['snippet'])->toBeTrue()
+        ->and($kinds)->not->toContain('query')
+        ->and($kinds)->not->toContain('log')
+        ->and($kinds)->not->toContain('n_plus_one');
+});
+
+/*
+|--------------------------------------------------------------------------
 | Against a committed Laravel 12 fixture (real subprocess)
 |--------------------------------------------------------------------------
 |
