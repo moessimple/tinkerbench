@@ -8,6 +8,7 @@ use Closure;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Number;
 use Throwable;
+use Tinkerbench\Runner\FeedItems\DumpFeedItem;
 use Tinkerbench\Runner\FeedItems\FeedItem;
 use Tinkerbench\Runner\FeedItems\NPlusOneFeedItem;
 use Tinkerbench\Runner\FeedItems\QueryFeedItem;
@@ -45,12 +46,18 @@ class SnippetRunRecorder
         private SourceLocator $source,
     ) {}
 
-    public function record(Application $app, Closure $run): void
+    /**
+     * $app is null for the basic (non-Laravel) pipeline: it registers no watchers, since every
+     * Watcher::register() needs an Application. Dump capture is installed by the caller instead.
+     */
+    public function record(?Application $app, Closure $run): void
     {
         $emit = $this->append(...);
 
-        foreach ($this->watchers as $watcher) {
-            $watcher->register($app, $emit);
+        if ($app instanceof Application) {
+            foreach ($this->watchers as $watcher) {
+                $watcher->register($app, $emit);
+            }
         }
 
         $this->startedAt = $this->now();
@@ -60,6 +67,16 @@ class SnippetRunRecorder
         } finally {
             $this->finishedAt = $this->now();
         }
+    }
+
+    /**
+     * Records a dump for the basic (non-Laravel) pipeline, which captures dumps without a
+     * DumpWatcher. $html/$text are already rendered by the caller; the snippet line is stamped
+     * here, exactly as it is for a watcher-emitted item.
+     */
+    public function appendDump(string $html, string $text): void
+    {
+        $this->append(new DumpFeedItem($html, $text));
     }
 
     public function appendException(Throwable $throwable, ?int $line, bool $includeFrames = true): void

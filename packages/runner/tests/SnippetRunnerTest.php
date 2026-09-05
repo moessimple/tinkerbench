@@ -421,3 +421,98 @@ it('persist writes the snapshot only once', function (): void {
 
     unlink($debugPath);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Against a non-Laravel Composer target (the basic pipeline)
+|--------------------------------------------------------------------------
+|
+| A Composer project with no bootstrap/app.php, or one whose bootstrap/app.php does not return an
+| Illuminate\Foundation\Application, gets a reduced feed (dump/result/exception) instead of a hard
+| failure. These runs never boot Laravel, so they are not gated on PHP 8.5 the way the
+| tinkerbench-as-target tests above are.
+|
+*/
+
+/**
+ * Creates a throwaway non-Laravel Composer project: a requirable vendor/autoload.php plus,
+ * when $bootstrapBody is given, a bootstrap/app.php with that body.
+ */
+function basicComposerTarget(?string $bootstrapBody = null): string
+{
+    $dir = sys_get_temp_dir().'/tb-basic-target-'.bin2hex(random_bytes(6));
+    mkdir($dir.'/vendor', recursive: true);
+    file_put_contents($dir.'/vendor/autoload.php', "<?php\n");
+
+    if ($bootstrapBody !== null) {
+        mkdir($dir.'/bootstrap', recursive: true);
+        file_put_contents($dir.'/bootstrap/app.php', $bootstrapBody);
+    }
+
+    return $dir;
+}
+
+/**
+ * Runs $code in-process against a fresh non-Laravel target, then removes the target and temp
+ * files and returns the decoded debug snapshot.
+ *
+ * @return array<string, mixed>
+ */
+function runBasicInProcess(string $code, ?string $bootstrapBody = null): array
+{
+    $target = basicComposerTarget($bootstrapBody);
+    $snippetPath = tempnam(sys_get_temp_dir(), 'snippet').'.php';
+    $debugPath = tempnam(sys_get_temp_dir(), 'debug');
+    file_put_contents($snippetPath, $code);
+
+    (new SnippetRunner())->run($target, $snippetPath, $debugPath);
+
+    $snapshot = json_decode((string) file_get_contents($debugPath), true);
+
+    unlink($snippetPath);
+    unlink($debugPath);
+    @unlink($target.'/bootstrap/app.php');
+    @rmdir($target.'/bootstrap');
+    unlink($target.'/vendor/autoload.php');
+    rmdir($target.'/vendor');
+    rmdir($target);
+
+    return is_array($snapshot) ? $snapshot : [];
+}
+
+it('captures dump and result items against a target with no bootstrap/app.php', function (): void {
+    $snapshot = runBasicInProcess("<?php\n\ndump('from a plain project');\n\nreturn 'the value';");
+
+    $kinds = array_column($snapshot['items'], 'kind');
+
+    expect($kinds)->toBe(['dump', 'result'])
+        ->and($kinds)->not->toContain('query')
+        ->and($kinds)->not->toContain('log')
+        ->and($kinds)->not->toContain('n_plus_one')
+        ->and($snapshot['items'][0]['html'])->toContain('from a plain project')
+        ->and($snapshot['items'][0]['line'])->toBe(3)
+        ->and($snapshot['items'][1]['html'])->toContain('the value');
+})->expectOutputString('');
+
+it('captures an uncaught exception against a target with no bootstrap/app.php', function (): void {
+    $snapshot = runBasicInProcess("<?php\n\nthrow new RuntimeException('plain boom');");
+
+    expect($snapshot['items'])->toHaveCount(1)
+        ->and($snapshot['items'][0]['kind'])->toBe('exception')
+        ->and($snapshot['items'][0]['type'])->toBe(RuntimeException::class)
+        ->and($snapshot['items'][0]['message'])->toBe('plain boom')
+        ->and($snapshot['items'][0]['line'])->toBe(3)
+        ->and($snapshot['items'][0]['frames'][0]['snippet'])->toBeTrue();
+});
+
+it('uses the basic pipeline when bootstrap/app.php does not return an Application', function (): void {
+    $snapshot = runBasicInProcess(
+        "<?php\n\ndump('still captured');\n\nreturn 42;",
+        "<?php\n\nreturn new stdClass();",
+    );
+
+    $kinds = array_column($snapshot['items'], 'kind');
+
+    expect($kinds)->toBe(['dump', 'result'])
+        ->and($snapshot['items'][1]['html'])->toContain('42');
+})->expectOutputString('');

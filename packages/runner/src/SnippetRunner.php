@@ -7,7 +7,7 @@ namespace Tinkerbench\Runner;
 use ErrorException;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Application;
-use RuntimeException;
+use Symfony\Component\VarDumper\VarDumper;
 use Throwable;
 use Tinkerbench\Runner\Watchers\DumpWatcher;
 use Tinkerbench\Runner\Watchers\LazyLoadWatcher;
@@ -28,25 +28,25 @@ class SnippetRunner
         // own, already-loaded autoloader.
         require $projectPath.'/vendor/autoload.php';
 
-        $app = require $projectPath.'/bootstrap/app.php';
-
-        throw_unless($app instanceof Application, RuntimeException::class, 'bootstrap/app.php did not return an Application instance.');
-
-        $app->make(Kernel::class)->bootstrap();
+        $app = $this->bootTargetApplication($projectPath);
 
         $source = new SourceLocator($snippetPath);
         $valueRenderer = new ValueRenderer();
 
         $recorder = new SnippetRunRecorder(
-            [
+            $app instanceof Application ? [
                 new DumpWatcher($valueRenderer),
                 new QueryWatcher(),
                 new LogWatcher($valueRenderer),
                 new LazyLoadWatcher(),
-            ],
+            ] : [],
             new ExceptionMapper($projectPath, $source->path()),
             $source,
         );
+
+        if (! $app instanceof Application) {
+            $this->installDumpHandler($recorder, $valueRenderer);
+        }
 
         // Safety net for the exit paths run() can't return from: dd()/die()/exit() and fatals.
         // On the normal and caught-exception paths run() persists below and this no-ops.
@@ -102,5 +102,47 @@ class SnippetRunner
         file_put_contents($debugPath, $json !== false ? $json : $fallback);
 
         $this->persisted = true;
+    }
+
+    /**
+     * Boots the target's Laravel application when it has one. Returns null for a Composer project
+     * with no bootstrap/app.php, or one whose bootstrap/app.php does not return an Application;
+     * run() then uses the basic pipeline (dump/result/exception only) instead of the Laravel one.
+     */
+    private function bootTargetApplication(string $projectPath): ?Application
+    {
+        $bootstrapPath = $projectPath.'/bootstrap/app.php';
+
+        if (! is_file($bootstrapPath)) {
+            return null;
+        }
+
+        $app = require $bootstrapPath;
+
+        if (! $app instanceof Application) {
+            return null;
+        }
+
+        $app->make(Kernel::class)->bootstrap();
+
+        return $app;
+    }
+
+    /**
+     * Installs dump capture for the basic pipeline, which has no Application to register a
+     * DumpWatcher against. Mirrors DumpWatcher::register()'s handler body: its $app parameter is
+     * never read there, so this pipeline reuses the same VarDumper::setHandler() logic directly
+     * rather than reshaping the Watcher interface for the one watcher that does not need $app.
+     */
+    private function installDumpHandler(SnippetRunRecorder $recorder, ValueRenderer $valueRenderer): void
+    {
+        unset($_SERVER['VAR_DUMPER_FORMAT']);
+
+        VarDumper::setHandler(function (mixed $value, ?string $label = null) use ($recorder, $valueRenderer): void {
+            $recorder->appendDump(
+                $valueRenderer->render($value, $label),
+                $valueRenderer->renderText($value, $label),
+            );
+        });
     }
 }

@@ -197,6 +197,34 @@ it('appends the rendered return value as a result item after the captured items'
     ]);
 });
 
+it('appends a dump item stamped with the resolved snippet line', function (): void {
+    $source = Mockery::mock(SourceLocator::class);
+    $source->shouldReceive('snippetLine')->andReturn(7);
+
+    $recorder = new SnippetRunRecorder([], Mockery::mock(ExceptionMapper::class), $source);
+
+    $recorder->appendDump('<a/>', 'a');
+
+    expect($recorder->snapshot()['items'])->toBe([
+        ['kind' => 'dump', 'html' => '<a/>', 'text' => 'a', 'line' => 7],
+    ]);
+});
+
+it('registers no watchers when record is given no application', function (): void {
+    $watcher = Mockery::mock(Watcher::class);
+    $watcher->shouldNotReceive('register');
+
+    $recorder = new SnippetRunRecorder([$watcher], Mockery::mock(ExceptionMapper::class), Mockery::mock(SourceLocator::class));
+
+    $ran = false;
+    $recorder->record(null, function () use (&$ran): void {
+        $ran = true;
+    });
+
+    expect($ran)->toBeTrue()
+        ->and($recorder->snapshot()['duration_str'])->toMatch('/^\d+\.\d{2}(ms|s)$/');
+});
+
 it('forwards a request to omit frames to the mapper', function (): void {
     $throwable = new RuntimeException('boom');
 
