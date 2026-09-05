@@ -1,0 +1,16 @@
+{
+    "name": "tinkerbench/fixture-plain-composer-php",
+    "description": "Test fixture: a Composer PHP project with no framework, proving SnippetRunner's basic pipeline.",
+    "license": "MIT",
+    "require": {
+        "php": "^8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "PlainComposerPhp\\": "src/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}

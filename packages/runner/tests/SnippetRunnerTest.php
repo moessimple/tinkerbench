@@ -65,6 +65,26 @@ afterEach(function (): void {
  */
 function runSnippetSubprocess(string $code): array
 {
+    return runSnippetSubprocessAgainst(runnerTargetPath(), $code);
+}
+
+/**
+ * Path to a committed fixture project under tests/fixtures/, each a real Composer project whose
+ * dependencies CI installs fresh (vendor/ gitignored).
+ */
+function fixtureTargetPath(string $name): string
+{
+    return __DIR__.'/fixtures/'.$name;
+}
+
+/**
+ * As runSnippetSubprocess(), but against an arbitrary target project path instead of tinkerbench
+ * itself, so a fixture below tinkerbench's own PHP/Laravel floor can be exercised end to end.
+ *
+ * @return array{output: string, exitCode: int, debug: array<string, mixed>|null}
+ */
+function runSnippetSubprocessAgainst(string $targetPath, string $code): array
+{
     $snippetPath = tempnam(sys_get_temp_dir(), 'snippet').'.php';
     $debugPath = tempnam(sys_get_temp_dir(), 'debug');
     file_put_contents($snippetPath, $code);
@@ -72,7 +92,7 @@ function runSnippetSubprocess(string $code): array
     $result = Process::env(['VAR_DUMPER_FORMAT' => 'html'])->run([
         PHP_BINARY,
         dirname(__DIR__).'/bin/run-snippet.php',
-        runnerTargetPath(),
+        $targetPath,
         $snippetPath,
         $debugPath,
     ]);
@@ -294,6 +314,66 @@ it('reports no n_plus_one when the project batches lazy loads with automatic eag
     expect($result['exitCode'])->toBe(0)
         ->and($kinds)->not->toContain('n_plus_one');
 })->skip(PHP_VERSION_ID < 80500, TARGET_REQUIRES_PHP85);
+
+/*
+|--------------------------------------------------------------------------
+| Against a committed non-Laravel fixture project (real subprocess)
+|--------------------------------------------------------------------------
+|
+| plain-composer-php is a real Composer project with no framework and no bootstrap/app.php. It
+| runs through the actual bin/run-snippet.php entry point, proving the basic pipeline end to end
+| below tinkerbench's own PHP/Laravel floor, so these are not gated on PHP 8.5.
+|
+*/
+
+it('captures dump and result against a plain Composer PHP fixture', function (): void {
+    $result = runSnippetSubprocessAgainst(fixtureTargetPath('plain-composer-php'), <<<'PHP'
+    <?php
+
+    use PlainComposerPhp\Greeter;
+
+    dump((new Greeter())->greet('world'));
+
+    return ['ok' => true];
+    PHP);
+
+    expect($result['exitCode'])->toBe(0)
+        ->and($result['output'])->toBe('')
+        ->and(array_column($result['debug']['items'], 'kind'))->toBe(['dump', 'result'])
+        ->and($result['debug']['items'][0]['html'])->toContain('Hello, world!')
+        ->and($result['debug']['items'][1]['html'])->toContain('ok');
+});
+
+it('classifies the snippet frame of an uncaught exception from a plain Composer PHP fixture', function (): void {
+    $result = runSnippetSubprocessAgainst(
+        fixtureTargetPath('plain-composer-php'),
+        "<?php\n\nthrow new RuntimeException('fixture boom');",
+    );
+
+    $item = $result['debug']['items'][0];
+
+    expect($result['exitCode'])->toBe(0)
+        ->and($item['kind'])->toBe('exception')
+        ->and($item['type'])->toBe(RuntimeException::class)
+        ->and($item['message'])->toBe('fixture boom')
+        ->and($item['line'])->toBe(3)
+        ->and($item['frames'])->toHaveCount(1)
+        ->and($item['frames'][0]['snippet'])->toBeTrue()
+        ->and($item['frames'][0]['line'])->toBe(3);
+});
+
+it('never emits query, log, or n_plus_one items for a plain Composer PHP fixture', function (): void {
+    $result = runSnippetSubprocessAgainst(
+        fixtureTargetPath('plain-composer-php'),
+        "<?php\n\ndump('a');\n\nreturn 'b';",
+    );
+
+    $kinds = array_column($result['debug']['items'] ?? [], 'kind');
+
+    expect($kinds)->not->toContain('query')
+        ->and($kinds)->not->toContain('log')
+        ->and($kinds)->not->toContain('n_plus_one');
+});
 
 // In-process runs exercise run()'s own wiring against tinkerbench itself. The shutdown handler
 // it registers no-ops at PHPUnit exit because run() has already persisted inline.

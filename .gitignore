@@ -13,6 +13,7 @@
 /storage/pail
 /vendor
 packages/runner/vendor
+packages/runner/tests/fixtures/*/vendor
 .env
 .env.backup
 .env.production

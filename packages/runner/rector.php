@@ -37,6 +37,9 @@ return RectorConfig::configure()
         MakeInheritedMethodVisibilitySameAsParentRector::class,
         AddOverrideAttributeToOverriddenPropertiesRector::class,
         ReadOnlyPropertyRector::class,
+        // Fixtures under tests/fixtures/ are standalone real Composer projects with their own
+        // (deliberately minimal) shape; this package's Laravel-flavored rules must not rewrite them.
+        __DIR__.'/tests/fixtures',
     ])
     ->withPreparedSets(
         deadCode: true,
