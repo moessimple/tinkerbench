@@ -210,6 +210,12 @@ class Herd
 
     private function resolveLaravelVersion(string $phpBinary, string $projectPath): string
     {
+        // A plain-PHP or non-Laravel Composer project has no autoloader or no bootstrap/app.php;
+        // running the probe there just writes a PHP fatal to stderr on every full-page load.
+        if (! is_file($projectPath.'/vendor/autoload.php') || ! is_file($projectPath.'/bootstrap/app.php')) {
+            return 'unknown';
+        }
+
         $probe = 'require $argv[1]."/vendor/autoload.php"; echo (require $argv[1]."/bootstrap/app.php")->version();';
         $version = mb_trim($this->run([$phpBinary, '-r', $probe, $projectPath]));
 

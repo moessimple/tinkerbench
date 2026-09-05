@@ -285,7 +285,19 @@ it('resolves the real laravel version of a given project', function (): void {
 it('reports the laravel version as unknown when the given project produces no output', function (): void {
     Process::fake(['*' => '']);
 
-    expect(new Herd()->laravelVersion('/some/php', '/some/path'))->toBe('unknown');
+    expect(new Herd()->laravelVersion('/some/php', base_path()))->toBe('unknown');
+});
+
+it('reports the laravel version as unknown for a project with no vendor autoloader, without shelling out', function (): void {
+    Process::fake();
+    $projectPath = sys_get_temp_dir().'/tb-no-composer-'.Str::random(8);
+    File::ensureDirectoryExists($projectPath);
+
+    expect(new Herd()->laravelVersion('/some/php', $projectPath))->toBe('unknown');
+
+    Process::assertNotRan(fn ($process): bool => in_array('/some/php', $process->command, true));
+
+    File::deleteDirectory($projectPath);
 });
 
 it('shells out for a php version only once, sharing the cache across instances', function (): void {
@@ -311,8 +323,8 @@ it('refreshes the cached php version explicitly', function (): void {
 it('shells out for a laravel version only once, sharing the cache across instances', function (): void {
     Process::fake(['*' => "13.0.0\n"]);
 
-    new Herd()->laravelVersion('/some/php', '/some/path');
-    new Herd()->laravelVersion('/some/php', '/some/path');
+    new Herd()->laravelVersion('/some/php', base_path());
+    new Herd()->laravelVersion('/some/php', base_path());
 
     Process::assertRanTimes(fn ($process): bool => in_array('/some/php', $process->command, true), 1);
 });
@@ -320,12 +332,12 @@ it('shells out for a laravel version only once, sharing the cache across instanc
 it('refreshes the cached laravel version explicitly', function (): void {
     Process::fake(['*' => "13.0.0\n"]);
 
-    expect(new Herd()->laravelVersion('/some/php', '/some/path'))->toBe('13.0.0');
+    expect(new Herd()->laravelVersion('/some/php', base_path()))->toBe('13.0.0');
 
     Process::fake(['*' => "13.1.0\n"]);
 
-    expect(new Herd()->refreshLaravelVersion('/some/php', '/some/path'))->toBe('13.1.0')
-        ->and(new Herd()->laravelVersion('/some/php', '/some/path'))->toBe('13.1.0');
+    expect(new Herd()->refreshLaravelVersion('/some/php', base_path()))->toBe('13.1.0')
+        ->and(new Herd()->laravelVersion('/some/php', base_path()))->toBe('13.1.0');
 });
 
 it('surfaces the process error when the given php binary does not exist', function (): void {

@@ -165,6 +165,14 @@ it('shows the running PHP and Laravel version', () => {
     screen.getByText('PHP 8.5.0 · Laravel 13.0.0');
 });
 
+it('shows only the PHP version when the Laravel version is unknown', () => {
+    const unknownProps = { ...props, laravelVersion: 'unknown' };
+    render(OpenSnippet, { props: unknownProps });
+
+    screen.getByText('PHP 8.5.0');
+    expect(screen.queryByText(/Laravel/)).toBeNull();
+});
+
 it('renders the project and snippet name in the output bar as a fallback for the hidden heading', () => {
     render(OpenSnippet, { props });
 

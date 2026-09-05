@@ -27,6 +27,14 @@ const pageTitle = computed(
     () => `${props.currentProject} / ${props.snippetName}`,
 );
 
+// A non-Laravel target reports its Laravel version as 'unknown'; show PHP alone rather than
+// "· Laravel unknown".
+const versionLabel = computed(() =>
+    props.laravelVersion === 'unknown'
+        ? `PHP ${props.phpVersion}`
+        : `PHP ${props.phpVersion} · Laravel ${props.laravelVersion}`,
+);
+
 const rawOutput = ref('');
 const debug = ref<SnippetDebugPayload | null>(null);
 const errorMessage = ref('');
@@ -451,7 +459,7 @@ function toggleMaximize(): void {
                             <span aria-hidden="true">·</span>
                         </span>
                         <span>
-                            PHP {{ phpVersion }} · Laravel {{ laravelVersion }}
+                            {{ versionLabel }}
                         </span>
                         <template v-if="debug">
                             <span aria-hidden="true">·</span>
