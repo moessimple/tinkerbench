@@ -6,7 +6,6 @@ namespace Tinkerbench\Runner;
 
 use Closure;
 use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Support\Number;
 use Throwable;
 use Tinkerbench\Runner\FeedItems\DumpFeedItem;
 use Tinkerbench\Runner\FeedItems\FeedItem;
@@ -104,7 +103,7 @@ class SnippetRunRecorder
                 $this->itemsWithoutSingleLazyLoads(),
             ),
             'duration_str' => Duration::format($this->elapsedMilliseconds()),
-            'peak_memory_str' => Number::fileSize(memory_get_peak_usage(true), precision: 2),
+            'peak_memory_str' => ByteSize::format(memory_get_peak_usage(true)),
         ];
     }
 

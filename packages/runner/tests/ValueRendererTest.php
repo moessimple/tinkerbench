@@ -47,3 +47,10 @@ it('truncates an oversized plain-text render so the clipboard stays bounded', fu
     expect(mb_strlen($text))->toBeLessThan(21_000)
         ->and($text)->toEndWith('...');
 });
+
+it('leaves a plain-text render that fits within the limit untouched', function (): void {
+    $text = (new ValueRenderer())->renderText('a short value');
+
+    expect($text)->not->toEndWith('...')
+        ->and($text)->toContain('a short value');
+});

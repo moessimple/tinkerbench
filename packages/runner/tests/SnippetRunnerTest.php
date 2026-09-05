@@ -615,14 +615,18 @@ it('persist writes the snapshot only once', function (): void {
 */
 
 /**
- * Creates a throwaway non-Laravel Composer project: a requirable vendor/autoload.php plus,
+ * Creates a throwaway non-Laravel target: when $withVendor, a requirable vendor/autoload.php;
  * when $bootstrapBody is given, a bootstrap/app.php with that body.
  */
-function basicComposerTarget(?string $bootstrapBody = null): string
+function basicComposerTarget(?string $bootstrapBody = null, bool $withVendor = true): string
 {
     $dir = sys_get_temp_dir().'/tb-basic-target-'.bin2hex(random_bytes(6));
-    mkdir($dir.'/vendor', recursive: true);
-    file_put_contents($dir.'/vendor/autoload.php', "<?php\n");
+    mkdir($dir, recursive: true);
+
+    if ($withVendor) {
+        mkdir($dir.'/vendor', recursive: true);
+        file_put_contents($dir.'/vendor/autoload.php', "<?php\n");
+    }
 
     if ($bootstrapBody !== null) {
         mkdir($dir.'/bootstrap', recursive: true);
@@ -638,9 +642,9 @@ function basicComposerTarget(?string $bootstrapBody = null): string
  *
  * @return array<string, mixed>
  */
-function runBasicInProcess(string $code, ?string $bootstrapBody = null): array
+function runBasicInProcess(string $code, ?string $bootstrapBody = null, bool $withVendor = true): array
 {
-    $target = basicComposerTarget($bootstrapBody);
+    $target = basicComposerTarget($bootstrapBody, $withVendor);
     $snippetPath = tempnam(sys_get_temp_dir(), 'snippet').'.php';
     $debugPath = tempnam(sys_get_temp_dir(), 'debug');
     file_put_contents($snippetPath, $code);
@@ -653,8 +657,8 @@ function runBasicInProcess(string $code, ?string $bootstrapBody = null): array
     unlink($debugPath);
     @unlink($target.'/bootstrap/app.php');
     @rmdir($target.'/bootstrap');
-    unlink($target.'/vendor/autoload.php');
-    rmdir($target.'/vendor');
+    @unlink($target.'/vendor/autoload.php');
+    @rmdir($target.'/vendor');
     rmdir($target);
 
     return is_array($snapshot) ? $snapshot : [];
@@ -695,4 +699,19 @@ it('uses the basic pipeline when bootstrap/app.php does not return an Applicatio
 
     expect($kinds)->toBe(['dump', 'result'])
         ->and($snapshot['items'][1]['html'])->toContain('42');
+})->expectOutputString('');
+
+it('runs the basic pipeline against a target with no vendor/autoload.php at all', function (): void {
+    $snapshot = runBasicInProcess(
+        "<?php\n\ndump('no composer here');\n\nthrow new RuntimeException('vanilla boom');",
+        withVendor: false,
+    );
+
+    $kinds = array_column($snapshot['items'], 'kind');
+
+    expect($kinds)->toBe(['dump', 'exception'])
+        ->and($snapshot['items'][0]['html'])->toContain('no composer here')
+        ->and($snapshot['items'][1]['message'])->toBe('vanilla boom')
+        ->and($snapshot['items'][1]['line'])->toBe(5)
+        ->and($snapshot['items'][1]['frames'][0]['snippet'])->toBeTrue();
 })->expectOutputString('');

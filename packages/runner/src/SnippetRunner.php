@@ -25,8 +25,11 @@ class SnippetRunner
     {
         // Invoked as a subprocess under the target project's own Herd-pinned PHP binary, not
         // necessarily tinkerbench's own, so it boots the target project separately from this file's
-        // own, already-loaded autoloader.
-        require $projectPath.'/vendor/autoload.php';
+        // own, already-loaded autoloader. A plain-PHP target with no Composer has none: the basic
+        // pipeline then runs with only the runner's own bundled libraries.
+        if (is_file($projectPath.'/vendor/autoload.php')) {
+            require $projectPath.'/vendor/autoload.php';
+        }
 
         $app = $this->bootTargetApplication($projectPath);
 
