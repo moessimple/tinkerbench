@@ -17,11 +17,11 @@ it('creates, renames and deletes a snippet from the palette over Monaco', functi
     $page->typeSlowly('[role="combobox"]', 'browsercreated', 15)
         ->assertSee('Press Enter to create it')
         ->keys('[role="combobox"]', ['Enter'])
-        ->assertPathIs('/tinkerbench/browsercreated')
-        ->waitForEvent('networkidle');
+        ->assertPathIs('/tinkerbench/browsercreated');
 
-    // Reopen, rename the row through the inline rename input. Select-all then type, rather
-    // than fill(): fill() has proved unreliable at updating the bound value on CI Chromium.
+    // Reopen, rename the row through the inline rename input. Select all then type rather
+    // than fill(): fill()'s value commit has proved unreliable on CI Chromium, leaving the
+    // field on its original name so the rename no-ops.
     $page->click('.monaco-editor')
         ->keys('.native-edit-context', ['ControlOrMeta+p'])
         ->assertVisible('[role="dialog"]')
@@ -29,8 +29,7 @@ it('creates, renames and deletes a snippet from the palette over Monaco', functi
         ->keys('[aria-label="Rename browsercreated"]', ['ControlOrMeta+a'])
         ->typeSlowly('[aria-label="Rename browsercreated"]', 'browserrenamed', 15)
         ->keys('[aria-label="Rename browsercreated"]', ['Enter'])
-        ->assertPathIs('/tinkerbench/browserrenamed')
-        ->waitForEvent('networkidle');
+        ->assertPathIs('/tinkerbench/browserrenamed');
 
     // Reopen, delete it; the palette drops back to the project root.
     $page->click('.monaco-editor')

@@ -22,7 +22,7 @@ it('still lets typing and the run chord through to Monaco', function (): void {
     $page->assertVisible('.monaco-editor');
 
     typeIntoEditor($page, 'abc');
-    $page->assertScript("document.querySelector('.monaco-editor .view-lines').innerText.includes('abc')");
+    $page->assertSeeIn('.monaco-editor .view-lines', 'abc');
 
     $page->keys('.native-edit-context', ['ControlOrMeta+Enter'])
         ->assertVisible('[role="tablist"][aria-label="Filter output by kind"]')
