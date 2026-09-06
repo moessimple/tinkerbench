@@ -456,7 +456,12 @@ function toggleMaximize(): void {
                     </div>
                 </div>
 
-                <div class="flex min-h-0 min-w-0 flex-2 flex-col">
+                <!--
+                    Dump/result cards render Symfony VarDumper HTML verbatim, and its <pre class=sf-dump>
+                    root carries an inline `position:relative; z-index:99999`. `isolate` keeps that stacking
+                    context contained to this pane so it can't paint over the command palette or toasts.
+                -->
+                <div class="isolate flex min-h-0 min-w-0 flex-2 flex-col">
                     <div
                         class="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-b border-line px-4 py-2 text-xs text-muted"
                     >

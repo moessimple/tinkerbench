@@ -304,17 +304,28 @@ function close(): void {
     cancelDelete();
 }
 
+// A keyboard move scrolls the list, which slides a different row under a
+// stationary cursor and fires that row's mouseenter. Ignoring hover until the
+// pointer genuinely moves again keeps that stray mouseenter from snatching the
+// highlight back to wherever the cursor happens to rest.
+const hoverHighlightSuppressed = ref(false);
+
 function moveHighlight(delta: number): void {
     if (activeEntries.value.length === 0) {
         return;
     }
 
+    hoverHighlightSuppressed.value = true;
     highlightedIndex.value =
         (highlightedIndex.value + delta + activeEntries.value.length) %
         activeEntries.value.length;
 }
 
 function highlight(index: number): void {
+    if (hoverHighlightSuppressed.value) {
+        return;
+    }
+
     highlightedIndex.value = index;
 }
 
@@ -728,6 +739,7 @@ async function confirmDelete(name: string): Promise<void> {
                     id="command-listbox"
                     role="listbox"
                     class="max-h-64 overflow-auto p-1"
+                    @mousemove="hoverHighlightSuppressed = false"
                 >
                     <template v-if="visibleSnippetNames.length > 0">
                         <li

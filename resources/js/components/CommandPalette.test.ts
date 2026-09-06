@@ -266,6 +266,32 @@ it('sets the highlight on mouse hover', async () => {
     ).toBe('true');
 });
 
+it('ignores a mouseenter fired by the scroll after keyboard navigation, until the pointer moves again', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo(['apple', 'scratch', 'zebra'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('Search snippets');
+
+    await fireEvent.keyDown(input, { key: 'ArrowDown' });
+    await fireEvent.mouseEnter(screen.getAllByRole('option')[0] as HTMLElement);
+
+    expect(
+        screen.getAllByRole('option')[0]?.getAttribute('aria-selected'),
+    ).toBe('false');
+
+    await fireEvent.mouseMove(screen.getByRole('listbox'));
+    await fireEvent.mouseEnter(screen.getAllByRole('option')[0] as HTMLElement);
+
+    expect(
+        screen.getAllByRole('option')[0]?.getAttribute('aria-selected'),
+    ).toBe('true');
+});
+
 it('opens the highlighted snippet when Enter is pressed with an empty name field', async () => {
     vi.stubGlobal('fetch', fetchRoutedTo(['apple', 'zebra'], []));
     render(CommandPalette, {
