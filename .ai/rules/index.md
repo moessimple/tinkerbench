@@ -8,7 +8,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/** | .ai/rules/app.md |
 | app/Http/Controllers/** | .ai/rules/controllers.md |
 | app/Enums/** | .ai/rules/enums.md |
-| app/Support/SnippetRun/FeedItems/** | .ai/rules/feed-items.md |
+| packages/runner/src/FeedItems/** | .ai/rules/feed-items.md |
 | **/*, composer.json, README.md | .ai/rules/general.md |
 | images/** | .ai/rules/images.md |
 | resources/js/** | .ai/rules/js.md |
@@ -19,4 +19,4 @@ Before planning or editing, find the row whose globs match the file's path and r
 | storage/app/snippets/** | .ai/rules/snippets.md |
 | app/Support/** | .ai/rules/support.md |
 | tests/**, tests/ArchTest.php | .ai/rules/tests.md |
-| app/Support/SnippetRun/Watchers/** | .ai/rules/watchers.md |
+| packages/runner/src/Watchers/** | .ai/rules/watchers.md |

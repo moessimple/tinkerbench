@@ -18,10 +18,7 @@ use Symfony\Component\Finder\Finder;
 |
 */
 
-// SourceLocator::snippetLine() uses debug_backtrace() as the mechanism for attributing a captured
-// dump/query/log to its snippet line, not as a debug leftover, so the php preset allows it. (The
-// preset only misfires on it under `pest --parallel`; non-parallel it is not flagged.)
-arch()->preset()->php()->ignoring('debug_backtrace');
+arch()->preset()->php();
 arch()->preset()->security();
 arch()->preset()->laravel();
 
