@@ -64,10 +64,7 @@ This coverage belongs in the FormRequest's own test file (e.g. UpdateSnippetName
 
 ## Load-bearing for `pest --parallel`
 
-`test:unit` runs `pest --parallel`. Two things keep the arch preset tests green under it; each is commented at its site, do not remove them:
-
-- `tests/Pest.php` resets the `App\` PSR-4 map to `app/` only. laravel/pint and laravel/lsp (Laravel Zero CLI tools) also register `App\` into the shared autoloader, incl. a colliding `App\Providers\AppServiceProvider`; a `--parallel` worker resolves it to the path-less vendor copy and pest-plugin-arch crashes with `$path must not be accessed before initialization`. Nothing loads those vendor classes (both tools run as subprocesses).
-- `arch()->preset()->php()->ignoring('debug_backtrace')` in `tests/ArchTest.php`. `SourceLocator::snippetLine()` uses it as the line-attribution mechanism, not as a debug leftover; the preset only misflags it under `--parallel`.
+`test:unit` runs `pest --parallel`. `tests/Pest.php` resets the `App\` PSR-4 map to `app/` only to keep the arch preset tests green under it; it is commented at its site, do not remove it. laravel/pint and laravel/lsp (Laravel Zero CLI tools) also register `App\` into the shared autoloader, incl. a colliding `App\Providers\AppServiceProvider`; a `--parallel` worker resolves it to the path-less vendor copy and pest-plugin-arch crashes with `$path must not be accessed before initialization`. Nothing loads those vendor classes (both tools run as subprocesses).
 
 ## Tests\TestCase disables Inertia SSR
 `config('inertia.ssr.enabled')` is `true`. When `npm run dev` is running, inertia-laravel dispatches SSR to the Vite dev endpoint (`{APP_URL}:5173/__inertia_ssr`); in a test that is a stray HTTP request that 500s every `assertInertia()` in `tests/Http/OpenSnippetControllerTest`. `Tests\TestCase::setUp()` sets `config(['inertia.ssr.enabled' => false])` so the suite passes whether or not the dev server is up. `withoutVite()` alone does NOT prevent this (inertia-laravel still finds the running dev server). Do not drop the config override.
