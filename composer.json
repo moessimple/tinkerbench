@@ -85,11 +85,11 @@
             "npm run test:lint"
         ],
         "test:unit": [
-            "sh -c 'pest=\"vendor/bin/pest --parallel --coverage --exactly=100.0 --exclude-testsuite=Browser\"; command -v herd >/dev/null 2>&1 && herd coverage $pest || XDEBUG_MODE=coverage $pest'",
+            "sh -c 'pest=\"vendor/bin/pest --parallel --coverage --exactly=100.0\"; command -v herd >/dev/null 2>&1 && herd coverage $pest || XDEBUG_MODE=coverage $pest'",
             "npm run test:unit"
         ],
         "test:browser": [
-            "pest --testsuite=Browser"
+            "pest --testsuite=Browser --group=browser"
         ],
         "test:types": [
             "phpstan analyse --memory-limit=512M",

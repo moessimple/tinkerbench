@@ -35,6 +35,7 @@ pest()->browser()->timeout(30_000);
 
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
+    ->group('browser')
     ->beforeEach(function () use (&$snippetsRoot): void {
         $snippetsRoot = sys_get_temp_dir().'/tinkerbench-browser-snippets-'.bin2hex(random_bytes(8));
         File::ensureDirectoryExists($snippetsRoot);

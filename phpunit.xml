@@ -24,6 +24,13 @@
             <directory>app</directory>
         </include>
     </source>
+    <groups>
+        <exclude>
+            <!-- Browser tests boot Playwright; keep them out of a bare pest or artisan test
+                 run. composer test:browser opts back in with the group filter. -->
+            <group>browser</group>
+        </exclude>
+    </groups>
     <php>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
