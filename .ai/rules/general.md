@@ -2,6 +2,7 @@
 paths:
   - '**/*'
   - composer.json
+  - README.md
 ---
 
 # General
@@ -48,3 +49,8 @@ Only propose removing code that was written for this app's own logic and lost it
 
 ## Never remove config.autoloader-suffix (root and packages/runner)
 composer.json pins `config.autoloader-suffix` to `TinkerbenchInternal`; `packages/runner/composer.json` pins its own to `TinkerbenchRunner`. `packages/runner/bin/run-snippet.php` loads the runner package's own vendor/autoload.php and then the target project's vendor/autoload.php in the same PHP process (see `Tinkerbench\Runner\SnippetRunner::run()`). Both define a class named ComposerAutoloaderInit<suffix>; without a pinned, distinctive suffix, a target project scaffolded from the same starter kit as tinkerbench (or sharing Composer's default suffix algorithm's result) can end up with the identical generated suffix, and running a snippet against it fatals with "Cannot redeclare class ComposerAutoloaderInit...". Fixing this in the target project isn't an option (tinkerbench must run against any Herd-linked project unmodified), so both suffixes are pinned instead, each unique. Never remove either or let them drift without keeping them unique from each other and from a target project's likely default.
+
+## Target project support floor: Laravel 12+ and PHP 8.2+
+Supported target projects: PHP 8.2 or newer, and for the Laravel feed (query/log/N+1 cards) Laravel 12 or newer. The Laravel 12 floor is a support policy: Laravel 11 no longer receives security fixes. Not enforced in code (Herd::resolveLaravelVersion only distinguishes "is it Laravel at all"), so it lives in docs.
+
+In README/user-facing text state it as a plain requirement ("Laravel 12 or newer"). Do not phrase it as "tested against 12 and 13" (understates it) and do not spell out the security-EOL reason.
