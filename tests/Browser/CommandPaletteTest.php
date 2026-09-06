@@ -14,22 +14,23 @@ it('creates, renames and deletes a snippet from the palette over Monaco', functi
         ->assertVisible('[role="dialog"]');
 
     // A non-matching name offers creation; Enter creates it on the isolated disk and opens it.
-    // Type key by key rather than fill(): fill() also fires a `change` event, which triggers
-    // the palette's precognition validation request, and pest-plugin-browser surfaces
-    // precognition's internal 204 abort() as an HTTP-server error.
     $page->typeSlowly('[role="combobox"]', 'browsercreated', 15)
         ->assertSee('Press Enter to create it')
         ->keys('[role="combobox"]', ['Enter'])
-        ->assertPathIs('/tinkerbench/browsercreated');
+        ->assertPathIs('/tinkerbench/browsercreated')
+        ->waitForEvent('networkidle');
 
-    // Reopen, rename the row through the inline rename input.
+    // Reopen, rename the row through the inline rename input. Select-all then type, rather
+    // than fill(): fill() has proved unreliable at updating the bound value on CI Chromium.
     $page->click('.monaco-editor')
         ->keys('.native-edit-context', ['ControlOrMeta+p'])
         ->assertVisible('[role="dialog"]')
         ->click('[aria-label="Rename browsercreated"]')
-        ->fill('[aria-label="Rename browsercreated"]', 'browserrenamed')
+        ->keys('[aria-label="Rename browsercreated"]', ['ControlOrMeta+a'])
+        ->typeSlowly('[aria-label="Rename browsercreated"]', 'browserrenamed', 15)
         ->keys('[aria-label="Rename browsercreated"]', ['Enter'])
-        ->assertPathIs('/tinkerbench/browserrenamed');
+        ->assertPathIs('/tinkerbench/browserrenamed')
+        ->waitForEvent('networkidle');
 
     // Reopen, delete it; the palette drops back to the project root.
     $page->click('.monaco-editor')
