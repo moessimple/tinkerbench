@@ -50,13 +50,23 @@ const editorRef = useTemplateRef<{ revealLine: (line: number) => void }>(
 
 const { theme, toggleTheme } = useTheme();
 
-const feedFilters: { label: string; value: FeedFilter }[] = [
+// A non-Laravel target (laravelVersion 'unknown') can only ever produce dumps, return values,
+// and exceptions, so its feed offers no query/log/N+1 tabs.
+const visibleFacetKinds = computed(() =>
+    props.laravelVersion === 'unknown'
+        ? FACET_KINDS.filter(
+              (kind) => kind.kind === 'dump' || kind.kind === 'exception',
+          )
+        : FACET_KINDS,
+);
+
+const feedFilters = computed<{ label: string; value: FeedFilter }[]>(() => [
     { label: 'All', value: 'all' },
-    ...FACET_KINDS.map((kind) => ({
+    ...visibleFacetKinds.value.map((kind) => ({
         label: kind.facet,
         value: kind.kind as FeedFilter,
     })),
-];
+]);
 
 const querySorts: { label: string; value: FeedSort }[] = [
     { label: 'Recent', value: 'recent' },
