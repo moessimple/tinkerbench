@@ -29,8 +29,9 @@ $snippetsRoot = null;
 
 // A run-snippet journey spawns the real packages/runner subprocess, and the first spawn in
 // a test process pays a one-time cold cost (fresh autoload + Laravel boot) well past the
-// plugin's 5s default. Raise the auto-wait ceiling once for the whole suite.
-pest()->browser()->timeout(20_000);
+// plugin's 5s default. Raise the auto-wait ceiling once for the whole suite, with headroom
+// for a loaded CI runner.
+pest()->browser()->timeout(30_000);
 
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)

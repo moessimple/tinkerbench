@@ -232,6 +232,13 @@ jobs:
       - name: Generate application key
         run: php artisan key:generate
 
+      - name: Prepare the SQLite database
+        run: |
+          touch database/database.sqlite
+          php artisan migrate --force
+        # The run-snippet journey executes real snippets against this app as the target
+        # project; one of them runs a `select 1` through the app's own database connection.
+
       - name: Install npm dependencies
         run: npm ci
 

@@ -8,11 +8,16 @@ it('keeps Cmd/Ctrl+F and F1 away from Monaco', function (): void {
     $page->assertVisible('.monaco-editor');
     $page->click('.monaco-editor');
 
+    // The widget never opens (assertMissing), and focus stays in the editor rather than
+    // moving into a find/palette input (the synchronous activeElement check). Both together
+    // rule out a false pass where the widget simply had not appeared yet.
     $page->keys('.native-edit-context', ['ControlOrMeta+f'])
-        ->assertMissing('.find-widget');
+        ->assertMissing('.find-widget')
+        ->assertScript("document.activeElement.classList.contains('native-edit-context')");
 
     $page->keys('.native-edit-context', ['F1'])
         ->assertMissing('.quick-input-widget')
+        ->assertScript("document.activeElement.classList.contains('native-edit-context')")
         ->assertNoJavascriptErrors();
 });
 
