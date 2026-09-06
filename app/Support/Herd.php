@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use Closure;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Process;
 use InvalidArgumentException;
@@ -12,19 +13,9 @@ use RuntimeException;
 class Herd
 {
     /** @return array<string, string> */
-    public function projects(): array
+    public function projects(bool $fresh = false): array
     {
-        return Cache::rememberForever('herd:projects', fn (): array => $this->resolveProjects());
-    }
-
-    /** @return array<string, string> */
-    public function refreshProjects(): array
-    {
-        $projects = $this->resolveProjects();
-
-        Cache::forever('herd:projects', $projects);
-
-        return $projects;
+        return $this->cached('herd:projects', $fresh, fn (): array => $this->resolveProjects());
     }
 
     /** @return list<string> */
@@ -71,49 +62,73 @@ class Herd
         return $project ?? $this->currentProject();
     }
 
-    public function phpBinary(string $project): string
+    /**
+     * The project plus everything the snippet editor page needs from Herd about it, or null when the
+     * name is not a known Herd site. Pass $fresh on a full page load to re-resolve every value through
+     * Herd instead of the forever-cache, so a site, PHP version or Laravel upgrade changed out of band
+     * is picked up.
+     */
+    public function snapshotProject(?string $project, bool $fresh = false): ?ProjectSnapshot
     {
-        return Cache::rememberForever("herd:php-binary:{$project}", fn (): string => $this->resolvePhpBinary($project));
+        // Re-pull the site list before resolving so a just-added or removed site is seen this request.
+        if ($fresh) {
+            $this->projects(fresh: true);
+        }
+
+        $name = $this->resolveProject($project);
+        $path = $this->projectPath($name);
+
+        if ($path === null) {
+            return null;
+        }
+
+        $phpBinary = $this->phpBinary($name, $fresh);
+
+        return new ProjectSnapshot(
+            name: $name,
+            path: $path,
+            phpBinary: $phpBinary,
+            phpVersion: $this->phpVersion($phpBinary, $fresh),
+            laravelVersion: $this->laravelVersion($phpBinary, $path, $fresh),
+        );
     }
 
-    public function refreshPhpBinary(string $project): string
+    public function phpBinary(string $project, bool $fresh = false): string
     {
-        $binary = $this->resolvePhpBinary($project);
-
-        Cache::forever("herd:php-binary:{$project}", $binary);
-
-        return $binary;
+        return $this->cached("herd:php-binary:{$project}", $fresh, fn (): string => $this->resolvePhpBinary($project));
     }
 
-    public function phpVersion(string $phpBinary): string
+    public function phpVersion(string $phpBinary, bool $fresh = false): string
     {
-        return Cache::rememberForever("herd:php-version:{$phpBinary}", fn (): string => $this->resolvePhpVersion($phpBinary));
+        return $this->cached("herd:php-version:{$phpBinary}", $fresh, fn (): string => $this->resolvePhpVersion($phpBinary));
     }
 
-    public function refreshPhpVersion(string $phpBinary): string
+    public function laravelVersion(string $phpBinary, string $projectPath, bool $fresh = false): string
     {
-        $version = $this->resolvePhpVersion($phpBinary);
-
-        Cache::forever("herd:php-version:{$phpBinary}", $version);
-
-        return $version;
-    }
-
-    public function laravelVersion(string $phpBinary, string $projectPath): string
-    {
-        return Cache::rememberForever(
+        return $this->cached(
             "herd:laravel-version:{$phpBinary}:{$projectPath}",
+            $fresh,
             fn (): string => $this->resolveLaravelVersion($phpBinary, $projectPath),
         );
     }
 
-    public function refreshLaravelVersion(string $phpBinary, string $projectPath): string
+    /**
+     * @template TValue
+     *
+     * @param  Closure(): TValue  $resolve
+     * @return TValue
+     */
+    private function cached(string $key, bool $fresh, Closure $resolve): mixed
     {
-        $version = $this->resolveLaravelVersion($phpBinary, $projectPath);
+        if ($fresh) {
+            $value = $resolve();
 
-        Cache::forever("herd:laravel-version:{$phpBinary}:{$projectPath}", $version);
+            Cache::forever($key, $value);
 
-        return $version;
+            return $value;
+        }
+
+        return Cache::rememberForever($key, $resolve);
     }
 
     /** @return array<string, string> */

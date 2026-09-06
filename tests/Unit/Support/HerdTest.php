@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Support\Herd;
+use App\Support\ProjectSnapshot;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
@@ -91,7 +92,7 @@ it('shares the project list cache across separate herd instances', function (): 
     Process::assertRanTimes(fn ($process): bool => in_array('parked', $process->command, true), 1);
 });
 
-it('refreshes the project list explicitly', function (): void {
+it('re-pulls the project list from herd when asked for a fresh copy', function (): void {
     config(['services.herd.bin' => '/tmp/herd-bin']);
     Process::fake([
         "*'sites' '--json'" => json_encode([]),
@@ -107,7 +108,7 @@ it('refreshes the project list explicitly', function (): void {
         "*'parked' '--json'" => json_encode([]),
     ]);
 
-    expect(new Herd()->refreshProjects())->toBe([
+    expect(new Herd()->projects(fresh: true))->toBe([
         'new-project' => '/path/to/new-project',
     ])->and(new Herd()->projects())->toBe([
         'new-project' => '/path/to/new-project',
@@ -256,7 +257,7 @@ it('shares the resolved php binary cache across separate herd instances', functi
     Process::assertRanTimes(fn ($process): bool => in_array('which-php', $process->command, true), 1);
 });
 
-it('refreshes the resolved php binary explicitly', function (): void {
+it('re-resolves the php binary from herd when asked for a fresh copy', function (): void {
     config(['services.herd.bin' => '/tmp/herd-bin']);
     Process::fake(["*'which-php'*" => "/some/project/php84\n"]);
 
@@ -264,7 +265,7 @@ it('refreshes the resolved php binary explicitly', function (): void {
 
     Process::fake(["*'which-php'*" => "/some/project/php85\n"]);
 
-    expect(new Herd()->refreshPhpBinary('a-project'))->toBe('/some/project/php85')
+    expect(new Herd()->phpBinary('a-project', fresh: true))->toBe('/some/project/php85')
         ->and(new Herd()->phpBinary('a-project'))->toBe('/some/project/php85');
 });
 
@@ -309,14 +310,14 @@ it('shells out for a php version only once, sharing the cache across instances',
     Process::assertRanTimes(fn ($process): bool => in_array('echo PHP_VERSION;', $process->command, true), 1);
 });
 
-it('refreshes the cached php version explicitly', function (): void {
+it('re-resolves the php version when asked for a fresh copy', function (): void {
     Process::fake(['*' => "8.5.0\n"]);
 
     expect(new Herd()->phpVersion('/some/php'))->toBe('8.5.0');
 
     Process::fake(['*' => "8.5.1\n"]);
 
-    expect(new Herd()->refreshPhpVersion('/some/php'))->toBe('8.5.1')
+    expect(new Herd()->phpVersion('/some/php', fresh: true))->toBe('8.5.1')
         ->and(new Herd()->phpVersion('/some/php'))->toBe('8.5.1');
 });
 
@@ -329,13 +330,77 @@ it('shells out for a laravel version only once, sharing the cache across instanc
     Process::assertRanTimes(fn ($process): bool => in_array('/some/php', $process->command, true), 1);
 });
 
-it('refreshes the cached laravel version explicitly', function (): void {
+it('re-resolves the laravel version when asked for a fresh copy', function (): void {
     Process::fake(['*' => "13.0.0\n"]);
 
     expect(new Herd()->laravelVersion('/some/php', base_path()))->toBe('13.0.0');
 
     Process::fake(['*' => "13.1.0\n"]);
 
-    expect(new Herd()->refreshLaravelVersion('/some/php', base_path()))->toBe('13.1.0')
+    expect(new Herd()->laravelVersion('/some/php', base_path(), fresh: true))->toBe('13.1.0')
         ->and(new Herd()->laravelVersion('/some/php', base_path()))->toBe('13.1.0');
+});
+
+it('bundles the project path and toolchain versions into a snapshot for a known site', function (): void {
+    config(['services.herd.bin' => '/tmp/herd-bin']);
+    Process::fake([
+        "*'sites' '--json'" => json_encode([['site' => 'tinkerbench', 'path' => base_path()]]),
+        "*'parked' '--json'" => json_encode([]),
+        "*'which-php'*" => "/fake/php\n",
+        "*'echo PHP_VERSION;'" => "8.5.0\n",
+        '*' => "13.0.0\n",
+    ]);
+
+    expect(new Herd()->snapshotProject('tinkerbench'))->toEqual(new ProjectSnapshot(
+        name: 'tinkerbench',
+        path: realpath(base_path()),
+        phpBinary: '/fake/php',
+        phpVersion: '8.5.0',
+        laravelVersion: '13.0.0',
+    ));
+});
+
+it('returns no snapshot for a name that is not a known herd site', function (): void {
+    config(['services.herd.bin' => '/tmp/herd-bin']);
+    Process::fake([
+        "*'sites' '--json'" => json_encode([]),
+        "*'parked' '--json'" => json_encode([]),
+    ]);
+
+    expect(new Herd()->snapshotProject('does-not-exist'))->toBeNull();
+});
+
+it('snapshots the current project when no name is given', function (): void {
+    config(['services.herd.bin' => '/tmp/herd-bin']);
+    Process::fake([
+        "*'sites' '--json'" => json_encode([['site' => 'tinkerbench', 'path' => base_path()]]),
+        "*'parked' '--json'" => json_encode([]),
+        "*'which-php'*" => "/fake/php\n",
+        "*'echo PHP_VERSION;'" => "8.5.0\n",
+        '*' => "13.0.0\n",
+    ]);
+
+    expect(new Herd()->snapshotProject(null)?->name)->toBe('tinkerbench');
+});
+
+it('serves the cache by default but re-resolves every value for a fresh snapshot', function (): void {
+    config(['services.herd.bin' => '/tmp/herd-bin']);
+    $sites = [
+        "*'sites' '--json'" => json_encode([['site' => 'tinkerbench', 'path' => base_path()]]),
+        "*'parked' '--json'" => json_encode([]),
+    ];
+    Process::fake([...$sites, "*'which-php'*" => "/fake/php\n", "*'echo PHP_VERSION;'" => "8.5.0\n", '*' => "13.0.0\n"]);
+
+    new Herd()->snapshotProject('tinkerbench');
+
+    Process::fake([...$sites, "*'which-php'*" => "/fake/php85\n", "*'echo PHP_VERSION;'" => "8.5.1\n", '*' => "13.1.0\n"]);
+
+    $cached = new Herd()->snapshotProject('tinkerbench');
+    $fresh = new Herd()->snapshotProject('tinkerbench', fresh: true);
+
+    expect($cached?->phpVersion)->toBe('8.5.0')
+        ->and($cached?->laravelVersion)->toBe('13.0.0')
+        ->and($fresh?->phpBinary)->toBe('/fake/php85')
+        ->and($fresh?->phpVersion)->toBe('8.5.1')
+        ->and($fresh?->laravelVersion)->toBe('13.1.0');
 });

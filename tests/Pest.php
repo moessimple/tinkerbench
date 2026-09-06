@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Support\Herd;
+use App\Support\ProjectSnapshot;
 use Composer\Autoload\ClassLoader;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Routing\MiddlewareNameResolver;
@@ -154,4 +155,16 @@ function mockKnownProject(string $project = 'my-project'): void
 {
     test()->mock(Herd::class)
         ->shouldReceive('projectPath')->with($project)->andReturn("/path/to/{$project}");
+}
+
+/** A ready-made Herd::snapshotProject() return value for tests that don't care about the exact values. */
+function projectSnapshot(string $name = 'my-project'): ProjectSnapshot
+{
+    return new ProjectSnapshot(
+        name: $name,
+        path: "/path/to/{$name}",
+        phpBinary: '/path/to/php',
+        phpVersion: '8.5.0',
+        laravelVersion: '13.0.0',
+    );
 }

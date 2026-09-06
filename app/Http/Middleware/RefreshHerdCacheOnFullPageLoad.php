@@ -16,23 +16,10 @@ class RefreshHerdCacheOnFullPageLoad
     /** @param Closure(Request): Response $next */
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->headers->has('X-Inertia')) {
-            return $next($request);
-        }
+        if (! $request->headers->has('X-Inertia')) {
+            $routeProject = $request->route('project');
 
-        $projects = $this->herd->refreshProjects();
-        $routeProject = $request->route('project');
-        $project = $this->herd->resolveProject(is_string($routeProject) ? $routeProject : null);
-
-        if (array_key_exists($project, $projects)) {
-            $phpBinary = $this->herd->refreshPhpBinary($project);
-            $this->herd->refreshPhpVersion($phpBinary);
-
-            $projectPath = $this->herd->projectPath($project);
-
-            if ($projectPath !== null) {
-                $this->herd->refreshLaravelVersion($phpBinary, $projectPath);
-            }
+            $this->herd->snapshotProject(is_string($routeProject) ? $routeProject : null, fresh: true);
         }
 
         return $next($request);

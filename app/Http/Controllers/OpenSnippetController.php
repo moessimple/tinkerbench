@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Support\Herd;
+use App\Support\ProjectSnapshot;
 use App\Support\SnippetRepository;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -14,23 +15,20 @@ class OpenSnippetController
 {
     public function __invoke(SnippetRepository $snippets, Herd $herd, ?string $project = null, ?string $snippet = null): Response
     {
-        $project = $herd->resolveProject($project);
-        $projectPath = $herd->projectPath($project);
+        $snapshot = $herd->snapshotProject($project);
 
-        abort_if($projectPath === null, HttpResponse::HTTP_NOT_FOUND, "Unknown Herd project: {$project}");
+        abort_if(! $snapshot instanceof ProjectSnapshot, HttpResponse::HTTP_NOT_FOUND, "Unknown Herd project: {$project}");
 
         $snippetName = $snippet ?? 'scratch';
 
-        abort_unless($snippets->ensureExists($project, $snippetName), HttpResponse::HTTP_INTERNAL_SERVER_ERROR, 'Unable to create the snippet.');
-
-        $phpBinary = $herd->phpBinary($project);
+        abort_unless($snippets->ensureExists($snapshot->name, $snippetName), HttpResponse::HTTP_INTERNAL_SERVER_ERROR, 'Unable to create the snippet.');
 
         return Inertia::render('Snippets/OpenSnippet', [
             'snippetName' => $snippetName,
-            'content' => $snippets->contents($project, $snippetName),
-            'currentProject' => $project,
-            'phpVersion' => $herd->phpVersion($phpBinary),
-            'laravelVersion' => $herd->laravelVersion($phpBinary, $projectPath),
+            'content' => $snippets->contents($snapshot->name, $snippetName),
+            'currentProject' => $snapshot->name,
+            'phpVersion' => $snapshot->phpVersion,
+            'laravelVersion' => $snapshot->laravelVersion,
         ]);
     }
 }
