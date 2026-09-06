@@ -14,7 +14,10 @@ it('creates, renames and deletes a snippet from the palette over Monaco', functi
         ->assertVisible('[role="dialog"]');
 
     // A non-matching name offers creation; Enter creates it on the isolated disk and opens it.
-    $page->fill('[role="combobox"]', 'browsercreated')
+    // Type key by key rather than fill(): fill() also fires a `change` event, which triggers
+    // the palette's precognition validation request, and pest-plugin-browser surfaces
+    // precognition's internal 204 abort() as an HTTP-server error.
+    $page->typeSlowly('[role="combobox"]', 'browsercreated', 15)
         ->assertSee('Press Enter to create it')
         ->keys('[role="combobox"]', ['Enter'])
         ->assertPathIs('/tinkerbench/browsercreated');
