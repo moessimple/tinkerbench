@@ -1,6 +1,6 @@
 import vue from '@vitejs/plugin-vue';
 import path from 'node:path';
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 // Only the Vue SFC plugin is reused from vite.config.ts here. The other plugins
 // there (laravel-vite-plugin, wayfinder, inertia) target a real dev/build server
@@ -16,5 +16,8 @@ export default defineConfig({
     test: {
         environment: 'jsdom',
         setupFiles: ['./vitest.setup.ts'],
+        // pest-plugin-browser ships a Playwright example spec under vendor/; Vitest's
+        // default exclude list does not cover vendor/, so it would try to run it.
+        exclude: [...configDefaults.exclude, 'vendor/**'],
     },
 });
