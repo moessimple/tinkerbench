@@ -25,6 +25,13 @@ const browseShortcut = shortcuts.find(
     (shortcut) => shortcut.id === 'browse',
 )?.keys;
 
+const searchIconPath =
+    'M11.5 7a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0Zm-.82 4.74a6 6 0 1 1 1.06-1.06l3.04 3.04a.75.75 0 1 1-1.06 1.06l-3.04-3.04Z';
+const projectIconPath =
+    'M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z';
+const snippetIconPath =
+    'M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.086A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6H10.75A1.75 1.75 0 0 1 9 4.25V1.5Zm7 .062V4.25c0 .138.112.25.25.25h2.688a.252.252 0 0 0-.011-.013l-2.914-2.914a.272.272 0 0 0-.013-.011Z';
+
 const isOpen = ref(false);
 const names = ref<string[]>([]);
 const projectNames = ref<string[]>([]);
@@ -67,10 +74,9 @@ const createForm = useHttp<{ name: string }, { ok: boolean }>({
 }).withPrecognition('post', CreateSnippetController.url(props.currentProject));
 
 // Both snippets and projects show at once by default, grouped into labeled
-// sections like GitHub's own command palette (`Pages`/`Repositories`), so a
-// project is discoverable without first knowing `/` exists. A leading `/`
-// narrows to just projects, a leading `#` narrows to just snippets; neither
-// is required to see the other category.
+// sections, so a project is discoverable without first knowing `/` exists. A
+// leading `/` narrows to just projects, a leading `#` narrows to just snippets;
+// neither is required to see the other category.
 const scope = computed<'all' | 'projects' | 'snippets'>(() => {
     if (createForm.name.startsWith('/')) {
         return 'projects';
@@ -102,14 +108,57 @@ createForm.transform((data) => ({
     name: snippetNameFromInput(data.name),
 }));
 
+// Subsequence match with light ranking: every query character must occur in
+// order, and contiguous runs plus matches at the start or after a word boundary
+// score higher, so the closest name sorts to the top and receives the initial
+// highlight. Returns null when the name is not a match at all.
+function fuzzyScore(name: string, query: string): number | null {
+    const haystack = name.toLowerCase();
+    let score = 0;
+    let queryIndex = 0;
+    let previousMatchIndex = -2;
+
+    for (let i = 0; i < haystack.length && queryIndex < query.length; i++) {
+        if (haystack[i] !== query[queryIndex]) {
+            continue;
+        }
+
+        if (i === previousMatchIndex + 1) {
+            score += 4;
+        }
+
+        if (i === 0 || /[-_/. ]/.test(haystack[i - 1])) {
+            score += 3;
+        }
+
+        score += 1;
+        previousMatchIndex = i;
+        queryIndex++;
+    }
+
+    return queryIndex === query.length ? score : null;
+}
+
+function rankByFuzzyMatch(candidates: string[], query: string): string[] {
+    if (query === '') {
+        return candidates;
+    }
+
+    return candidates
+        .map((name) => ({ name, score: fuzzyScore(name, query) }))
+        .filter((scored): scored is { name: string; score: number } => {
+            return scored.score !== null;
+        })
+        .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+        .map((scored) => scored.name);
+}
+
 const visibleSnippetNames = computed(() => {
     if (scope.value === 'projects') {
         return [];
     }
 
-    return names.value.filter((name) =>
-        name.toLowerCase().includes(filterText.value),
-    );
+    return rankByFuzzyMatch(names.value, filterText.value);
 });
 
 const visibleProjectNames = computed(() => {
@@ -117,9 +166,7 @@ const visibleProjectNames = computed(() => {
         return [];
     }
 
-    return projectNames.value.filter((name) =>
-        name.toLowerCase().includes(filterText.value),
-    );
+    return rankByFuzzyMatch(projectNames.value, filterText.value);
 });
 
 // Projects render after every snippet row, so a project row's position in the shared,
@@ -143,10 +190,9 @@ const activeEntries = computed<PaletteEntry[]>(() => [
     })),
 ]);
 
-// Generic by default, same reasoning as GitHub's own "Search or jump to…":
-// the field searches and jumps to either a snippet or a project, so wording
-// it as if it only ever creates a new snippet would be misleading now that
-// both sections show at once.
+// Generic by default: the field searches and jumps to either a snippet or a
+// project, so wording it as if it only ever creates a new snippet would be
+// misleading now that both sections show at once.
 const inputLabel = computed(() => {
     if (scope.value === 'projects') {
         return 'Switch to project';
@@ -179,8 +225,26 @@ const activeOptionId = computed(() => {
     return entry ? `command-option-${entry.type}-${entry.name}` : undefined;
 });
 
+// Scrolling only the active row into view leaves its section heading clipped
+// above the fold when the highlight lands on the first row of a section, so the
+// first row of each section anchors the scroll to the heading instead.
+const scrollTargetId = computed(() => {
+    if (visibleSnippetNames.value.length > 0 && highlightedIndex.value === 0) {
+        return 'command-section-snippets';
+    }
+
+    if (
+        visibleProjectNames.value.length > 0 &&
+        highlightedIndex.value === visibleSnippetNames.value.length
+    ) {
+        return 'command-section-projects';
+    }
+
+    return activeOptionId.value;
+});
+
 // Resets the highlight to the top of each new set of matches, same as VS Code
-// Quick Open and GitHub's own command palette do as you narrow a search.
+// Quick Open does as you narrow a search.
 watch(
     () => createForm.name,
     () => {
@@ -188,6 +252,22 @@ watch(
         createError.value = '';
     },
 );
+
+// The listbox has a fixed max height and clips its overflow, and keyboard
+// navigation does not scroll it on its own; each highlight move has to pull the
+// active row back into view, or arrowing past the fold leaves it hidden until
+// the user reaches for the mouse wheel.
+watch(highlightedIndex, () => {
+    void nextTick(() => {
+        const id = scrollTargetId.value;
+
+        if (id) {
+            document
+                .getElementById(id)
+                ?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }
+    });
+});
 
 // The open dialog is a fixed, full-viewport backdrop that renders after both scope
 // icons in the DOM, so it visually covers them the moment it's open; a click on
@@ -526,9 +606,7 @@ async function confirmDelete(name: string): Promise<void> {
                 fill="currentColor"
                 aria-hidden="true"
             >
-                <path
-                    d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"
-                />
+                <path :d="projectIconPath" />
             </svg>
         </button>
         <button
@@ -545,10 +623,7 @@ async function confirmDelete(name: string): Promise<void> {
                 fill="currentColor"
                 aria-hidden="true"
             >
-                <path
-                    fill-rule="evenodd"
-                    d="M11.5 7a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0Zm-.82 4.74a6 6 0 1 1 1.06-1.06l3.04 3.04a.75.75 0 1 1-1.06 1.06l-3.04-3.04Z"
-                />
+                <path fill-rule="evenodd" :d="searchIconPath" />
             </svg>
         </button>
 
@@ -561,29 +636,41 @@ async function confirmDelete(name: string): Promise<void> {
                 role="dialog"
                 aria-modal="true"
                 :aria-label="dialogLabel"
-                class="h-fit w-full max-w-xs rounded-md border border-line bg-surface shadow-2xl"
+                class="h-fit w-full max-w-md rounded-md border border-line bg-surface shadow-2xl"
             >
                 <form
                     class="border-b border-line p-2"
                     @submit.prevent="onSubmit"
                 >
-                    <input
-                        ref="createInput"
-                        v-model="createForm.name"
-                        type="text"
-                        role="combobox"
-                        aria-expanded="true"
-                        aria-controls="command-listbox"
-                        :aria-activedescendant="activeOptionId"
-                        :aria-label="inputLabel"
-                        :placeholder="placeholder"
-                        :disabled="createForm.processing"
-                        class="w-full rounded border border-line bg-transparent px-2 py-1 font-mono text-sm text-fg placeholder:text-muted focus:outline-none"
-                        @change="createForm.validate('name')"
-                        @keydown.down.prevent="moveHighlight(1)"
-                        @keydown.up.prevent="moveHighlight(-1)"
-                        @keydown.escape="close"
-                    />
+                    <div class="relative">
+                        <svg
+                            viewBox="0 0 16 16"
+                            width="14"
+                            height="14"
+                            fill="currentColor"
+                            aria-hidden="true"
+                            class="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted"
+                        >
+                            <path fill-rule="evenodd" :d="searchIconPath" />
+                        </svg>
+                        <input
+                            ref="createInput"
+                            v-model="createForm.name"
+                            type="text"
+                            role="combobox"
+                            aria-expanded="true"
+                            aria-controls="command-listbox"
+                            :aria-activedescendant="activeOptionId"
+                            :aria-label="inputLabel"
+                            :placeholder="placeholder"
+                            :disabled="createForm.processing"
+                            class="w-full rounded border border-line bg-transparent py-1.5 pr-2.5 pl-8 font-mono text-sm text-fg placeholder:text-muted focus:outline-none"
+                            @change="createForm.validate('name')"
+                            @keydown.down.prevent="moveHighlight(1)"
+                            @keydown.up.prevent="moveHighlight(-1)"
+                            @keydown.escape="close"
+                        />
+                    </div>
                     <p
                         v-if="
                             scope !== 'projects' &&
@@ -640,10 +727,11 @@ async function confirmDelete(name: string): Promise<void> {
                     v-else
                     id="command-listbox"
                     role="listbox"
-                    class="max-h-64 overflow-auto py-1"
+                    class="max-h-64 overflow-auto p-1"
                 >
                     <template v-if="visibleSnippetNames.length > 0">
                         <li
+                            id="command-section-snippets"
                             role="presentation"
                             class="px-3 pt-2 pb-1 font-mono text-[10px] font-semibold tracking-widest text-muted uppercase"
                         >
@@ -655,7 +743,7 @@ async function confirmDelete(name: string): Promise<void> {
                             :key="`snippet-${name}`"
                             role="option"
                             :aria-selected="index === highlightedIndex"
-                            class="group flex flex-col gap-1 px-3 py-1.5 font-mono text-sm text-fg hover:bg-line/30"
+                            class="group flex flex-col gap-1 rounded px-3 py-2 font-mono text-sm text-fg hover:bg-line/30"
                             :class="{
                                 'bg-line/60': index === highlightedIndex,
                             }"
@@ -710,6 +798,16 @@ async function confirmDelete(name: string): Promise<void> {
                                     class="flex flex-1 items-center gap-1.5 truncate text-left"
                                     @click="openSnippet(name)"
                                 >
+                                    <svg
+                                        viewBox="0 0 16 16"
+                                        width="14"
+                                        height="14"
+                                        fill="currentColor"
+                                        aria-hidden="true"
+                                        class="shrink-0 text-muted"
+                                    >
+                                        <path :d="snippetIconPath" />
+                                    </svg>
                                     <span
                                         v-if="name === currentSnippet"
                                         class="h-1.5 w-1.5 shrink-0 rounded-full bg-accent"
@@ -778,6 +876,12 @@ async function confirmDelete(name: string): Promise<void> {
 
                     <template v-if="visibleProjectNames.length > 0">
                         <li
+                            v-if="visibleSnippetNames.length > 0"
+                            role="separator"
+                            class="mx-2 my-1 border-t border-line"
+                        />
+                        <li
+                            id="command-section-projects"
                             role="presentation"
                             class="px-3 pt-2 pb-1 font-mono text-[10px] font-semibold tracking-widest text-muted uppercase"
                         >
@@ -791,7 +895,7 @@ async function confirmDelete(name: string): Promise<void> {
                             :aria-selected="
                                 projectEntryIndex(index) === highlightedIndex
                             "
-                            class="flex flex-col gap-1 px-3 py-1.5 font-mono text-sm text-fg hover:bg-line/30"
+                            class="flex flex-col gap-1 rounded px-3 py-2 font-mono text-sm text-fg hover:bg-line/30"
                             :class="{
                                 'bg-line/60':
                                     projectEntryIndex(index) ===
@@ -804,6 +908,16 @@ async function confirmDelete(name: string): Promise<void> {
                                 class="flex flex-1 items-center gap-1.5 truncate text-left"
                                 @click="switchProject(name)"
                             >
+                                <svg
+                                    viewBox="0 0 16 16"
+                                    width="14"
+                                    height="14"
+                                    fill="currentColor"
+                                    aria-hidden="true"
+                                    class="shrink-0 text-muted"
+                                >
+                                    <path :d="projectIconPath" />
+                                </svg>
                                 <span
                                     v-if="name === currentProject"
                                     class="h-1.5 w-1.5 shrink-0 rounded-full bg-accent"

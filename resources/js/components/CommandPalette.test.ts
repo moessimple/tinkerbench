@@ -200,6 +200,54 @@ it('moves the highlight down and up through the list, wrapping at the ends', asy
     ).toBe('true');
 });
 
+it('scrolls the highlighted option back into view as the arrow keys move it', async () => {
+    const scrollIntoView = vi.fn();
+    vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(
+        scrollIntoView,
+    );
+    vi.stubGlobal('fetch', fetchRoutedTo(['apple', 'scratch', 'zebra'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'apple' },
+    });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('Search snippets');
+
+    await fireEvent.keyDown(input, { key: 'ArrowDown' });
+
+    expect(scrollIntoView.mock.contexts.at(-1)).toBe(
+        screen.getAllByRole('option')[1],
+    );
+    expect(scrollIntoView.mock.lastCall?.[0]).toEqual({
+        block: 'nearest',
+        inline: 'nearest',
+    });
+});
+
+it('scrolls the section heading into view when the highlight reaches the first row of a section', async () => {
+    const scrollIntoView = vi.fn();
+    vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(
+        scrollIntoView,
+    );
+    vi.stubGlobal('fetch', fetchRoutedTo(['apple', 'scratch', 'zebra'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('Search snippets');
+
+    await fireEvent.keyDown(input, { key: 'ArrowUp' });
+
+    expect(scrollIntoView.mock.contexts.at(-1)).toBe(
+        screen.getByText('Snippets'),
+    );
+});
+
 it('sets the highlight on mouse hover', async () => {
     vi.stubGlobal('fetch', fetchRoutedTo(['apple', 'zebra'], []));
     render(CommandPalette, {
@@ -280,6 +328,42 @@ it('resets the highlight to the first match when the filter changes', async () =
 
     const options = screen.getAllByRole('option');
     expect(options[0]?.getAttribute('aria-selected')).toBe('true');
+});
+
+it('matches names as a fuzzy subsequence, not only as a substring', async () => {
+    vi.stubGlobal(
+        'fetch',
+        fetchRoutedTo(['user-account-settings', 'readme'], []),
+    );
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'readme' },
+    });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('Search snippets');
+    await fireEvent.update(input, 'uas');
+
+    await screen.findByRole('option', { name: /user-account-settings/ });
+    expect(screen.queryByText('readme')).toBeNull();
+});
+
+it('ranks a prefix match above a mid-word match', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo(['latest-run', 'test-helpers'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'latest-run' },
+    });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('Search snippets');
+    await fireEvent.update(input, 'test');
+
+    const options = screen.getAllByRole('option');
+    expect(options[0]?.textContent).toContain('test-helpers');
+    expect(options[1]?.textContent).toContain('latest-run');
 });
 
 it('opens the highlighted match when Enter is pressed with a filtered query', async () => {
