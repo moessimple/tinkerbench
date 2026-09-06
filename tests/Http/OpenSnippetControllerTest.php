@@ -25,7 +25,6 @@ it('opens the default scratch snippet for the current project', function (): voi
         $mock->shouldReceive('phpBinary')->with('my-project')->andReturn('/path/to/php');
         $mock->shouldReceive('phpVersion')->andReturn('8.5.0');
         $mock->shouldReceive('laravelVersion')->andReturn('13.0.0');
-        $mock->shouldReceive('projects')->andReturn(['my-project' => '/path/to/project']);
     });
 
     $this->mock(SnippetRepository::class, function (MockInterface $mock): void {
@@ -75,7 +74,6 @@ it('opens the named snippet from a project in the URL', function (): void {
         $mock->shouldReceive('phpBinary')->with('my-project')->andReturn('/path/to/php');
         $mock->shouldReceive('phpVersion')->andReturn('8.5.0');
         $mock->shouldReceive('laravelVersion')->andReturn('13.0.0');
-        $mock->shouldReceive('projects')->andReturn(['my-project' => '/path/to/project']);
     });
 
     $this->mock(SnippetRepository::class, function (MockInterface $mock): void {
@@ -103,7 +101,6 @@ it('uses cached herd data for inertia navigation', function (): void {
         $mock->shouldReceive('phpBinary')->with('my-project')->andReturn('/path/to/php');
         $mock->shouldReceive('phpVersion')->andReturn('8.5.0');
         $mock->shouldReceive('laravelVersion')->andReturn('13.0.0');
-        $mock->shouldReceive('projects')->andReturn(['my-project' => '/path/to/project']);
     });
 
     $this->mock(SnippetRepository::class, function (MockInterface $mock): void {
@@ -132,7 +129,6 @@ it('shows the php and laravel version of the current project', function (): void
         $mock->shouldReceive('phpBinary')->with('my-project')->andReturn('/path/to/php');
         $mock->shouldReceive('phpVersion')->with('/path/to/php')->andReturn('8.5.0');
         $mock->shouldReceive('laravelVersion')->with('/path/to/php', '/path/to/project')->andReturn('13.0.0');
-        $mock->shouldReceive('projects')->andReturn(['my-project' => '/path/to/project']);
     });
 
     $this->mock(SnippetRepository::class, function (MockInterface $mock): void {
