@@ -6,6 +6,7 @@ use App\Support\Herd;
 use App\Support\LanguageServer\LanguageServerBridgeLauncher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Vite;
 use Tests\Support\DeadLanguageServerBridgeLauncher;
 use Tests\Support\FakeHerd;
 use Tests\TestCase;
@@ -32,6 +33,11 @@ pest()->extend(TestCase::class)
         $snippetsRoot = sys_get_temp_dir().'/tinkerbench-browser-snippets-'.bin2hex(random_bytes(8));
         File::ensureDirectoryExists($snippetsRoot);
         config(['filesystems.disks.snippets.root' => $snippetsRoot]);
+
+        // A stale public/hot (a dev server that exited without cleaning up) points @vite at
+        // an unreachable dev-server URL, so no JS loads and Monaco never mounts. Force the
+        // built manifest for the browser suite.
+        Vite::useHotFile(storage_path('framework/testing/browser-suite-no-vite-hmr'));
 
         $this->app->bind(Herd::class, FakeHerd::class);
         $this->app->bind(LanguageServerBridgeLauncher::class, DeadLanguageServerBridgeLauncher::class);
