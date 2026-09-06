@@ -27,6 +27,17 @@ const pageTitle = computed(
     () => `${props.currentProject} / ${props.snippetName}`,
 );
 
+// A non-Laravel target reports its Laravel version as 'unknown': it runs the basic pipeline, which
+// only ever produces dumps, return values, and exceptions.
+const isLaravelTarget = computed(() => props.laravelVersion !== 'unknown');
+
+// Show PHP alone rather than "· Laravel unknown" for a non-Laravel target.
+const versionLabel = computed(() =>
+    isLaravelTarget.value
+        ? `PHP ${props.phpVersion} · Laravel ${props.laravelVersion}`
+        : `PHP ${props.phpVersion}`,
+);
+
 const rawOutput = ref('');
 const debug = ref<SnippetDebugPayload | null>(null);
 const errorMessage = ref('');
@@ -42,13 +53,23 @@ const editorRef = useTemplateRef<{ revealLine: (line: number) => void }>(
 
 const { theme, toggleTheme } = useTheme();
 
-const feedFilters: { label: string; value: FeedFilter }[] = [
+// The basic pipeline never emits query/log/N+1 items, so a non-Laravel target's feed offers no
+// tabs for them.
+const visibleFacetKinds = computed(() =>
+    isLaravelTarget.value
+        ? FACET_KINDS
+        : FACET_KINDS.filter(
+              (kind) => kind.kind === 'dump' || kind.kind === 'exception',
+          ),
+);
+
+const feedFilters = computed<{ label: string; value: FeedFilter }[]>(() => [
     { label: 'All', value: 'all' },
-    ...FACET_KINDS.map((kind) => ({
+    ...visibleFacetKinds.value.map((kind) => ({
         label: kind.facet,
         value: kind.kind as FeedFilter,
     })),
-];
+]);
 
 const querySorts: { label: string; value: FeedSort }[] = [
     { label: 'Recent', value: 'recent' },
@@ -451,7 +472,7 @@ function toggleMaximize(): void {
                             <span aria-hidden="true">·</span>
                         </span>
                         <span>
-                            PHP {{ phpVersion }} · Laravel {{ laravelVersion }}
+                            {{ versionLabel }}
                         </span>
                         <template v-if="debug">
                             <span aria-hidden="true">·</span>

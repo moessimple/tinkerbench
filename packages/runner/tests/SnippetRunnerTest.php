@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\Widget;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Process;
 use Symfony\Component\VarDumper\VarDumper;
@@ -65,6 +66,26 @@ afterEach(function (): void {
  */
 function runSnippetSubprocess(string $code): array
 {
+    return runSnippetSubprocessAgainst(runnerTargetPath(), $code);
+}
+
+/**
+ * Path to a committed fixture project under tests/fixtures/, each a real Composer project whose
+ * dependencies CI installs fresh (vendor/ gitignored).
+ */
+function fixtureTargetPath(string $name): string
+{
+    return __DIR__.'/fixtures/'.$name;
+}
+
+/**
+ * As runSnippetSubprocess(), but against an arbitrary target project path instead of tinkerbench
+ * itself, so a fixture below tinkerbench's own PHP/Laravel floor can be exercised end to end.
+ *
+ * @return array{output: string, exitCode: int, debug: array<string, mixed>|null}
+ */
+function runSnippetSubprocessAgainst(string $targetPath, string $code): array
+{
     $snippetPath = tempnam(sys_get_temp_dir(), 'snippet').'.php';
     $debugPath = tempnam(sys_get_temp_dir(), 'debug');
     file_put_contents($snippetPath, $code);
@@ -72,7 +93,7 @@ function runSnippetSubprocess(string $code): array
     $result = Process::env(['VAR_DUMPER_FORMAT' => 'html'])->run([
         PHP_BINARY,
         dirname(__DIR__).'/bin/run-snippet.php',
-        runnerTargetPath(),
+        $targetPath,
         $snippetPath,
         $debugPath,
     ]);
@@ -295,6 +316,216 @@ it('reports no n_plus_one when the project batches lazy loads with automatic eag
         ->and($kinds)->not->toContain('n_plus_one');
 })->skip(PHP_VERSION_ID < 80500, TARGET_REQUIRES_PHP85);
 
+/*
+|--------------------------------------------------------------------------
+| Against a committed non-Laravel fixture project (real subprocess)
+|--------------------------------------------------------------------------
+|
+| plain-composer-php is a real Composer project with no framework and no bootstrap/app.php. It
+| runs through the actual bin/run-snippet.php entry point, proving the basic pipeline end to end
+| below tinkerbench's own PHP/Laravel floor, so these are not gated on PHP 8.5.
+|
+*/
+
+it('captures dump and result against a plain Composer PHP fixture', function (): void {
+    $result = runSnippetSubprocessAgainst(fixtureTargetPath('plain-composer-php'), <<<'PHP'
+    <?php
+
+    use PlainComposerPhp\Greeter;
+
+    dump((new Greeter())->greet('world'));
+
+    return ['ok' => true];
+    PHP);
+
+    expect($result['exitCode'])->toBe(0)
+        ->and($result['output'])->toBe('')
+        ->and(array_column($result['debug']['items'], 'kind'))->toBe(['dump', 'result'])
+        ->and($result['debug']['items'][0]['html'])->toContain('Hello, world!')
+        ->and($result['debug']['items'][1]['html'])->toContain('ok');
+});
+
+it('classifies the snippet frame of an uncaught exception from a plain Composer PHP fixture', function (): void {
+    $result = runSnippetSubprocessAgainst(
+        fixtureTargetPath('plain-composer-php'),
+        "<?php\n\nthrow new RuntimeException('fixture boom');",
+    );
+
+    $item = $result['debug']['items'][0];
+
+    expect($result['exitCode'])->toBe(0)
+        ->and($item['kind'])->toBe('exception')
+        ->and($item['type'])->toBe(RuntimeException::class)
+        ->and($item['message'])->toBe('fixture boom')
+        ->and($item['line'])->toBe(3)
+        ->and($item['frames'])->toHaveCount(1)
+        ->and($item['frames'][0]['snippet'])->toBeTrue()
+        ->and($item['frames'][0]['line'])->toBe(3);
+});
+
+it('never emits query, log, or n_plus_one items for a plain Composer PHP fixture', function (): void {
+    $result = runSnippetSubprocessAgainst(
+        fixtureTargetPath('plain-composer-php'),
+        "<?php\n\ndump('a');\n\nreturn 'b';",
+    );
+
+    $kinds = array_column($result['debug']['items'] ?? [], 'kind');
+
+    expect($kinds)->not->toContain('query')
+        ->and($kinds)->not->toContain('log')
+        ->and($kinds)->not->toContain('n_plus_one');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Against a committed plain-PHP fixture with no Composer at all (real subprocess)
+|--------------------------------------------------------------------------
+|
+| vanilla-php has no composer.json and no vendor/. The snippet require()s the one fixture class
+| by absolute path, since there is no autoloader. Proves T6's is_file() guard end to end.
+|
+*/
+
+it('runs a snippet against a plain-PHP fixture with no Composer', function (): void {
+    $snippet = str_replace('__CALC__', fixtureTargetPath('vanilla-php').'/src/Calculator.php', <<<'PHP'
+    <?php
+
+    require '__CALC__';
+
+    $sum = (new VanillaPhp\Calculator())->add(2, 3);
+
+    dump($sum);
+
+    return ['sum' => $sum];
+    PHP);
+
+    $result = runSnippetSubprocessAgainst(fixtureTargetPath('vanilla-php'), $snippet);
+
+    expect($result['exitCode'])->toBe(0)
+        ->and($result['output'])->toBe('')
+        ->and(array_column($result['debug']['items'], 'kind'))->toBe(['dump', 'result'])
+        ->and($result['debug']['items'][0]['html'])->toContain('5')
+        ->and($result['debug']['items'][1]['html'])->toContain('sum');
+})->expectOutputString('');
+
+it('captures an uncaught exception from a plain-PHP fixture with no Composer', function (): void {
+    $result = runSnippetSubprocessAgainst(
+        fixtureTargetPath('vanilla-php'),
+        "<?php\n\nthrow new RuntimeException('vanilla fixture boom');",
+    );
+
+    $item = $result['debug']['items'][0];
+    $kinds = array_column($result['debug']['items'], 'kind');
+
+    expect($result['exitCode'])->toBe(0)
+        ->and($item['kind'])->toBe('exception')
+        ->and($item['message'])->toBe('vanilla fixture boom')
+        ->and($item['line'])->toBe(3)
+        ->and($item['frames'][0]['snippet'])->toBeTrue()
+        ->and($kinds)->not->toContain('query')
+        ->and($kinds)->not->toContain('log')
+        ->and($kinds)->not->toContain('n_plus_one');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Against a committed Laravel 12 fixture (real subprocess)
+|--------------------------------------------------------------------------
+|
+| laravel-12 is a real, minimal Laravel 12 application: the documented lower bound of the full
+| (Laravel) feed. It boots on whatever PHP runs the suite (Laravel 12's own floor is PHP 8.2), so
+| these prove the existing Laravel pipeline still produces the whole feed there, and are not gated
+| on PHP 8.5.
+|
+*/
+
+/**
+ * Snippet preamble for the Laravel 12 fixture: an in-memory SQLite connection the fixture's
+ * App\Models\Widget / App\Models\WidgetPart bind to, with their tables created and three
+ * widget/part rows seeded.
+ */
+function laravel12Preamble(): string
+{
+    return <<<'PHP'
+    <?php
+
+    use App\Models\Widget;
+    use App\Models\WidgetPart;
+    use Illuminate\Database\Schema\Blueprint;
+    use Illuminate\Support\Facades\Schema;
+
+    config(['database.connections.fixture' => ['driver' => 'sqlite', 'database' => ':memory:']]);
+
+    Schema::connection('fixture')->create('widgets', function (Blueprint $table): void {
+        $table->increments('id');
+        $table->string('name');
+    });
+
+    Schema::connection('fixture')->create('widget_parts', function (Blueprint $table): void {
+        $table->increments('id');
+        $table->unsignedInteger('widget_id');
+    });
+
+    foreach (range(1, 3) as $id) {
+        Widget::create(['id' => $id, 'name' => "widget {$id}"]);
+        WidgetPart::create(['id' => $id, 'widget_id' => $id]);
+    }
+    PHP;
+}
+
+it('captures dump, log, query, and result against a Laravel 12 fixture', function (): void {
+    $result = runSnippetSubprocessAgainst(fixtureTargetPath('laravel-12'), laravel12Preamble()."\n".<<<'PHP'
+    dump('from laravel 12');
+
+    Log::info('hello from the fixture');
+
+    $widget = Widget::query()->where('id', 2)->first();
+
+    return $widget->name;
+    PHP);
+
+    $items = collect($result['debug']['items']);
+
+    expect($result['exitCode'])->toBe(0)
+        ->and($result['output'])->toBe('')
+        ->and(array_column($result['debug']['items'], 'kind'))->toContain('dump', 'log', 'query', 'result')
+        ->and($items->pluck('sql')->filter())->toContain('select * from "widgets" where "id" = 2 limit 1')
+        ->and($items->firstWhere('kind', 'result')['html'])->toContain('widget 2')
+        ->and($items->firstWhere('kind', 'log')['message'])->toBe('hello from the fixture')
+        ->and($items->firstWhere('kind', 'dump')['html'])->toContain('from laravel 12');
+});
+
+it('classifies the snippet frame of an uncaught exception from a Laravel 12 fixture', function (): void {
+    $result = runSnippetSubprocessAgainst(
+        fixtureTargetPath('laravel-12'),
+        "<?php\n\nthrow new RuntimeException('laravel 12 boom');",
+    );
+
+    $item = $result['debug']['items'][0];
+
+    expect($result['exitCode'])->toBe(0)
+        ->and($item['kind'])->toBe('exception')
+        ->and($item['message'])->toBe('laravel 12 boom')
+        ->and($item['line'])->toBe(3)
+        ->and($item['frames'][0]['snippet'])->toBeTrue();
+});
+
+it('detects an N+1 lazy load against a Laravel 12 fixture', function (): void {
+    $result = runSnippetSubprocessAgainst(fixtureTargetPath('laravel-12'), laravel12Preamble()."\n".<<<'PHP'
+    foreach (Widget::all() as $widget) {
+        $widget->parts->count();
+    }
+    PHP);
+
+    $finding = collect($result['debug']['items'] ?? [])->firstWhere('kind', 'n_plus_one');
+
+    expect($result['exitCode'])->toBe(0)
+        ->and($finding)->not->toBeNull()
+        ->and($finding['model'])->toBe(Widget::class)
+        ->and($finding['relation'])->toBe('parts')
+        ->and($finding['count'])->toBe(3);
+});
+
 // In-process runs exercise run()'s own wiring against tinkerbench itself. The shutdown handler
 // it registers no-ops at PHPUnit exit because run() has already persisted inline.
 
@@ -421,3 +652,128 @@ it('persist writes the snapshot only once', function (): void {
 
     unlink($debugPath);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Against a non-Laravel Composer target (the basic pipeline)
+|--------------------------------------------------------------------------
+|
+| A Composer project with no bootstrap/app.php, or one whose bootstrap/app.php does not return an
+| Illuminate\Foundation\Application, gets a reduced feed (dump/result/exception) instead of a hard
+| failure. These runs never boot Laravel, so they are not gated on PHP 8.5 the way the
+| tinkerbench-as-target tests above are.
+|
+*/
+
+/**
+ * Creates a throwaway non-Laravel target: when $withVendor, a requirable vendor/autoload.php;
+ * when $bootstrapBody is given, a bootstrap/app.php with that body.
+ */
+function basicComposerTarget(?string $bootstrapBody = null, bool $withVendor = true): string
+{
+    $dir = sys_get_temp_dir().'/tb-basic-target-'.bin2hex(random_bytes(6));
+    mkdir($dir, recursive: true);
+
+    if ($withVendor) {
+        mkdir($dir.'/vendor', recursive: true);
+        file_put_contents($dir.'/vendor/autoload.php', "<?php\n");
+    }
+
+    if ($bootstrapBody !== null) {
+        mkdir($dir.'/bootstrap', recursive: true);
+        file_put_contents($dir.'/bootstrap/app.php', $bootstrapBody);
+    }
+
+    return $dir;
+}
+
+/**
+ * Runs $code in-process against a fresh non-Laravel target, then removes the target and temp
+ * files and returns the decoded debug snapshot.
+ *
+ * @return array<string, mixed>
+ */
+function runBasicInProcess(string $code, ?string $bootstrapBody = null, bool $withVendor = true): array
+{
+    $target = basicComposerTarget($bootstrapBody, $withVendor);
+    $snippetPath = tempnam(sys_get_temp_dir(), 'snippet').'.php';
+    $debugPath = tempnam(sys_get_temp_dir(), 'debug');
+    file_put_contents($snippetPath, $code);
+
+    (new SnippetRunner())->run($target, $snippetPath, $debugPath);
+
+    $snapshot = json_decode((string) file_get_contents($debugPath), true);
+
+    unlink($snippetPath);
+    unlink($debugPath);
+    @unlink($target.'/bootstrap/app.php');
+    @rmdir($target.'/bootstrap');
+    @unlink($target.'/vendor/autoload.php');
+    @rmdir($target.'/vendor');
+    rmdir($target);
+
+    return is_array($snapshot) ? $snapshot : [];
+}
+
+it('captures dump and result items against a target with no bootstrap/app.php', function (): void {
+    $snapshot = runBasicInProcess("<?php\n\ndump('from a plain project');\n\nreturn 'the value';");
+
+    $kinds = array_column($snapshot['items'], 'kind');
+
+    expect($kinds)->toBe(['dump', 'result'])
+        ->and($kinds)->not->toContain('query')
+        ->and($kinds)->not->toContain('log')
+        ->and($kinds)->not->toContain('n_plus_one')
+        ->and($snapshot['items'][0]['html'])->toContain('from a plain project')
+        ->and($snapshot['items'][0]['line'])->toBe(3)
+        ->and($snapshot['items'][1]['html'])->toContain('the value');
+})->expectOutputString('');
+
+it('captures an uncaught exception against a target with no bootstrap/app.php', function (): void {
+    $snapshot = runBasicInProcess("<?php\n\nthrow new RuntimeException('plain boom');");
+
+    expect($snapshot['items'])->toHaveCount(1)
+        ->and($snapshot['items'][0]['kind'])->toBe('exception')
+        ->and($snapshot['items'][0]['type'])->toBe(RuntimeException::class)
+        ->and($snapshot['items'][0]['message'])->toBe('plain boom')
+        ->and($snapshot['items'][0]['line'])->toBe(3)
+        ->and($snapshot['items'][0]['frames'][0]['snippet'])->toBeTrue();
+});
+
+it('uses the basic pipeline when bootstrap/app.php does not return an Application', function (): void {
+    $snapshot = runBasicInProcess(
+        "<?php\n\ndump('still captured');\n\nreturn 42;",
+        "<?php\n\nreturn new stdClass();",
+    );
+
+    $kinds = array_column($snapshot['items'], 'kind');
+
+    expect($kinds)->toBe(['dump', 'result'])
+        ->and($snapshot['items'][1]['html'])->toContain('42');
+})->expectOutputString('');
+
+it('uses the basic pipeline when bootstrap/app.php is present but vendor/autoload.php is missing', function (): void {
+    $snapshot = runBasicInProcess(
+        "<?php\n\ndump('still captured');\n\nreturn 1;",
+        "<?php\n\nthrow new RuntimeException('bootstrap/app.php must not run without an autoloader');",
+        withVendor: false,
+    );
+
+    expect(array_column($snapshot['items'], 'kind'))->toBe(['dump'])
+        ->and($snapshot['items'][0]['html'])->toContain('still captured');
+})->expectOutputString('');
+
+it('runs the basic pipeline against a target with no vendor/autoload.php at all', function (): void {
+    $snapshot = runBasicInProcess(
+        "<?php\n\ndump('no composer here');\n\nthrow new RuntimeException('vanilla boom');",
+        withVendor: false,
+    );
+
+    $kinds = array_column($snapshot['items'], 'kind');
+
+    expect($kinds)->toBe(['dump', 'exception'])
+        ->and($snapshot['items'][0]['html'])->toContain('no composer here')
+        ->and($snapshot['items'][1]['message'])->toBe('vanilla boom')
+        ->and($snapshot['items'][1]['line'])->toBe(5)
+        ->and($snapshot['items'][1]['frames'][0]['snippet'])->toBeTrue();
+})->expectOutputString('');

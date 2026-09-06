@@ -5,19 +5,20 @@
 
 [![tests](https://github.com/moessimple/tinkerbench/actions/workflows/tests.yml/badge.svg)](https://github.com/moessimple/tinkerbench/actions/workflows/tests.yml)
 
-tinkerbench is a browser based REPL for any Laravel project linked in [Laravel Herd](https://herd.laravel.com).
-Write a PHP snippet, run it against that project's own app context, and see the output immediately, no separate setup per project.
+tinkerbench is a browser based REPL for any project linked in [Laravel Herd](https://herd.laravel.com).
+Write a PHP snippet, run it against that project's own runtime, and see the output immediately, no separate setup per project.
+A Laravel project produces a feed of dumps, database queries, log entries, exceptions, return values, and N+1 warnings. Any other project, Composer without Laravel or plain PHP, produces dumps, return values, and exceptions; the query, log, and N+1 tabs are not shown.
 A take on Laravel's [`tinker`](https://github.com/laravel/tinker), inspired by [Tinkerwell](https://tinkerwell.app).
 
 ## Features
 
-* Runs snippets against any Herd linked Laravel project, switch projects without leaving the page.
+* Runs snippets against any Herd linked project, switching projects without leaving the page.
 * Saves multiple named snippets per project. Create, rename, and delete them as needed.
 * Command palette (`⌘P`) to jump between snippets and projects, similar to an editor's quick open.
 * Monaco based editor with PHP syntax highlighting, autosave, and a run shortcut (`⌘Enter`).
 * PHP autocompletion, hover documentation, and signature help for the target project's own code, powered by intelephense (the same language server VS Code uses).
 * Output rendering adapts to the value: `dump()`/`dd()` calls use Symfony's interactive VarDumper, JSON is syntax highlighted, and HTML output renders in a sandboxed frame.
-* A single chronological feed of everything a run touched: each dump, database query, log entry, and exception as its own card, in execution order. Filter by kind with live counts, and jump the editor to a card's source line.
+* A single chronological feed of everything a run touched, each entry as its own card in execution order: dumps, return values, and exceptions for any project, plus database queries, log entries, and N+1 warnings for a Laravel project. Filter by kind with live counts, and jump the editor to a card's source line.
 * Query cards pretty-print and syntax-highlight their SQL, flag queries that ran more than once or slower than 100ms, and can be sorted slowest first. Every card has a button to copy its contents.
 * Light and dark theme, switchable from the sidebar, defaulting to your system preference.
 
@@ -26,7 +27,7 @@ A take on Laravel's [`tinker`](https://github.com/laravel/tinker), inspired by [
 ## Requirements
 
 * [Laravel Herd](https://herd.laravel.com)
-* Target projects need PHP 8.2 or newer (`herd isolate` per project). The snippet runner ships as its own low-PHP-floor package, so tinkerbench's own PHP 8.5 stack doesn't dictate what the target project runs.
+* Target projects need PHP 8.2 or newer (`herd isolate` per project). Laravel 12 and 13 produce the full feed (dumps, queries, logs, exceptions, return values, N+1 warnings). Any other project, Composer without Laravel or plain PHP with no autoloader, produces dumps, return values, and exceptions. The snippet runner ships as its own package with a PHP 8.2 floor, so tinkerbench's own PHP 8.5 stack does not constrain the target.
 
 ## Installation
 

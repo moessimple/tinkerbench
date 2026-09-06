@@ -7,7 +7,6 @@ namespace Tinkerbench\Runner;
 use ErrorException;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Application;
-use RuntimeException;
 use Throwable;
 use Tinkerbench\Runner\Watchers\DumpWatcher;
 use Tinkerbench\Runner\Watchers\LazyLoadWatcher;
@@ -25,28 +24,33 @@ class SnippetRunner
     {
         // Invoked as a subprocess under the target project's own Herd-pinned PHP binary, not
         // necessarily tinkerbench's own, so it boots the target project separately from this file's
-        // own, already-loaded autoloader.
-        require $projectPath.'/vendor/autoload.php';
+        // own, already-loaded autoloader. A plain-PHP target with no Composer has none: the basic
+        // pipeline then runs with only the runner's own bundled libraries.
+        if (is_file($projectPath.'/vendor/autoload.php')) {
+            require $projectPath.'/vendor/autoload.php';
+        }
 
-        $app = require $projectPath.'/bootstrap/app.php';
-
-        throw_unless($app instanceof Application, RuntimeException::class, 'bootstrap/app.php did not return an Application instance.');
-
-        $app->make(Kernel::class)->bootstrap();
+        $app = $this->bootTargetApplication($projectPath);
 
         $source = new SourceLocator($snippetPath);
         $valueRenderer = new ValueRenderer();
 
         $recorder = new SnippetRunRecorder(
-            [
+            $app instanceof Application ? [
                 new DumpWatcher($valueRenderer),
                 new QueryWatcher(),
                 new LogWatcher($valueRenderer),
                 new LazyLoadWatcher(),
-            ],
+            ] : [],
             new ExceptionMapper($projectPath, $source->path()),
             $source,
         );
+
+        // The basic pipeline registers no watchers, so it captures dumps straight into the recorder
+        // instead of through a Watcher's $emit callback.
+        if (! $app instanceof Application) {
+            DumpCapture::install($valueRenderer, $recorder->appendDump(...));
+        }
 
         // Safety net for the exit paths run() can't return from: dd()/die()/exit() and fatals.
         // On the normal and caught-exception paths run() persists below and this no-ops.
@@ -102,5 +106,31 @@ class SnippetRunner
         file_put_contents($debugPath, $json !== false ? $json : $fallback);
 
         $this->persisted = true;
+    }
+
+    /**
+     * Boots the target's Laravel application when it has one. Returns null (run() then uses the
+     * basic dump/result/exception pipeline) for a target missing either half of a bootable Laravel
+     * install, or one whose bootstrap/app.php does not return an Application. The vendor check
+     * matches Herd::resolveLaravelVersion() and keeps a bootstrap/app.php with no autoloader from
+     * fataling on the require below instead of falling back.
+     */
+    private function bootTargetApplication(string $projectPath): ?Application
+    {
+        $bootstrapPath = $projectPath.'/bootstrap/app.php';
+
+        if (! is_file($projectPath.'/vendor/autoload.php') || ! is_file($bootstrapPath)) {
+            return null;
+        }
+
+        $app = require $bootstrapPath;
+
+        if (! $app instanceof Application) {
+            return null;
+        }
+
+        $app->make(Kernel::class)->bootstrap();
+
+        return $app;
     }
 }

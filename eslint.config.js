@@ -79,6 +79,7 @@ export default defineConfigWithVueTs(
         ignores: [
             'vendor',
             'packages/runner/vendor',
+            'packages/runner/tests/fixtures/**',
             'node_modules',
             'public',
             'bootstrap/ssr',

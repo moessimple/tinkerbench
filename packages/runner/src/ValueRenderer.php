@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tinkerbench\Runner;
 
-use Illuminate\Support\Str;
 use Symfony\Component\VarDumper\Cloner\Data;
 use Symfony\Component\VarDumper\Cloner\VarCloner;
 use Symfony\Component\VarDumper\Dumper\CliDumper;
@@ -39,7 +38,23 @@ class ValueRenderer
     {
         $text = $this->textDumper->dump($this->cloneValue($value, $label), true) ?? '';
 
-        return Str::limit($text, self::MAX_TEXT_LENGTH);
+        return $this->limit($text);
+    }
+
+    /**
+     * Character-bounded truncation with a trailing ellipsis, standing in for
+     * Illuminate\Support\Str::limit($text, self::MAX_TEXT_LENGTH) so the runner needs no
+     * illuminate/support on the basic (non-Laravel) pipeline. Str::limit also rtrim()s the cut
+     * segment; that is dropped here (the cut lands mid var-dump, trailing space there is
+     * irrelevant to the clipboard) to avoid mb_rtrim(), which is PHP 8.4+ and this package is 8.2.
+     */
+    private function limit(string $text): string
+    {
+        if (mb_strwidth($text, 'UTF-8') <= self::MAX_TEXT_LENGTH) {
+            return $text;
+        }
+
+        return mb_strimwidth($text, 0, self::MAX_TEXT_LENGTH, '', 'UTF-8').'...';
     }
 
     private function cloneValue(mixed $value, ?string $label): Data

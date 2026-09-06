@@ -1,5 +1,8 @@
 {
     "preset": "laravel",
+    "exclude": [
+        "tests/fixtures"
+    ],
     "rules": {
         "array_push": true,
         "backtick_to_shell_exec": true,

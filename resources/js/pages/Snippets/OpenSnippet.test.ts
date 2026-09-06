@@ -165,6 +165,33 @@ it('shows the running PHP and Laravel version', () => {
     screen.getByText('PHP 8.5.0 · Laravel 13.0.0');
 });
 
+it('shows only the PHP version when the Laravel version is unknown', () => {
+    const unknownProps = { ...props, laravelVersion: 'unknown' };
+    render(OpenSnippet, { props: unknownProps });
+
+    screen.getByText('PHP 8.5.0');
+    expect(screen.queryByText(/Laravel/)).toBeNull();
+});
+
+it('offers only the dump and exception filters for a non-Laravel target', async () => {
+    const unknownProps = { ...props, laravelVersion: 'unknown' };
+    render(OpenSnippet, { props: unknownProps });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({
+        output: '',
+        debug: payload({
+            items: [{ html: '<i>x</i>', kind: 'dump', line: 1, text: 'x' }],
+        }),
+    });
+
+    await screen.findByRole('tab', { name: 'Dumps 1' });
+    screen.getByRole('tab', { name: 'Exceptions 0' });
+    expect(screen.queryByRole('tab', { name: /queries/i })).toBeNull();
+    expect(screen.queryByRole('tab', { name: /logs/i })).toBeNull();
+    expect(screen.queryByRole('tab', { name: /n\+1/i })).toBeNull();
+});
+
 it('renders the project and snippet name in the output bar as a fallback for the hidden heading', () => {
     render(OpenSnippet, { props });
 
