@@ -27,6 +27,11 @@ use Tests\TestCase;
 
 $snippetsRoot = null;
 
+// A run-snippet journey spawns the real packages/runner subprocess, and the first spawn in
+// a test process pays a one-time cold cost (fresh autoload + Laravel boot) well past the
+// plugin's 5s default. Raise the auto-wait ceiling once for the whole suite.
+pest()->browser()->timeout(20_000);
+
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->beforeEach(function () use (&$snippetsRoot): void {
@@ -65,6 +70,22 @@ function stopAnimations(mixed $page): mixed
         ."s.textContent = '*, *::before, *::after { transition: none !important; animation: none !important; }';"
         .'document.head.appendChild(s); }'
     );
+
+    return $page;
+}
+
+/**
+ * Replaces the Monaco editor's contents with the given PHP by real typing. This build of
+ * Monaco takes input through the browser's EditContext, whose target is the focused
+ * `.native-edit-context` element, not the vestigial read-only `.ime-text-area` textarea;
+ * `type()`/`fill()` on a textarea selector are silent no-ops here. Ctrl/Cmd+A then Delete
+ * clears the scratch stub first. The page is returned for chaining.
+ */
+function typeIntoEditor(mixed $page, string $php): mixed
+{
+    $page->click('.monaco-editor')
+        ->keys('.native-edit-context', ['ControlOrMeta+a', 'Delete'])
+        ->typeSlowly('.native-edit-context', $php, 20);
 
     return $page;
 }
