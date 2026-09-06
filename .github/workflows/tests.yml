@@ -223,8 +223,20 @@ jobs:
           key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
           restore-keys: ${{ runner.os }}-playwright-
 
+      - name: Cache packages/runner Composer dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: packages/runner/vendor
+          key: ${{ runner.os }}-composer-runner-${{ hashFiles('packages/runner/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-runner-
+
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress
+
+      - name: Install packages/runner Composer dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress --working-dir=packages/runner
+        # SnippetRunner spawns packages/runner/bin/run-snippet.php in its own PHP process; it
+        # requires the package's own vendor/autoload.php, so the run-snippet journeys need it.
 
       - name: Copy environment file
         run: cp .env.example .env
