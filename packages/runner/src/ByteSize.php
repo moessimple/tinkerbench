@@ -8,9 +8,10 @@ class ByteSize
 {
     /**
      * Reproduces Illuminate\Support\Number::fileSize($bytes, precision: 2) for the "en" locale
-     * (unit step at 0.9 of the next unit, two decimals, "," thousands grouping) so the basic
+     * (unit step at 0.9 of the next unit, two decimals, "." decimal separator) so the basic
      * pipeline needs no illuminate/support. The Laravel pipeline formats peak memory through the
-     * same call, so this output must stay byte-identical to Number::fileSize.
+     * same call, so this output must stay byte-identical to Number::fileSize. The 0.9 step keeps
+     * every displayed value under 1000, so thousands grouping never applies.
      *
      * @var list<string>
      */

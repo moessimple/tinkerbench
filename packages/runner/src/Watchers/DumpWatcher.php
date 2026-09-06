@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tinkerbench\Runner\Watchers;
 
 use Illuminate\Contracts\Foundation\Application;
-use Symfony\Component\VarDumper\VarDumper;
+use Tinkerbench\Runner\DumpCapture;
 use Tinkerbench\Runner\FeedItems\DumpFeedItem;
 use Tinkerbench\Runner\ValueRenderer;
 
@@ -15,16 +15,9 @@ class DumpWatcher implements Watcher
 
     public function register(Application $app, callable $emit): void
     {
-        // Herd::runSnippet() sets VAR_DUMPER_FORMAT=html, which turns VarDumper::setHandler() into a
-        // no-op (its guard against overriding an operator-fixed format). Clearing it lets the
-        // capturing handler install, so dump() feeds the card list instead of writing to stdout.
-        unset($_SERVER['VAR_DUMPER_FORMAT']);
-
-        VarDumper::setHandler(function (mixed $value, ?string $label = null) use ($emit): void {
-            $emit(new DumpFeedItem(
-                $this->renderer->render($value, $label),
-                $this->renderer->renderText($value, $label),
-            ));
-        });
+        DumpCapture::install(
+            $this->renderer,
+            fn (string $html, string $text) => $emit(new DumpFeedItem($html, $text)),
+        );
     }
 }

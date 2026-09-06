@@ -752,6 +752,17 @@ it('uses the basic pipeline when bootstrap/app.php does not return an Applicatio
         ->and($snapshot['items'][1]['html'])->toContain('42');
 })->expectOutputString('');
 
+it('uses the basic pipeline when bootstrap/app.php is present but vendor/autoload.php is missing', function (): void {
+    $snapshot = runBasicInProcess(
+        "<?php\n\ndump('still captured');\n\nreturn 1;",
+        "<?php\n\nthrow new RuntimeException('bootstrap/app.php must not run without an autoloader');",
+        withVendor: false,
+    );
+
+    expect(array_column($snapshot['items'], 'kind'))->toBe(['dump'])
+        ->and($snapshot['items'][0]['html'])->toContain('still captured');
+})->expectOutputString('');
+
 it('runs the basic pipeline against a target with no vendor/autoload.php at all', function (): void {
     $snapshot = runBasicInProcess(
         "<?php\n\ndump('no composer here');\n\nthrow new RuntimeException('vanilla boom');",

@@ -27,12 +27,15 @@ const pageTitle = computed(
     () => `${props.currentProject} / ${props.snippetName}`,
 );
 
-// A non-Laravel target reports its Laravel version as 'unknown'; show PHP alone rather than
-// "· Laravel unknown".
+// A non-Laravel target reports its Laravel version as 'unknown': it runs the basic pipeline, which
+// only ever produces dumps, return values, and exceptions.
+const isLaravelTarget = computed(() => props.laravelVersion !== 'unknown');
+
+// Show PHP alone rather than "· Laravel unknown" for a non-Laravel target.
 const versionLabel = computed(() =>
-    props.laravelVersion === 'unknown'
-        ? `PHP ${props.phpVersion}`
-        : `PHP ${props.phpVersion} · Laravel ${props.laravelVersion}`,
+    isLaravelTarget.value
+        ? `PHP ${props.phpVersion} · Laravel ${props.laravelVersion}`
+        : `PHP ${props.phpVersion}`,
 );
 
 const rawOutput = ref('');
@@ -50,14 +53,14 @@ const editorRef = useTemplateRef<{ revealLine: (line: number) => void }>(
 
 const { theme, toggleTheme } = useTheme();
 
-// A non-Laravel target (laravelVersion 'unknown') can only ever produce dumps, return values,
-// and exceptions, so its feed offers no query/log/N+1 tabs.
+// The basic pipeline never emits query/log/N+1 items, so a non-Laravel target's feed offers no
+// tabs for them.
 const visibleFacetKinds = computed(() =>
-    props.laravelVersion === 'unknown'
-        ? FACET_KINDS.filter(
+    isLaravelTarget.value
+        ? FACET_KINDS
+        : FACET_KINDS.filter(
               (kind) => kind.kind === 'dump' || kind.kind === 'exception',
-          )
-        : FACET_KINDS,
+          ),
 );
 
 const feedFilters = computed<{ label: string; value: FeedFilter }[]>(() => [
