@@ -21,10 +21,13 @@ it('still lets typing and the run chord through to Monaco', function (): void {
     stopAnimations($page);
     $page->assertVisible('.monaco-editor');
 
-    typeIntoEditor($page, 'abc');
-    $page->assertSeeIn('.monaco-editor .view-lines', 'abc');
+    // Valid PHP so the run produces a clean output card: the visible `echo 42` proves
+    // typing reached the model, and `42` in the output proves Ctrl/Cmd+Enter ran it
+    // instead of being swallowed by Monaco.
+    typeIntoEditor($page, '<?php echo 42;');
+    $page->assertSeeIn('.monaco-editor .view-lines', 'echo 42');
 
     $page->keys('.native-edit-context', ['ControlOrMeta+Enter'])
-        ->assertVisible('[role="tablist"][aria-label="Filter output by kind"]')
+        ->assertSeeIn('article[data-label="Output"]', '42')
         ->assertNoJavascriptErrors();
 });
