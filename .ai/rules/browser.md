@@ -5,11 +5,11 @@ paths:
 
 # Browser
 
-## Browser suite: hard cap of 10 it() blocks, quarantine flaky same-day
-tests/Browser is a wiring canary plus a few journey guards, not a second behavior matrix. Vitest + Pest-unit stay the workhorse and keep 100% line/type coverage on app/.
+## tests/Browser is a wiring canary, and every test in it must be robust
+tests/Browser proves the real controller -> Inertia -> Vue -> Monaco wiring and a handful of full journeys. Vitest and Pest-unit stay the behavior workhorse and keep 100% line/type coverage on app/; a browser test earns its place only when no unit-level test can catch the regression.
 
-- Hard cap: at most 10 it() blocks across tests/Browser. Enforced by tests/Arch/BrowserSuiteTest.php. A new browser test needs a one-line PR justification that the unit layer cannot catch the regression; otherwise merge or drop an existing one.
-- Every browser test ends with ->assertNoJavascriptErrors() or ->assertNoSmoke().
-- Flake policy: a browser test that fails nondeterministically moves to ->group('quarantine') and is dropped from the CI browser job the same day; fixed or deleted within a week. A --retry=2 pass in CI is a bug to file, not an accepted state.
-- No sleep()/fixed-time waits for synchronization; rely on the auto-waiting assertions. The one allowed timed wait is the autosave debounce settle in AutosaveTest (AUTOSAVE_SETTLE, commented).
+- Every browser test ends with `->assertNoJavascriptErrors()` or `->assertNoSmoke()`.
+- A browser test must be deterministic. Flakiness is a defect in the test, not a CI knob: the CI browser job runs with no `--retry`, so a nondeterministic test fails the build. Fix it or delete it the same day; never add a retry flag to paper over it.
+- Synchronise on the auto-waiting assertions, never on `sleep()` or a fixed wait. The one deliberate fixed wait is the autosave debounce settle in AutosaveTest (`AUTOSAVE_DEBOUNCE_SETTLE`, commented), because nothing emits an event once typing stops.
+- To check browser-side state, install a spy or flag with `script()` up front and read it with `assertScript()` after an auto-waiting assertion has settled the page; `assertScript()` is single-shot and does not poll.
 - Determinism lives in tests/Browser/Pest.php: isolated snippets disk, FakeHerd, DeadLanguageServerBridgeLauncher, forced Vite manifest. Never point the snippets disk at storage/app/snippets.

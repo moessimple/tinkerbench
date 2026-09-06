@@ -89,7 +89,7 @@
             "npm run test:unit"
         ],
         "test:browser": [
-            "pest --testsuite=Browser --group=browser"
+            "vendor/bin/pest --testsuite=Browser --group=browser"
         ],
         "test:types": [
             "phpstan analyse --memory-limit=512M",

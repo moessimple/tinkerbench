@@ -27,7 +27,7 @@ it('re-runs the VarDumper script so a dump renders', function (): void {
     $page->keys('.native-edit-context', ['ControlOrMeta+Enter']);
 
     // A visible .sf-dump proves executeScripts() re-ran VarDumper's inline <script>; no JS
-    // errors proves the isolate/z-index dump-pane fix still holds.
+    // errors proves the isolated, stacked dump pane still renders it cleanly.
     $page->assertVisible('.sf-dump')
         ->assertNoJavascriptErrors();
 });

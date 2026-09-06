@@ -7,6 +7,7 @@ use App\Support\LanguageServer\LanguageServerBridgeLauncher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Vite;
+use Pest\Browser\Api\PendingAwaitablePage;
 use Tests\Support\DeadLanguageServerBridgeLauncher;
 use Tests\Support\FakeHerd;
 use Tests\TestCase;
@@ -19,9 +20,8 @@ use Tests\TestCase;
 | Pest's BootFiles bootstrapper only auto-includes the root tests/Pest.php, so this file
 | is pulled in from there with require_once. It makes every browser test deterministic:
 | an isolated snippets disk, a Herd that never shells out, and LSP bridges that spawn no
-| node process. The Amp HTTP server runs in the same PHP process as the test (see
-| tasks/plan.md "Open questions (resolved in T2)"), so a beforeEach config() override and
-| container bind both reach the browser-driven request.
+| node process. The Amp HTTP server runs in the same PHP process as the test, so a
+| beforeEach config() override and container bind both reach the browser-driven request.
 |
 */
 
@@ -63,7 +63,7 @@ pest()->extend(TestCase::class)
  * assertions. pest-plugin-browser exposes no suite-wide page-preparation hook, so each
  * test applies it explicitly right after visit(); the page is returned for chaining.
  */
-function stopAnimations(mixed $page): mixed
+function stopAnimations(PendingAwaitablePage $page): PendingAwaitablePage
 {
     $page->script(
         "if (!document.getElementById('pest-no-animations')) {"
@@ -83,11 +83,11 @@ function stopAnimations(mixed $page): mixed
  * `type()`/`fill()` on a textarea selector are silent no-ops here. Ctrl/Cmd+A then Delete
  * clears the scratch stub first. The page is returned for chaining.
  */
-function typeIntoEditor(mixed $page, string $php): mixed
+function typeIntoEditor(PendingAwaitablePage $page, string $php): PendingAwaitablePage
 {
-    $page->click('.monaco-editor')
-        ->keys('.native-edit-context', ['ControlOrMeta+a', 'Delete'])
-        ->typeSlowly('.native-edit-context', $php, 20);
+    $page->click('.monaco-editor');
+    $page->keys('.native-edit-context', ['ControlOrMeta+a', 'Delete']);
+    $page->typeSlowly('.native-edit-context', $php, 20);
 
     return $page;
 }

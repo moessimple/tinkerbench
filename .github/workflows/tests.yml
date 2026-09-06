@@ -261,7 +261,9 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Browser tests
-        run: composer test:browser -- --retry=2
+        # Runs without --retry: a browser test that only passes on a re-run is a defect to
+        # fix or delete (.ai/rules/browser.md).
+        run: composer test:browser
 
       - name: Upload failure screenshots
         if: failure()
