@@ -11,6 +11,7 @@
 /storage/*.key
 /storage/app/snippets
 /storage/pail
+/tests/Browser/Screenshots
 /vendor
 packages/runner/vendor
 packages/runner/tests/fixtures/*/vendor

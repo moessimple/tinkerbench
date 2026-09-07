@@ -6,6 +6,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | --- | --- |
 | app/Actions/** | .ai/rules/actions.md |
 | app/** | .ai/rules/app.md |
+| tests/Browser/** | .ai/rules/browser.md |
 | app/Http/Controllers/** | .ai/rules/controllers.md |
 | app/Enums/** | .ai/rules/enums.md |
 | packages/runner/src/FeedItems/** | .ai/rules/feed-items.md |

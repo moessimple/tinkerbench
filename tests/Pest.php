@@ -48,6 +48,11 @@ $loader->setPsr4('App\\', [dirname(__DIR__).'/app']);
 pest()->extend(TestCase::class)
     ->in('Unit', 'Http', 'Arch');
 
+// Pest's BootFiles bootstrapper only auto-includes the root tests/Pest.php, never a
+// nested one. The Browser suite keeps its own bootstrap (TestCase binding, snippets-disk
+// isolation, external-process fakes) in tests/Browser/Pest.php; pull it in from here.
+require_once __DIR__.'/Browser/Pest.php';
+
 /*
 |--------------------------------------------------------------------------
 | Expectations
