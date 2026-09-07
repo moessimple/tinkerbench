@@ -6,19 +6,18 @@ declare(strict_types=1);
 // past that; the network-settle and the auto-retrying reload assertion below absorb the
 // rest, so the reloaded value is never read before the save lands. This is the one
 // deliberate fixed wait in the suite: once typing stops, nothing emits an event to wait
-// for (.ai/rules/browser.md). The tests still settle on the rendered text before starting
-// the wait, so the debounce is always scheduled before the clock does.
+// for (.ai/rules/browser.md). The test settles on the rendered text before starting the
+// wait, so the debounce is always scheduled before the clock starts.
 const AUTOSAVE_DEBOUNCE_SETTLE = 1.5;
 
-// Counts content-save requests the page fires, snapshots that count at the instant
-// Cmd/Ctrl+S is pressed, and records whether that keydown was default-prevented. Installed
-// before typing. The page saves on a microtask (persistSnippet runs inside a promise
-// callback), so __savesWhenCmdSPressed is read synchronously in the keydown listener before
-// this keypress's own save can land: a value of 0 there means the 500 ms debounce had not
-// fired on its own, which is what "before the debounce" has to prove without racing a clock.
+// Counts content-save requests the page fires and records whether the Cmd/Ctrl+S keydown
+// was default-prevented. Installed before typing. It also drops the 500 ms autosave
+// debounce timer (OpenSnippet.vue schedules it with that exact delay), so once typing has
+// settled the only code path left that can save is flushSave(), the Cmd/Ctrl+S handler
+// under test. That turns "saved because of the keypress" into a plain equality check with
+// no dependency on how fast the runner is.
 const AUTOSAVE_SPY = <<<'JS'
     window.__contentSaves = 0;
-    window.__savesWhenCmdSPressed = null;
     window.__cmdSDefaultPrevented = null;
     const nativeFetch = window.fetch;
     window.fetch = function (input, init) {
@@ -29,9 +28,15 @@ const AUTOSAVE_SPY = <<<'JS'
         }
         return nativeFetch.apply(window, arguments);
     };
+    const nativeSetTimeout = window.setTimeout;
+    window.setTimeout = function (handler, timeout) {
+        if (timeout === 500) {
+            return 0;
+        }
+        return nativeSetTimeout.apply(window, arguments);
+    };
     window.addEventListener('keydown', function (event) {
         if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
-            window.__savesWhenCmdSPressed = window.__contentSaves;
             window.__cmdSDefaultPrevented = event.defaultPrevented;
         }
     });
@@ -62,13 +67,15 @@ it('saves on Cmd/Ctrl+S before the debounce and suppresses the browser save dial
 
     typeIntoEditor($page, 'AUTOSAVE_FLUSHED_OK');
 
-    // Every keystroke's change event has fired once the text is on screen, so the editor
-    // content is complete before the keypress and no late change event can reschedule the
-    // debounce after flushSave() clears it.
+    // The text on screen means every keystroke's change event has fired, so the editor
+    // content is complete before the keypress.
     $page->assertSeeIn('.monaco-editor .view-lines', 'AUTOSAVE_FLUSHED_OK');
 
+    // The debounce is swallowed in AUTOSAVE_SPY, so a save here could only have come from
+    // typing alone, which must not happen.
+    $page->assertScript('window.__contentSaves === 0');
+
     $page->keys('.native-edit-context', ['ControlOrMeta+s'])
-        ->assertScript('window.__savesWhenCmdSPressed === 0')
         ->assertScript('window.__cmdSDefaultPrevented === true')
         ->waitForEvent('networkidle')
         ->assertScript('window.__contentSaves === 1')
