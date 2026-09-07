@@ -20,3 +20,6 @@ app/Support is split by what the classes serve, not by pattern:
 - `Herd.php` and `SnippetRepository.php` stay flat at the Support root: each is a standalone concern with no sibling group, and a one-class folder is noise.
 
 Add a new class to the feature folder it serves. Start a new feature folder only once two or more classes cohere around one area; a lone class stays flat until then. Each class keeps its 1:1 mirrored unit test at the matching path under `tests/Unit/Support/` (tests/ArchTest.php enforces this on the relative pathname, so `app/Support/SnippetRun/SnippetRunner.php` mirrors `tests/Unit/Support/SnippetRun/SnippetRunnerTest.php`).
+
+## Result enums for multi-outcome operations
+A Support method with a single pass/fail outcome returns bool (e.g. SnippetRepository::write, ensureExists); the one-outcome infrastructure case may instead use a nullable return plus a throw_if variant (Herd::projectPath / projectPathOrFail). A method the caller must tell apart by reason (conflict vs missing vs I/O failure) returns a dedicated unbacked enum from app/Enums (see RenameSnippetResult: Renamed/Missing/Conflict/Failed), not an exception and not a bool. The calling controller maps each case to an HTTP status with abort_if().
