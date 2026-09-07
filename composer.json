@@ -104,7 +104,8 @@
             "@test:unit",
             "@test:lint",
             "@test:types",
-            "@test:runner"
+            "@test:runner",
+            "@test:browser"
         ],
         "update:dependencies": [
             "@composer update --bump-after-update",

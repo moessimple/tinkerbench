@@ -4,6 +4,8 @@
 ![App](images/app.png)
 
 [![tests](https://github.com/moessimple/tinkerbench/actions/workflows/tests.yml/badge.svg)](https://github.com/moessimple/tinkerbench/actions/workflows/tests.yml)
+[![lint](https://github.com/moessimple/tinkerbench/actions/workflows/lint.yml/badge.svg)](https://github.com/moessimple/tinkerbench/actions/workflows/lint.yml)
+[![static analysis](https://github.com/moessimple/tinkerbench/actions/workflows/static.yml/badge.svg)](https://github.com/moessimple/tinkerbench/actions/workflows/static.yml)
 
 tinkerbench is a browser based REPL for any project linked in [Laravel Herd](https://herd.laravel.com).
 Write a PHP snippet, run it against that project's own runtime, and see the output immediately, no separate setup per project.
@@ -63,7 +65,7 @@ composer setup
 
 ## Testing
 
-Run the full quality gate (formatting, static analysis, type coverage, and the PHP and JS test suites):
+Run the full quality gate (formatting, static analysis, type coverage, and the PHP, JS, runner, and browser test suites):
 
 ```bash
 composer test
