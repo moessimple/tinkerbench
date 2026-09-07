@@ -51,6 +51,12 @@ it('saves on Cmd/Ctrl+S before the debounce and suppresses the browser save dial
 
     typeIntoEditor($page, 'AUTOSAVE_FLUSHED_OK');
 
+    // Cmd/Ctrl+S flushes http.code, which only holds the full text once every keystroke's
+    // change event has landed. Settle on the rendered text first: a slow runner that applies
+    // the last keystrokes after the keypress would otherwise flush a truncated save, then
+    // queue the complete one on a 500 ms debounce that the hard navigate() below drops.
+    $page->assertSeeIn('.monaco-editor .view-lines', 'AUTOSAVE_FLUSHED_OK');
+
     // Guards the post-keypress check: it must read the pre-flush state, so the debounce
     // must still be pending here and no save may have gone out from typing alone.
     $page->assertScript('window.__contentSaves === 0');
