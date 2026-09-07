@@ -14,7 +14,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ci:
+  app:
+    # The Laravel app's behaviour suite: Pest Arch/Unit/Http plus the Vitest unit suite
+    # (`composer test:unit`). Lint, static analysis and type coverage run as their own
+    # workflows (lint.yml, static.yml) so a formatting nit and a real failure are separate
+    # red checks.
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -24,17 +28,16 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+      - name: Setup app
+        uses: ./.github/actions/setup-app
         with:
-          php-version: '8.5'
-          tools: composer:v2
           coverage: xdebug
 
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: '.nvmrc'
+      - name: Copy environment file
+        run: cp .env.example .env
+
+      - name: Generate application key
+        run: php artisan key:generate
 
       - name: Point HERD_BIN at this runner's PHP
         run: echo "HERD_BIN=$(dirname "$(which php)")" >> "$GITHUB_ENV"
@@ -46,6 +49,8 @@ jobs:
         run: echo "127.0.0.1 tinkerbench.test" | sudo tee -a /etc/hosts
 
       - name: Generate a self-signed certificate for tinkerbench.test
+        # tests/Unit/Support/LanguageServer/* boot the real language-server-bridge.mjs, which
+        # reads tinkerbench.test's certificate; TINKERBENCH_HERD_CERTIFICATES_DIR points it here.
         run: |
           mkdir -p /tmp/tinkerbench-certs
           openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
@@ -54,89 +59,30 @@ jobs:
             -out /tmp/tinkerbench-certs/tinkerbench.test.crt
           echo "TINKERBENCH_HERD_CERTIFICATES_DIR=/tmp/tinkerbench-certs" >> "$GITHUB_ENV"
 
-      - name: Cache Composer dependencies
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: vendor
-          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-
+      - name: App tests
+        run: composer test:unit
 
-      - name: Cache packages/runner Composer dependencies
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: packages/runner/vendor
-          key: ${{ runner.os }}-composer-runner-${{ hashFiles('packages/runner/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-runner-
-
-      - name: Cache Laravel 12 fixture Composer dependencies
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: packages/runner/tests/fixtures/laravel-12/vendor
-          key: ${{ runner.os }}-composer-fixture-laravel12-${{ hashFiles('packages/runner/tests/fixtures/laravel-12/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-fixture-laravel12-
-
-      - name: Cache npm dependencies
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
-          restore-keys: ${{ runner.os }}-npm-
-
-      - name: Cache Rector
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: /tmp/rector
-          key: ${{ runner.os }}-rector-${{ hashFiles('composer.lock') }}
-          restore-keys: ${{ runner.os }}-rector-
-
-      - name: Cache PHPStan
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: /tmp/phpstan
-          key: ${{ runner.os }}-phpstan-${{ hashFiles('composer.lock') }}
-          restore-keys: ${{ runner.os }}-phpstan-
-
-      - name: Install Composer dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress
-
-      - name: Install packages/runner Composer dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress --working-dir=packages/runner
-
-      - name: Install runner test-fixture Composer dependencies
-        run: |
-          composer install --no-interaction --prefer-dist --no-progress --working-dir=packages/runner/tests/fixtures/plain-composer-php
-          composer install --no-interaction --prefer-dist --no-progress --working-dir=packages/runner/tests/fixtures/laravel-12
-
-      - name: Copy environment file
-        run: cp .env.example .env
-
-      - name: Generate application key
-        run: php artisan key:generate
-
-      - name: Install npm dependencies
-        run: npm ci
-
-      - name: Build assets
-        run: npm run build
-
-      - name: Tests
-        run: composer test
-
-  runner-php82:
-    # packages/runner declares php: ^8.2 (the whole point of the package is to run on a target
-    # project's Laravel-12-supported PHP, not tinkerbench's own ^8.5). The `ci` job above only
-    # proves it under this repo's own PHP 8.5, which is not the same guarantee — a syntax feature
-    # that only exists on PHP 8.4+ (e.g. `new Foo()->bar()` without wrapping parens) parses fine
-    # under 8.5 and is invisible to PHPStan's phpVersion checks, but is a hard parse error on a
-    # real 8.2 target. This job runs `composer test:php82` instead of the full `composer test`:
-    # SnippetRunnerTest's tinkerbench-as-target-project group needs a target that boots on
-    # whatever PHP is currently running the suite, and tinkerbench itself requires PHP 8.5+, so
-    # that group self-skips under 8.2 (see the ->skip() there). That leaves no path to the 100%
-    # line coverage `test:unit` demands, so `test:php82` runs the same suite without the coverage
-    # gate: it still proves every other behavior parses and passes on a real 8.2 interpreter, just
-    # not SnippetRunner::run() itself, which is proven only by the `ci` job's PHP 8.5 run above.
+  runner:
+    # packages/runner declares php: ^8.2 — it has to run on a target project's
+    # Laravel-12-supported PHP, not tinkerbench's own ^8.5. The 8.5 cell runs the full
+    # `composer test` (100% line-coverage gate); the 8.2 cell runs `composer test:php82`,
+    # which drops only that gate: SnippetRunnerTest's tinkerbench-as-target group self-skips
+    # under 8.2 (tinkerbench itself needs 8.5+), so 100% is unreachable there. Everything
+    # else still has to parse and pass on a real 8.2 interpreter.
     runs-on: ubuntu-latest
     timeout-minutes: 10
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.5', '8.2']
+        include:
+          - php: '8.5'
+            script: test
+            coverage: xdebug
+          - php: '8.2'
+            script: test:php82
+            coverage: none
 
     steps:
       - name: Checkout code
@@ -144,26 +90,26 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup PHP 8.2
+      - name: Setup PHP ${{ matrix.php }}
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
-          php-version: '8.2'
+          php-version: ${{ matrix.php }}
           tools: composer:v2
-          coverage: none
+          coverage: ${{ matrix.coverage }}
 
       - name: Cache packages/runner Composer dependencies
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: packages/runner/vendor
-          key: ${{ runner.os }}-composer-runner-php82-${{ hashFiles('packages/runner/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-runner-php82-
+          key: ${{ runner.os }}-composer-runner-${{ matrix.php }}-${{ hashFiles('packages/runner/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-runner-${{ matrix.php }}-
 
       - name: Cache Laravel 12 fixture Composer dependencies
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: packages/runner/tests/fixtures/laravel-12/vendor
-          key: ${{ runner.os }}-composer-fixture-laravel12-php82-${{ hashFiles('packages/runner/tests/fixtures/laravel-12/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-fixture-laravel12-php82-
+          key: ${{ runner.os }}-composer-fixture-laravel12-${{ matrix.php }}-${{ hashFiles('packages/runner/tests/fixtures/laravel-12/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-fixture-laravel12-${{ matrix.php }}-
 
       - name: Install packages/runner Composer dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress --working-dir=packages/runner
@@ -173,14 +119,14 @@ jobs:
           composer install --no-interaction --prefer-dist --no-progress --working-dir=packages/runner/tests/fixtures/plain-composer-php
           composer install --no-interaction --prefer-dist --no-progress --working-dir=packages/runner/tests/fixtures/laravel-12
 
-      - name: Test packages/runner under real PHP 8.2
-        run: composer test:php82 --working-dir=packages/runner
+      - name: Runner tests
+        run: composer ${{ matrix.script }} --working-dir=packages/runner
 
   browser:
-    # Real-browser tests via pest-plugin-browser + headless Chromium. Runs parallel to `ci`,
-    # not chained onto it. The suite fakes every external process (Herd, the LSP bridges) in
-    # tests/Browser/Pest.php, so this job needs no Herd binary, no tinkerbench.test host entry
-    # and no certificate, just built assets and a browser.
+    # Real-browser tests via pest-plugin-browser + headless Chromium. The suite fakes every
+    # external process (Herd, the LSP bridges) in tests/Browser/Pest.php, so this job needs
+    # no Herd binary, no tinkerbench.test host entry and no certificate, just built assets
+    # and a browser.
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -190,53 +136,20 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
-        with:
-          php-version: '8.5'
-          tools: composer:v2
-          coverage: none
-
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: '.nvmrc'
-
-      - name: Cache Composer dependencies
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: vendor
-          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-
-
-      - name: Cache npm dependencies
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
-          restore-keys: ${{ runner.os }}-npm-
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
-          restore-keys: ${{ runner.os }}-playwright-
+      - name: Setup app
+        uses: ./.github/actions/setup-app
 
       - name: Cache packages/runner Composer dependencies
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: packages/runner/vendor
-          key: ${{ runner.os }}-composer-runner-${{ hashFiles('packages/runner/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-runner-
-
-      - name: Install Composer dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress
+          key: ${{ runner.os }}-composer-runner-8.5-${{ hashFiles('packages/runner/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-runner-8.5-
 
       - name: Install packages/runner Composer dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress --working-dir=packages/runner
         # SnippetRunner spawns packages/runner/bin/run-snippet.php in its own PHP process; it
         # requires the package's own vendor/autoload.php, so the run-snippet journeys need it.
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress --working-dir=packages/runner
 
       - name: Copy environment file
         run: cp .env.example .env
@@ -245,17 +158,11 @@ jobs:
         run: php artisan key:generate
 
       - name: Prepare the SQLite database
+        # The run-snippet journey executes real snippets against this app as the target
+        # project; one of them runs a `select 1` through the app's own database connection.
         run: |
           touch database/database.sqlite
           php artisan migrate --force
-        # The run-snippet journey executes real snippets against this app as the target
-        # project; one of them runs a `select 1` through the app's own database connection.
-
-      - name: Install npm dependencies
-        run: npm ci
-
-      - name: Build assets
-        run: npm run build
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
