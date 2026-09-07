@@ -57,8 +57,10 @@ In README/user-facing text state it as a plain requirement ("Laravel 12 or newer
 
 ## Themed test:* aliases cover app + packages/runner + frontend
 Each `composer test:*` alias runs its theme across every codebase, mirroring `lint`:
-`test:lint`, `test:types`, `test:type-coverage`, `test:unit` each also run
-`composer <same> --working-dir=packages/runner` plus the frontend `npm run <same>`.
+`test:lint`, `test:types`, `test:unit` each run their PHP checks over app/, then
+`composer <same> --working-dir=packages/runner`, then the frontend `npm run <same>`.
+`test:type-coverage` is PHP-only (Pest's type-coverage gate over app/ and packages/runner);
+there is no `npm run test:type-coverage`.
 There is no `test:runner` / `test:php82` bundle: the runner's lint/static/type-coverage
 belong to the matching theme, not to a tests job.
 

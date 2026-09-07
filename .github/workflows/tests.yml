@@ -21,7 +21,7 @@ jobs:
     # (lint.yml, static.yml) so a formatting nit and a real failure are separate red checks.
     # The runner suite on a real PHP 8.2 interpreter is the separate `runner (8.2)` job.
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code
@@ -138,7 +138,7 @@ jobs:
     # no Herd binary, no tinkerbench.test host entry and no certificate, just built assets
     # and a browser.
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code
