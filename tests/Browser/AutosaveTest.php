@@ -2,59 +2,64 @@
 
 declare(strict_types=1);
 
-// OpenSnippet.vue debounces the autosave 500 ms after the last keystroke. This waits well
-// past that; the network-settle and the auto-retrying reload assertion below absorb the
-// rest, so the reloaded value is never read before the save lands. This is the one
-// deliberate fixed wait in the suite: once typing stops, nothing emits an event to wait
-// for (.ai/rules/browser.md). The test settles on the rendered text before starting the
-// wait, so the debounce is always scheduled before the clock starts.
-const AUTOSAVE_DEBOUNCE_SETTLE = 1.5;
-
-// Counts content-save requests the page fires and records whether the Cmd/Ctrl+S keydown
-// was default-prevented. Installed before typing. It also drops the 500 ms autosave
-// debounce timer (OpenSnippet.vue schedules it with that exact delay), so once typing has
-// settled the only code path left that can save is flushSave(), the Cmd/Ctrl+S handler
-// under test. That turns "saved because of the keypress" into a plain equality check with
-// no dependency on how fast the runner is.
-const AUTOSAVE_SPY = <<<'JS'
+// Spies on the autosave requests OpenSnippet.vue fires. __contentSaves counts PUTs issued;
+// __savedOk maps a saved content string to true once its PUT has resolved 2xx;
+// __cmdSDefaultPrevented records whether the Cmd/Ctrl+S keydown was default-prevented.
+// assertScript() is retried up to the suite timeout, so a test waits for a save to actually
+// reach the server by asserting on __savedOk before it navigates: a hard navigate() aborts
+// an in-flight request, and waitForLoadState('networkidle') does not cover a later fetch.
+const AUTOSAVE_SPY = <<<'JAVASCRIPT'
     window.__contentSaves = 0;
     window.__cmdSDefaultPrevented = null;
+    window.__savedOk = {};
     const nativeFetch = window.fetch;
     window.fetch = function (input, init) {
         const url = typeof input === 'string' ? input : input.url;
         const method = (init && init.method ? init.method : 'GET').toUpperCase();
         if (method === 'PUT' && url.indexOf('/snippets/') !== -1) {
             window.__contentSaves++;
+            let saved = null;
+            try {
+                saved = JSON.parse(init.body).content;
+            } catch (error) {
+                saved = null;
+            }
+            return nativeFetch.apply(window, arguments).then(function (response) {
+                if (response.ok && saved !== null) {
+                    window.__savedOk[saved] = true;
+                }
+                return response;
+            });
         }
         return nativeFetch.apply(window, arguments);
-    };
-    const nativeSetTimeout = window.setTimeout;
-    window.setTimeout = function (handler, timeout) {
-        if (timeout === 500) {
-            return 0;
-        }
-        return nativeSetTimeout.apply(window, arguments);
     };
     window.addEventListener('keydown', function (event) {
         if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
             window.__cmdSDefaultPrevented = event.defaultPrevented;
         }
     });
-    JS;
+    JAVASCRIPT;
+
+// Swallows OpenSnippet.vue's 500 ms autosave debounce (its only window.setTimeout with that
+// exact delay). The Cmd/Ctrl+S test installs this so flushSave() is the sole path left that
+// can save, which makes "the keypress saved" a plain equality instead of a clock race.
+const DISABLE_AUTOSAVE_DEBOUNCE = <<<'JAVASCRIPT'
+    const nativeSetTimeout = window.setTimeout;
+    window.setTimeout = function (handler, timeout) {
+        return timeout === 500 ? 0 : nativeSetTimeout.apply(window, arguments);
+    };
+    JAVASCRIPT;
 
 it('autosaves editor changes once the debounce settles', function (): void {
     $page = visitEditor();
+    $page->script(AUTOSAVE_SPY);
 
     typeIntoEditor($page, 'AUTOSAVE_DEBOUNCED_OK');
 
-    // The debounce is scheduled from the last change event, which on a loaded runner can
-    // land after typeSlowly() returns. Settle on the rendered text so the fixed wait below
-    // cannot elapse before the save is even scheduled; otherwise the hard navigate() drops
-    // it, because a full page load never runs onBeforeUnmount's flush.
-    $page->assertSeeIn('.monaco-editor .view-lines', 'AUTOSAVE_DEBOUNCED_OK');
-
-    $page->wait(AUTOSAVE_DEBOUNCE_SETTLE)
-        ->waitForEvent('networkidle')
+    // assertScript() retries up to the suite timeout, so this waits out the 500 ms debounce
+    // and the request round-trip with no fixed wait, and only proceeds once the full text
+    // has been saved 2xx. Reloading before that would abort the in-flight save.
+    $page->assertScript('window.__savedOk["AUTOSAVE_DEBOUNCED_OK"] === true')
         ->navigate('/')
         ->assertVisible('.monaco-editor')
         ->assertSeeIn('.monaco-editor .view-lines', 'AUTOSAVE_DEBOUNCED_OK')
@@ -64,6 +69,7 @@ it('autosaves editor changes once the debounce settles', function (): void {
 it('saves on Cmd/Ctrl+S before the debounce and suppresses the browser save dialog', function (): void {
     $page = visitEditor();
     $page->script(AUTOSAVE_SPY);
+    $page->script(DISABLE_AUTOSAVE_DEBOUNCE);
 
     typeIntoEditor($page, 'AUTOSAVE_FLUSHED_OK');
 
@@ -71,14 +77,13 @@ it('saves on Cmd/Ctrl+S before the debounce and suppresses the browser save dial
     // content is complete before the keypress.
     $page->assertSeeIn('.monaco-editor .view-lines', 'AUTOSAVE_FLUSHED_OK');
 
-    // The debounce is swallowed in AUTOSAVE_SPY, so a save here could only have come from
-    // typing alone, which must not happen.
+    // The debounce is disabled, so a save here could only have come from typing alone.
     $page->assertScript('window.__contentSaves === 0');
 
     $page->keys('.native-edit-context', ['ControlOrMeta+s'])
         ->assertScript('window.__cmdSDefaultPrevented === true')
-        ->waitForEvent('networkidle')
         ->assertScript('window.__contentSaves === 1')
+        ->assertScript('window.__savedOk["AUTOSAVE_FLUSHED_OK"] === true')
         ->navigate('/')
         ->assertVisible('.monaco-editor')
         ->assertSeeIn('.monaco-editor .view-lines', 'AUTOSAVE_FLUSHED_OK')
