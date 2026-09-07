@@ -120,3 +120,16 @@ it('returns an exception item in the debug data for an uncaught throw', function
     expect(data_get($result->debug, 'items.0.kind'))->toBe('exception')
         ->and(data_get($result->debug, 'items.0.message'))->toBe('boom');
 });
+
+it('returns no debug data when the debug file was left truncated by a killed subprocess', function (): void {
+    Process::fake(function ($process) {
+        // The debug path is the fifth and last argument run-snippet.php is invoked with.
+        file_put_contents($process->command[4], '{"items": [');
+
+        return Process::result(output: '');
+    });
+
+    $result = new SnippetRunner()->run("<?php\n\nreturn 1;", PHP_BINARY, base_path());
+
+    expect($result->debug)->toBeNull();
+});

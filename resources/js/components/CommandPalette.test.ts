@@ -1426,3 +1426,108 @@ it('switches to the highlighted project when Enter is pressed after navigating p
 
     expect(routerGet).toHaveBeenCalledWith('/other');
 });
+
+it('shows an error when the snippet list fails to load', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn((url: string) =>
+            Promise.resolve(jsonResponse([], !url.includes('/snippets'))),
+        ),
+    );
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+
+    await screen.findByText('Unable to load snippets.');
+});
+
+it('shows an error when the project list fails to load', async () => {
+    vi.stubGlobal(
+        'fetch',
+        vi.fn((url: string) =>
+            Promise.resolve(jsonResponse([], url.includes('/snippets'))),
+        ),
+    );
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+    const input = await screen.findByLabelText('Search or jump to');
+    await fireEvent.update(input, '/');
+
+    await screen.findByText('Unable to load projects.');
+});
+
+it('ignores arrow-key navigation when the project filter matches nothing', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], ['apple']));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+    const input = await screen.findByLabelText('Search or jump to');
+    await fireEvent.update(input, '/nope');
+    await screen.findByText('No projects found.');
+
+    await fireEvent.keyDown(input, { key: 'ArrowDown' });
+    await fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+    expect(routerGet).not.toHaveBeenCalled();
+});
+
+it('closes the rename row without a request when the name is unchanged', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    await screen.findByText('scratch');
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Rename scratch' }),
+    );
+
+    await fireEvent.keyDown(
+        screen.getByRole('textbox', { name: 'Rename scratch' }),
+        { key: 'Enter' },
+    );
+
+    expect(
+        screen.queryByRole('textbox', { name: 'Rename scratch' }),
+    ).toBeNull();
+    expect(fetch).toHaveBeenCalledTimes(2);
+});
+
+it('navigates to a project clicked in the combined list', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], ['other']));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+    await screen.findByText('other');
+    await fireEvent.click(screen.getByRole('button', { name: 'other' }));
+
+    expect(routerGet).toHaveBeenCalledWith('/other');
+});
+
+it('highlights a project row in the combined list on hover', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], ['other']));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+    const row = await screen.findByRole('option', { name: 'other' });
+
+    await fireEvent.mouseEnter(row);
+
+    expect(row.getAttribute('aria-selected')).toBe('true');
+});

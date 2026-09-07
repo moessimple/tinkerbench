@@ -5,16 +5,9 @@
 /public/fonts-manifest.dev.json
 /public/hot
 /public/storage
-/resources/js/actions
-/resources/js/routes
-/resources/js/wayfinder
 /storage/*.key
-/storage/app/snippets
 /storage/pail
-/tests/Browser/Screenshots
 /vendor
-packages/runner/vendor
-packages/runner/tests/fixtures/*/vendor
 .env
 .env.backup
 .env.production
@@ -30,3 +23,14 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# tinkerbench-specific. Kept below the stock Laravel entries so pulling an
+# upstream .gitignore change stays a clean diff.
+/resources/js/actions
+/resources/js/routes
+/resources/js/wayfinder
+/storage/app/snippets
+/tests/Browser/Screenshots
+/coverage
+packages/runner/vendor
+packages/runner/tests/fixtures/*/vendor

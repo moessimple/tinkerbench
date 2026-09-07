@@ -20,4 +20,5 @@ Before planning or editing, find the row whose globs match the file's path and r
 | storage/app/snippets/** | .ai/rules/snippets.md |
 | app/Support/** | .ai/rules/support.md |
 | tests/**, tests/ArchTest.php | .ai/rules/tests.md |
+| tests/Unit/Requests/** | .ai/rules/unit-requests.md |
 | packages/runner/src/Watchers/** | .ai/rules/watchers.md |

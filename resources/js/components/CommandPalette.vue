@@ -332,6 +332,7 @@ function highlight(index: number): void {
 function selectHighlighted(): void {
     const entry = activeEntries.value[highlightedIndex.value];
 
+    /* v8 ignore next 3 -- onSubmit only calls this with a non-empty list, and the highlight is kept in range; the guard is for the array index's type. */
     if (!entry) {
         return;
     }

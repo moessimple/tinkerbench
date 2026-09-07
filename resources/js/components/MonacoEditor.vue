@@ -25,6 +25,7 @@ function monacoThemeName(): string {
 }
 
 function revealLine(lineNumber: number): void {
+    /* v8 ignore next 3 -- guards the exposed method against a call before onMounted assigns `editor`; unreachable once the component is mounted. */
     if (!editor) {
         return;
     }
@@ -92,6 +93,7 @@ onMounted(() => {
         },
     });
 
+    /* v8 ignore next 3 -- the template ref on the always-rendered root <div> is populated by the time onMounted runs. */
     if (!editorElement.value) {
         return;
     }

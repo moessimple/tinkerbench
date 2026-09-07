@@ -166,6 +166,18 @@ it('returns null for an unknown project', function (): void {
     expect(new Herd()->projectPath('does-not-exist'))->toBeNull();
 });
 
+it('returns null for a known project whose directory no longer exists on disk', function (): void {
+    config(['services.herd.bin' => '/tmp/herd-bin']);
+    Process::fake([
+        "*'sites' '--json'" => json_encode([
+            ['site' => 'stale-project', 'path' => '/path/to/a/removed/project'],
+        ]),
+        "*'parked' '--json'" => json_encode([]),
+    ]);
+
+    expect(new Herd()->projectPath('stale-project'))->toBeNull();
+});
+
 it('returns the resolved path when requiring a known project', function (): void {
     config(['services.herd.bin' => '/tmp/herd-bin']);
     Process::fake([

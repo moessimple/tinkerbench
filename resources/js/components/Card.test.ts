@@ -115,3 +115,14 @@ it('does nothing on click when the clipboard API is unavailable', async () => {
     expect(writeText).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Copy' })).toBeTruthy();
 });
+
+it('leaves the button unconfirmed when the clipboard write is rejected', async () => {
+    writeText.mockRejectedValueOnce(new Error('denied'));
+
+    render(Card, { props: { label: 'Query', line: null, copy: 'select 1' } });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
+
+    expect(screen.getByRole('button', { name: 'Copy' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Copied' })).toBeNull();
+});

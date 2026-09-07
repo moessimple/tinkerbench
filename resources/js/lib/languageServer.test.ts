@@ -955,3 +955,222 @@ it('requests a port from the configured URL and applies diagnostics under the co
         ],
     );
 });
+
+it('joins array-form hover contents into a single markdown block', async () => {
+    const attaching = attachLanguageServer(
+        monaco,
+        intelephenseConfig,
+        '<?php',
+        model,
+    );
+    const socket = await connectAndHandshake();
+    await attaching;
+
+    const provider = vi
+        .mocked(monaco.languages.registerHoverProvider)
+        .mock.calls.at(-1)![1];
+    const hovering = provider.provideHover(
+        { getValue: () => '' } as never,
+        { lineNumber: 1, column: 1 } as never,
+        {} as never,
+    );
+    await vi.waitFor(() =>
+        expect(
+            socket.sent.some(
+                (raw) =>
+                    (JSON.parse(raw) as { method?: string }).method ===
+                    'textDocument/hover',
+            ),
+        ).toBe(true),
+    );
+    const hoverRequest = socket.sent
+        .map((raw) => JSON.parse(raw) as { id: number; method?: string })
+        .find((message) => message.method === 'textDocument/hover')!;
+    socket.receive({
+        jsonrpc: '2.0',
+        id: hoverRequest.id,
+        result: {
+            contents: [
+                'function strlen(string $s): int',
+                { value: 'Returns the length of a string.' },
+            ],
+        },
+    });
+
+    expect(await hovering).toEqual({
+        contents: [
+            {
+                value: 'function strlen(string $s): int\n\nReturns the length of a string.',
+            },
+        ],
+    });
+});
+
+it('unwraps an object-form hover content into its value', async () => {
+    const attaching = attachLanguageServer(
+        monaco,
+        intelephenseConfig,
+        '<?php',
+        model,
+    );
+    const socket = await connectAndHandshake();
+    await attaching;
+
+    const provider = vi
+        .mocked(monaco.languages.registerHoverProvider)
+        .mock.calls.at(-1)![1];
+    const hovering = provider.provideHover(
+        { getValue: () => '' } as never,
+        { lineNumber: 1, column: 1 } as never,
+        {} as never,
+    );
+    await vi.waitFor(() =>
+        expect(
+            socket.sent.some(
+                (raw) =>
+                    (JSON.parse(raw) as { method?: string }).method ===
+                    'textDocument/hover',
+            ),
+        ).toBe(true),
+    );
+    const hoverRequest = socket.sent
+        .map((raw) => JSON.parse(raw) as { id: number; method?: string })
+        .find((message) => message.method === 'textDocument/hover')!;
+    socket.receive({
+        jsonrpc: '2.0',
+        id: hoverRequest.id,
+        result: { contents: { value: 'markup content value' } },
+    });
+
+    expect(await hovering).toEqual({
+        contents: [{ value: 'markup content value' }],
+    });
+});
+
+it('returns a completion item unchanged when it did not originate from the provider', async () => {
+    const attaching = attachLanguageServer(
+        monaco,
+        intelephenseConfig,
+        '<?php',
+        model,
+    );
+    const socket = await connectAndHandshake();
+    await attaching;
+
+    const provider = vi
+        .mocked(monaco.languages.registerCompletionItemProvider)
+        .mock.calls.at(-1)![1];
+    const foreign = { label: 'unknown' };
+
+    const resolved = await provider.resolveCompletionItem!(
+        foreign as never,
+        {} as never,
+    );
+
+    expect(resolved).toBe(foreign);
+    expect(
+        socket.sent.some(
+            (raw) =>
+                (JSON.parse(raw) as { method?: string }).method ===
+                'completionItem/resolve',
+        ),
+    ).toBe(false);
+});
+
+it('keeps the original completion item when the resolve response is empty', async () => {
+    const attaching = attachLanguageServer(
+        monaco,
+        intelephenseConfig,
+        '<?php',
+        model,
+    );
+    const socket = await connectAndHandshake();
+    await attaching;
+
+    const provider = vi
+        .mocked(monaco.languages.registerCompletionItemProvider)
+        .mock.calls.at(-1)![1];
+    const completing = provider.provideCompletionItems(
+        { getValue: () => '' } as never,
+        { lineNumber: 1, column: 1 } as never,
+        {} as never,
+        {} as never,
+    );
+    await vi.waitFor(() =>
+        expect(
+            socket.sent.some(
+                (raw) =>
+                    (JSON.parse(raw) as { method?: string }).method ===
+                    'textDocument/completion',
+            ),
+        ).toBe(true),
+    );
+    const completionRequest = socket.sent
+        .map((raw) => JSON.parse(raw) as { id: number; method?: string })
+        .find((message) => message.method === 'textDocument/completion')!;
+    socket.receive({
+        jsonrpc: '2.0',
+        id: completionRequest.id,
+        result: { items: [{ label: 'strlen' }] },
+    });
+    const { suggestions } = (await completing) as { suggestions: unknown[] };
+
+    const resolving = provider.resolveCompletionItem!(
+        suggestions[0] as never,
+        {} as never,
+    );
+    await vi.waitFor(() =>
+        expect(
+            socket.sent.some(
+                (raw) =>
+                    (JSON.parse(raw) as { method?: string }).method ===
+                    'completionItem/resolve',
+            ),
+        ).toBe(true),
+    );
+    const resolveRequest = socket.sent
+        .map((raw) => JSON.parse(raw) as { id: number; method?: string })
+        .find((message) => message.method === 'completionItem/resolve')!;
+    socket.receive({
+        jsonrpc: '2.0',
+        id: resolveRequest.id,
+        result: null,
+    });
+
+    expect(await resolving).toBe(suggestions[0]);
+});
+
+it('notifies the server of a content change with a bumped document version', async () => {
+    const attaching = attachLanguageServer(
+        monaco,
+        intelephenseConfig,
+        '<?php',
+        model,
+    );
+    const socket = await connectAndHandshake();
+    const handle = await attaching;
+
+    handle.notifyContentChanged('<?php echo 1;');
+    handle.notifyContentChanged('<?php echo 2;');
+
+    const changes = socket.sent
+        .map((raw) => JSON.parse(raw) as { method?: string; params?: unknown })
+        .filter((message) => message.method === 'textDocument/didChange');
+
+    expect(changes.map((message) => message.params)).toEqual([
+        {
+            textDocument: {
+                uri: 'file:///tinkerbench-snippet.php',
+                version: 2,
+            },
+            contentChanges: [{ text: '<?php echo 1;' }],
+        },
+        {
+            textDocument: {
+                uri: 'file:///tinkerbench-snippet.php',
+                version: 3,
+            },
+            contentChanges: [{ text: '<?php echo 2;' }],
+        },
+    ]);
+});
