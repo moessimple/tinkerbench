@@ -15,66 +15,11 @@ concurrency:
 
 jobs:
   app:
-    # The Laravel app's behaviour suite: Pest Arch/Unit/Http plus the Vitest unit suite
-    # (`composer test:unit`). Lint, static analysis and type coverage run as their own
-    # workflows (lint.yml, static.yml) so a formatting nit and a real failure are separate
-    # red checks.
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Setup app
-        uses: ./.github/actions/setup-app
-        with:
-          coverage: xdebug
-
-      - name: Cache packages/runner Composer dependencies
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: packages/runner/vendor
-          key: ${{ runner.os }}-composer-runner-8.5-${{ hashFiles('packages/runner/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-runner-8.5-
-
-      - name: Install packages/runner Composer dependencies
-        # Several app tests spawn packages/runner/bin/run-snippet.php as a real subprocess,
-        # which require()s the package's own vendor/autoload.php.
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress --working-dir=packages/runner
-
-      - name: Point HERD_BIN at this runner's PHP
-        run: echo "HERD_BIN=$(dirname "$(which php)")" >> "$GITHUB_ENV"
-
-      - name: Point HERD_NVM_EXEC at this runner's Node
-        run: echo "HERD_NVM_EXEC=$(which env)" >> "$GITHUB_ENV"
-
-      - name: Resolve tinkerbench.test to localhost
-        run: echo "127.0.0.1 tinkerbench.test" | sudo tee -a /etc/hosts
-
-      - name: Generate a self-signed certificate for tinkerbench.test
-        # tests/Unit/Support/LanguageServer/* boot the real language-server-bridge.mjs, which
-        # reads tinkerbench.test's certificate; TINKERBENCH_HERD_CERTIFICATES_DIR points it here.
-        run: |
-          mkdir -p /tmp/tinkerbench-certs
-          openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
-            -subj "/CN=tinkerbench.test" \
-            -keyout /tmp/tinkerbench-certs/tinkerbench.test.key \
-            -out /tmp/tinkerbench-certs/tinkerbench.test.crt
-          echo "TINKERBENCH_HERD_CERTIFICATES_DIR=/tmp/tinkerbench-certs" >> "$GITHUB_ENV"
-
-      - name: App tests
-        run: composer test:unit
-
-  runner:
-    # packages/runner declares php: ^8.2 and has to run on a target project's
-    # Laravel-12-supported PHP. This job proves it under tinkerbench's own 8.5 with the full
-    # `composer test` (100% line-coverage gate). SnippetRunnerTest's "tinkerbench itself as
-    # target" group spawns run-snippet.php against the repo root, so this job needs the app's
-    # own install too, which the setup-app action provides.
-    name: runner (8.5)
+    # `composer test:unit`: the Laravel app's Pest Arch/Unit/Http suite, the packages/runner
+    # Pest suite (100% line-coverage gate, run here on tinkerbench's own PHP 8.5), and the
+    # Vitest unit suite. Lint, static analysis and type coverage run as their own workflows
+    # (lint.yml, static.yml) so a formatting nit and a real failure are separate red checks.
+    # The runner suite on a real PHP 8.2 interpreter is the separate `runner (8.2)` job.
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -104,21 +49,47 @@ jobs:
           restore-keys: ${{ runner.os }}-composer-fixture-laravel12-8.5-
 
       - name: Install packages/runner Composer dependencies
+        # Several app tests spawn packages/runner/bin/run-snippet.php as a real subprocess,
+        # which require()s the package's own vendor/autoload.php.
         run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress --working-dir=packages/runner
 
       - name: Install runner test-fixture Composer dependencies
+        # `composer test:unit` descends into packages/runner, whose SnippetRunnerTest runs
+        # real snippets against these fixture projects.
         run: |
           composer install --no-interaction --prefer-dist --no-progress --working-dir=packages/runner/tests/fixtures/plain-composer-php
           composer install --no-interaction --prefer-dist --no-progress --working-dir=packages/runner/tests/fixtures/laravel-12
 
-      - name: Runner tests
-        run: composer test --working-dir=packages/runner
+      - name: Point HERD_BIN at this runner's PHP
+        run: echo "HERD_BIN=$(dirname "$(which php)")" >> "$GITHUB_ENV"
+
+      - name: Point HERD_NVM_EXEC at this runner's Node
+        run: echo "HERD_NVM_EXEC=$(which env)" >> "$GITHUB_ENV"
+
+      - name: Resolve tinkerbench.test to localhost
+        run: echo "127.0.0.1 tinkerbench.test" | sudo tee -a /etc/hosts
+
+      - name: Generate a self-signed certificate for tinkerbench.test
+        # tests/Unit/Support/LanguageServer/* boot the real language-server-bridge.mjs, which
+        # reads tinkerbench.test's certificate; TINKERBENCH_HERD_CERTIFICATES_DIR points it here.
+        run: |
+          mkdir -p /tmp/tinkerbench-certs
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+            -subj "/CN=tinkerbench.test" \
+            -keyout /tmp/tinkerbench-certs/tinkerbench.test.key \
+            -out /tmp/tinkerbench-certs/tinkerbench.test.crt
+          echo "TINKERBENCH_HERD_CERTIFICATES_DIR=/tmp/tinkerbench-certs" >> "$GITHUB_ENV"
+
+      - name: App tests
+        run: composer test:unit
 
   runner-php82:
-    # The same runner suite on a real PHP 8.2 interpreter (its declared floor). `test:php82`
-    # drops only the coverage gate: SnippetRunnerTest's tinkerbench-as-target group self-skips
-    # under 8.2 (tinkerbench itself needs 8.5+), so 100% is unreachable and no app install is
-    # needed here. Everything else still has to parse and pass on 8.2.
+    # The packages/runner Pest suite on a real PHP 8.2 interpreter (its declared floor), the
+    # one thing the `app` job's 8.5 run can't cover. `test:unit:no-coverage` drops the
+    # coverage gate: SnippetRunnerTest's tinkerbench-as-target group self-skips under 8.2
+    # (tinkerbench itself needs 8.5+), so 100% is unreachable and no app install is needed
+    # here. Lint, static analysis and type coverage are interpreter-independent and run once
+    # on 8.5 in lint.yml / static.yml.
     name: runner (8.2)
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -159,7 +130,7 @@ jobs:
           composer install --no-interaction --prefer-dist --no-progress --working-dir=packages/runner/tests/fixtures/laravel-12
 
       - name: Runner tests
-        run: composer test:php82 --working-dir=packages/runner
+        run: composer test:unit:no-coverage --working-dir=packages/runner
 
   browser:
     # Real-browser tests via pest-plugin-browser + headless Chromium. The suite fakes every
@@ -167,7 +138,7 @@ jobs:
     # no Herd binary, no tinkerbench.test host entry and no certificate, just built assets
     # and a browser.
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code

@@ -15,8 +15,9 @@ concurrency:
 
 jobs:
   lint:
-    # `composer test:lint`: Pint + Rector (dry run) + prettier/eslint over the frontend.
-    # `composer test:type-coverage`: Pest's 100% type-coverage gate over app/.
+    # `composer test:lint`: Pint + Rector (dry run) over app/ and packages/runner, plus
+    # prettier/eslint over the frontend.
+    # `composer test:type-coverage`: Pest's 100% type-coverage gate over app/ and packages/runner.
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -31,11 +32,25 @@ jobs:
         with:
           build: 'false'
 
+      - name: Cache packages/runner Composer dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: packages/runner/vendor
+          key: ${{ runner.os }}-composer-runner-8.5-${{ hashFiles('packages/runner/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-runner-8.5-
+
+      - name: Install packages/runner Composer dependencies
+        # `composer test:lint` / `test:type-coverage` descend into packages/runner, which runs
+        # its own Pint, Rector and Pest binaries from this vendor dir.
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress --working-dir=packages/runner
+
       - name: Cache Rector
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: /tmp/rector
-          key: ${{ runner.os }}-rector-${{ hashFiles('composer.lock') }}
+          path: |
+            /tmp/rector
+            /tmp/rector-runner
+          key: ${{ runner.os }}-rector-${{ hashFiles('composer.lock', 'packages/runner/composer.lock') }}
           restore-keys: ${{ runner.os }}-rector-
 
       - name: Lint
