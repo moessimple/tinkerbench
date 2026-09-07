@@ -54,3 +54,17 @@ composer.json pins `config.autoloader-suffix` to `TinkerbenchInternal`; `package
 Supported target projects: PHP 8.2 or newer, and for the Laravel feed (query/log/N+1 cards) Laravel 12 or newer. The Laravel 12 floor is a support policy: Laravel 11 no longer receives security fixes. Not enforced in code (Herd::resolveLaravelVersion only distinguishes "is it Laravel at all"), so it lives in docs.
 
 In README/user-facing text state it as a plain requirement ("Laravel 12 or newer"). Do not phrase it as "tested against 12 and 13" (understates it) and do not spell out the security-EOL reason.
+
+## Themed test:* aliases cover app + packages/runner + frontend
+Each `composer test:*` alias runs its theme across every codebase, mirroring `lint`:
+`test:lint`, `test:types`, `test:type-coverage`, `test:unit` each also run
+`composer <same> --working-dir=packages/runner` plus the frontend `npm run <same>`.
+There is no `test:runner` / `test:php82` bundle: the runner's lint/static/type-coverage
+belong to the matching theme, not to a tests job.
+
+CI mirrors this one theme per workflow: lint.yml = test:lint + test:type-coverage,
+static.yml = test:types, tests.yml = test:unit (+ browser). tests.yml `runner (8.2)` is
+the only place the runner suite runs on a real PHP 8.2 interpreter; it calls
+`composer test:unit:no-coverage --working-dir=packages/runner` directly (static checks are
+interpreter-independent and already run on 8.5). Both lint.yml and static.yml must install
+packages/runner's Composer deps because those aliases now shell into it.

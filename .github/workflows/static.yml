@@ -15,7 +15,8 @@ concurrency:
 
 jobs:
   static:
-    # `composer test:types`: PHPStan (larastan) over app/ plus vue-tsc over the frontend.
+    # `composer test:types`: PHPStan (larastan) over app/ and packages/runner, plus vue-tsc
+    # over the frontend.
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -30,11 +31,25 @@ jobs:
         with:
           build: 'false'
 
+      - name: Cache packages/runner Composer dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: packages/runner/vendor
+          key: ${{ runner.os }}-composer-runner-8.5-${{ hashFiles('packages/runner/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-runner-8.5-
+
+      - name: Install packages/runner Composer dependencies
+        # `composer test:types` descends into packages/runner, which runs its own PHPStan
+        # binary and larastan extension from this vendor dir.
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress --working-dir=packages/runner
+
       - name: Cache PHPStan
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: /tmp/phpstan
-          key: ${{ runner.os }}-phpstan-${{ hashFiles('composer.lock') }}
+          path: |
+            /tmp/phpstan
+            /tmp/phpstan-runner
+          key: ${{ runner.os }}-phpstan-${{ hashFiles('composer.lock', 'packages/runner/composer.lock') }}
           restore-keys: ${{ runner.os }}-phpstan-
 
       - name: Static analysis

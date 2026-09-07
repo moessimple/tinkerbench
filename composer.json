@@ -77,15 +77,18 @@
             "npm run lint"
         ],
         "test:type-coverage": [
-            "php -d memory_limit=512M vendor/bin/pest --type-coverage --min=100"
+            "php -d memory_limit=512M vendor/bin/pest --type-coverage --min=100",
+            "composer test:type-coverage --working-dir=packages/runner"
         ],
         "test:lint": [
             "pint --parallel --test",
             "rector --dry-run",
+            "composer test:lint --working-dir=packages/runner",
             "npm run test:lint"
         ],
         "test:unit": [
             "sh -c 'pest=\"vendor/bin/pest --parallel --coverage --exactly=100.0\"; command -v herd >/dev/null 2>&1 && herd coverage $pest || XDEBUG_MODE=coverage $pest'",
+            "composer test:unit --working-dir=packages/runner",
             "npm run test:unit"
         ],
         "test:browser": [
@@ -93,10 +96,8 @@
         ],
         "test:types": [
             "phpstan analyse --memory-limit=512M",
+            "composer test:types --working-dir=packages/runner",
             "npm run test:types"
-        ],
-        "test:runner": [
-            "composer test --working-dir=packages/runner"
         ],
         "test": [
             "@php artisan config:clear --ansi",
@@ -104,7 +105,6 @@
             "@test:unit",
             "@test:lint",
             "@test:types",
-            "@test:runner",
             "@test:browser"
         ],
         "update:dependencies": [
