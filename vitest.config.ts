@@ -19,5 +19,32 @@ export default defineConfig({
         // pest-plugin-browser ships a Playwright example spec under vendor/; Vitest's
         // default exclude list does not cover vendor/, so it would try to run it.
         exclude: [...configDefaults.exclude, 'vendor/**'],
+        coverage: {
+            // Enforced only under `--coverage` (the `test:unit` script), mirroring the PHP
+            // side's `pest --coverage --exactly=100.0`: every runtime module ships with a
+            // test that covers it.
+            provider: 'v8',
+            // Terminal-only, like the PHP side; no report directory is written.
+            reporter: ['text'],
+            include: ['resources/js/**/*.{ts,vue}'],
+            exclude: [
+                'resources/js/**/*.test.ts',
+                'resources/js/types/**',
+                // Wayfinder-generated route/controller helpers.
+                'resources/js/actions/**',
+                'resources/js/routes/**',
+                'resources/js/wayfinder/**',
+                // Inertia bootstrap entry point, the JS counterpart of bootstrap/app.php,
+                // which the PHP <source> set also leaves out.
+                'resources/js/app.ts',
+                // Constructs a real Web Worker via Vite's `?worker` import, which jsdom
+                // cannot instantiate; mocked wherever it is exercised (MonacoEditor.test.ts).
+                'resources/js/lib/monacoEditorWorker.ts',
+                // Unused laravel/vue-starter-kit helper kept per .ai/rules/general.md.
+                'resources/js/lib/utils.ts',
+            ],
+            // Line coverage only, matching `pest --coverage --exactly=100.0` on the PHP side.
+            thresholds: { lines: 100 },
+        },
     },
 });

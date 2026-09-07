@@ -42,3 +42,10 @@ it('reports a server error as JSON when the repository fails to write', function
         ->assertServerError()
         ->assertJsonPath('message', 'Unable to save the snippet.');
 });
+
+it('does not route a snippet segment that carries disallowed characters', function (): void {
+    $this->mock(SnippetRepository::class);
+
+    $this->putJson('/api/projects/my-project/snippets/bad.name', ['content' => 'echo 1;'])
+        ->assertNotFound();
+});

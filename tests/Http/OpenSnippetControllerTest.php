@@ -121,6 +121,16 @@ it('rejects a url whose project is not a known herd site with a 404', function (
     'one segment' => '/unknown-segment',
 ]);
 
+it('does not route an open-page url whose segments carry disallowed characters', function (string $url): void {
+    $this->mock(Herd::class);
+    $this->mock(SnippetRepository::class);
+
+    $this->get($url)->assertNotFound();
+})->with([
+    'project segment' => '/has.a.dot',
+    'snippet segment' => '/my-project/bad.snippet',
+]);
+
 it('reads the snapshot without a refresh for an inertia navigation', function (): void {
     $herd = $this->mock(Herd::class);
     $herd->shouldReceive('snapshotProject')->with('my-project', true)->never();
