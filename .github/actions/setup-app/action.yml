@@ -1,12 +1,14 @@
 name: Setup app
-description: PHP 8.5, Node, Composer and npm dependencies for the tinkerbench Laravel app.
+description: PHP 8.5, Node, dependencies, environment and generated route helpers for the tinkerbench Laravel app.
 
 inputs:
   coverage:
-    description: PHP coverage driver to enable (none or xdebug).
+    description: PHP coverage driver (none or xdebug).
     default: none
   build:
-    description: Whether to run `npm run build` (needed by anything that renders a Blade view with @vite).
+    description: >-
+      'true' runs `npm run build` (a full Vite build, needed whenever a Blade view renders @vite).
+      'false' only generates the Wayfinder route helpers that the JS type-check and lint need.
     default: 'true'
 
 runs:
@@ -35,6 +37,12 @@ runs:
       shell: bash
       run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress
 
+    - name: Prepare environment
+      shell: bash
+      run: |
+        cp .env.example .env
+        php artisan key:generate
+
     - name: Cache npm dependencies
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
@@ -50,3 +58,8 @@ runs:
       if: inputs.build == 'true'
       shell: bash
       run: npm run build
+
+    - name: Generate route helpers
+      if: inputs.build != 'true'
+      shell: bash
+      run: php artisan wayfinder:generate --with-form
