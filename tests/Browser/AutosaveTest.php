@@ -33,9 +33,7 @@ const AUTOSAVE_SPY = <<<'JS'
     JS;
 
 it('autosaves editor changes once the debounce settles', function (): void {
-    $page = visit('/');
-    stopAnimations($page);
-    $page->assertVisible('.monaco-editor');
+    $page = visitEditor();
 
     typeIntoEditor($page, 'AUTOSAVE_DEBOUNCED_OK');
 
@@ -44,13 +42,11 @@ it('autosaves editor changes once the debounce settles', function (): void {
         ->navigate('/')
         ->assertVisible('.monaco-editor')
         ->assertSeeIn('.monaco-editor .view-lines', 'AUTOSAVE_DEBOUNCED_OK')
-        ->assertNoJavascriptErrors();
+        ->assertNoJavaScriptErrors();
 });
 
 it('saves on Cmd/Ctrl+S before the debounce and suppresses the browser save dialog', function (): void {
-    $page = visit('/');
-    stopAnimations($page);
-    $page->assertVisible('.monaco-editor');
+    $page = visitEditor();
     $page->script(AUTOSAVE_SPY);
 
     typeIntoEditor($page, 'AUTOSAVE_FLUSHED_OK');
@@ -67,5 +63,5 @@ it('saves on Cmd/Ctrl+S before the debounce and suppresses the browser save dial
         ->navigate('/')
         ->assertVisible('.monaco-editor')
         ->assertSeeIn('.monaco-editor .view-lines', 'AUTOSAVE_FLUSHED_OK')
-        ->assertNoJavascriptErrors();
+        ->assertNoJavaScriptErrors();
 });

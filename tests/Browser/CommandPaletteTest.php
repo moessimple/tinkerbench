@@ -3,9 +3,7 @@
 declare(strict_types=1);
 
 it('opens the palette over Monaco and offers to create a missing snippet', function (): void {
-    $page = visit('/');
-    stopAnimations($page);
-    $page->assertVisible('.monaco-editor');
+    $page = visitEditor();
 
     // Meta/Ctrl+P with Monaco focused: the capture-phase window listener must beat Monaco's
     // own keybinding service, open the dialog, and move focus into the search field.
@@ -17,5 +15,5 @@ it('opens the palette over Monaco and offers to create a missing snippet', funct
     // A name with no match offers creation.
     $page->typeSlowly('[role="combobox"]', 'nosuchsnippet', 15)
         ->assertSee('Press Enter to create it')
-        ->assertNoJavascriptErrors();
+        ->assertNoJavaScriptErrors();
 });

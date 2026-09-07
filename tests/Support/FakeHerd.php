@@ -36,11 +36,6 @@ class FakeHerd extends Herd
         return PHP_VERSION;
     }
 
-    public function laravelVersion(string $phpBinary, string $projectPath, bool $fresh = false): string
-    {
-        return app()->version();
-    }
-
     public function snapshotProject(?string $project, bool $fresh = false): ?ProjectSnapshot
     {
         if (($project ?? 'tinkerbench') !== 'tinkerbench') {

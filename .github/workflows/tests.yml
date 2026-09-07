@@ -180,7 +180,7 @@ jobs:
     # Real-browser tests via pest-plugin-browser + headless Chromium. Runs parallel to `ci`,
     # not chained onto it. The suite fakes every external process (Herd, the LSP bridges) in
     # tests/Browser/Pest.php, so this job needs no Herd binary, no tinkerbench.test host entry
-    # and no certificate — just built assets and a browser.
+    # and no certificate, just built assets and a browser.
     runs-on: ubuntu-latest
     timeout-minutes: 15
 

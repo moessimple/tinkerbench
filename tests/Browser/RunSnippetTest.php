@@ -3,9 +3,7 @@
 declare(strict_types=1);
 
 it('runs a snippet and shows its return value and the queries facet', function (): void {
-    $page = visit('/');
-    stopAnimations($page);
-    $page->assertVisible('.monaco-editor');
+    $page = visitEditor();
 
     // DB resolves through Laravel's global facade alias inside the runner, so the snippet
     // needs no import; select('select 1') captures one query without touching a table.
@@ -15,13 +13,11 @@ it('runs a snippet and shows its return value and the queries facet', function (
     $page->assertSeeIn('article[data-label="Result"]', '2')
         ->assertSeeIn('[role="tablist"][aria-label="Filter output by kind"]', 'Queries')
         ->assertVisible('article[data-label="Query"]')
-        ->assertNoJavascriptErrors();
+        ->assertNoJavaScriptErrors();
 });
 
 it('re-runs the VarDumper script so a dump renders', function (): void {
-    $page = visit('/');
-    stopAnimations($page);
-    $page->assertVisible('.monaco-editor');
+    $page = visitEditor();
 
     typeIntoEditor($page, "<?php dump(['a' => 1]);");
     $page->keys('.native-edit-context', ['ControlOrMeta+Enter']);
@@ -29,5 +25,5 @@ it('re-runs the VarDumper script so a dump renders', function (): void {
     // A visible .sf-dump proves executeScripts() re-ran VarDumper's inline <script>; no JS
     // errors proves the isolated, stacked dump pane still renders it cleanly.
     $page->assertVisible('.sf-dump')
-        ->assertNoJavascriptErrors();
+        ->assertNoJavaScriptErrors();
 });

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 it('toggles the theme and keeps it across a navigation', function (): void {
     $page = visit('/')->inLightMode();
-    stopAnimations($page);
 
     // The toggle's own label is the light/dark signal; asserting on it auto-waits, so the
     // synchronous classList/localStorage reads below never race the theme update.
@@ -22,5 +21,5 @@ it('toggles the theme and keeps it across a navigation', function (): void {
         ->assertVisible('[aria-label="Switch to light theme"]')
         ->assertScript("document.documentElement.classList.contains('dark')")
         ->assertScript("localStorage.getItem('theme') === 'dark'")
-        ->assertNoJavascriptErrors();
+        ->assertNoJavaScriptErrors();
 });

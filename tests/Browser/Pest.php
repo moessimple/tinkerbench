@@ -59,19 +59,14 @@ pest()->extend(TestCase::class)
     ->in(__DIR__);
 
 /**
- * Injects the same transitions/animations kill-switch the plugin uses for screenshot
- * assertions. pest-plugin-browser exposes no suite-wide page-preparation hook, so each
- * test applies it explicitly right after visit(); the page is returned for chaining.
+ * Visits the editor page and waits for Monaco to mount. visit() alone only settles the
+ * initial HTML, and every editor interaction needs the mounted `.monaco-editor` first. The
+ * page is returned for chaining.
  */
-function stopAnimations(PendingAwaitablePage $page): PendingAwaitablePage
+function visitEditor(): PendingAwaitablePage
 {
-    $page->script(
-        "if (!document.getElementById('pest-no-animations')) {"
-        ."const s = document.createElement('style');"
-        ."s.id = 'pest-no-animations';"
-        ."s.textContent = '*, *::before, *::after { transition: none !important; animation: none !important; }';"
-        .'document.head.appendChild(s); }'
-    );
+    $page = visit('/');
+    $page->assertVisible('.monaco-editor');
 
     return $page;
 }
