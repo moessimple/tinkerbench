@@ -42,7 +42,7 @@
             "rector --dry-run"
         ],
         "test:unit": [
-            "sh -c 'pest=\"vendor/bin/pest --parallel --coverage --exactly=100.0\"; command -v herd >/dev/null 2>&1 && herd coverage $pest || XDEBUG_MODE=coverage $pest'"
+            "XDEBUG_MODE=coverage vendor/bin/pest --parallel --coverage --exactly=100.0"
         ],
         "test:unit:no-coverage": [
             "pest --parallel"

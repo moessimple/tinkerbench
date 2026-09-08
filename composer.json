@@ -87,7 +87,7 @@
             "npm run test:lint"
         ],
         "test:unit": [
-            "sh -c 'pest=\"vendor/bin/pest --parallel --coverage --exactly=100.0\"; command -v herd >/dev/null 2>&1 && herd coverage $pest || XDEBUG_MODE=coverage $pest'",
+            "XDEBUG_MODE=coverage vendor/bin/pest --parallel --coverage --exactly=100.0",
             "composer test:unit --working-dir=packages/runner",
             "npm run test:unit"
         ],
