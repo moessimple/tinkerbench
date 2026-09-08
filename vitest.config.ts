@@ -40,8 +40,6 @@ export default defineConfig({
                 // Constructs a real Web Worker via Vite's `?worker` import, which jsdom
                 // cannot instantiate; mocked wherever it is exercised (MonacoEditor.test.ts).
                 'resources/js/lib/monacoEditorWorker.ts',
-                // Unused laravel/vue-starter-kit helper kept per .ai/rules/general.md.
-                'resources/js/lib/utils.ts',
             ],
             // Line coverage only, matching `pest --coverage --exactly=100.0` on the PHP side.
             thresholds: { lines: 100 },

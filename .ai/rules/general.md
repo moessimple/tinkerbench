@@ -43,8 +43,6 @@ When hunting for dead code, a file having no caller is not enough to call it dea
 - tests/Pest.php: expect()->extend('toBeOne', ...) and function something() - Pest --init scaffolding.
 - Auth baseline, even though there is no login route or auth middleware: app/Models/User.php, UserFactory, tests/Unit/Models/UserTest.php, config/auth.php, the create_users_table migration, the auth.user share in HandleInertiaRequests, resources/js/types/auth.ts.
 
-Grey zone (ask before removing, don't just delete): resources/js/lib/utils.ts cn() helper from laravel/vue-starter-kit - currently unused, and clsx + tailwind-merge are its only consumers.
-
 Only propose removing code that was written for this app's own logic and lost its last caller.
 
 ## Never remove config.autoloader-suffix (root and packages/runner)

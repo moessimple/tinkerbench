@@ -37,7 +37,8 @@
         "pestphp/pest-plugin-phpstan": "^5.2",
         "pestphp/pest-plugin-type-coverage": "^5.0",
         "phpstan/phpstan-mockery": "^2.0",
-        "rector/rector": "^2.6.6"
+        "rector/rector": "^2.6.6",
+        "roave/security-advisories": "dev-latest"
     },
     "autoload": {
         "psr-4": {
