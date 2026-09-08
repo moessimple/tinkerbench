@@ -37,7 +37,7 @@ pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->group('browser')
     ->beforeEach(function () use (&$snippetsRoot): void {
-        freezeDeterministicState();
+        freezeDeterministicState($this);
 
         $snippetsRoot = sys_get_temp_dir().'/tinkerbench-browser-snippets-'.bin2hex(random_bytes(8));
         File::ensureDirectoryExists($snippetsRoot);
@@ -48,8 +48,8 @@ pest()->extend(TestCase::class)
         // built manifest for the browser suite.
         Vite::useHotFile(storage_path('framework/testing/browser-suite-no-vite-hmr'));
 
-        app()->bind(Herd::class, FakeHerd::class);
-        app()->bind(LanguageServerBridgeLauncher::class, DeadLanguageServerBridgeLauncher::class);
+        $this->app->bind(Herd::class, FakeHerd::class);
+        $this->app->bind(LanguageServerBridgeLauncher::class, DeadLanguageServerBridgeLauncher::class);
     })
     ->afterEach(function () use (&$snippetsRoot): void {
         if (is_string($snippetsRoot) && File::isDirectory($snippetsRoot)) {

@@ -19,7 +19,6 @@ use PHPUnit\Framework\Assert;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 
-use function Pest\Laravel\freezeTime;
 use function Pest\Laravel\mock;
 use function Pest\Laravel\postJson;
 
@@ -54,7 +53,9 @@ $loader->setPsr4('App\\', [dirname(__DIR__).'/app']);
 */
 
 pest()->extend(TestCase::class)
-    ->beforeEach(fn () => freezeDeterministicState())
+    ->beforeEach(function (): void {
+        freezeDeterministicState($this);
+    })
     ->in('Arch', 'Unit', 'Http', 'Console');
 
 pest()->use(LazilyRefreshDatabase::class)->in('Http', 'Console');
@@ -129,13 +130,13 @@ expect()->extend('toUseMiddleware', function (string $middleware): self {
  * clock. Suites that spawn real subprocesses on purpose opt back out with
  * Process::allowStrayProcesses() in their own beforeEach.
  */
-function freezeDeterministicState(): void
+function freezeDeterministicState(TestCase $test): void
 {
     Str::createRandomStringsNormally();
     Str::createUuidsNormally();
     Process::preventStrayProcesses();
 
-    freezeTime();
+    $test->freezeTime();
 }
 
 function something(): void

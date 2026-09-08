@@ -6,6 +6,9 @@ includes:
     - phar://phpstan.phar/conf/bleedingEdge.neon
 
 parameters:
+    bootstrapFiles:
+        - tests/TestSupport/PHPStan/register-custom-expectations.php
+
     paths:
         - app/
         - bootstrap/app.php
