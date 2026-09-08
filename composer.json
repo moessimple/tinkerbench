@@ -63,6 +63,7 @@
             "@php artisan key:generate",
             "@php artisan migrate --force",
             "npm install",
+            "npx playwright install chromium",
             "npm run build",
             "herd link tinkerbench --secure",
             "herd isolate 8.5"
@@ -78,7 +79,7 @@
             "npm run lint"
         ],
         "test:type-coverage": [
-            "php -d memory_limit=512M vendor/bin/pest --type-coverage --min=100",
+            "pest --type-coverage --min=100",
             "composer test:type-coverage --working-dir=packages/runner"
         ],
         "test:lint": [
@@ -88,15 +89,15 @@
             "npm run test:lint"
         ],
         "test:unit": [
-            "XDEBUG_MODE=coverage vendor/bin/pest --parallel --coverage --exactly=100.0",
+            "XDEBUG_MODE=coverage pest --parallel --coverage --exactly=100.0",
             "composer test:unit --working-dir=packages/runner",
             "npm run test:unit"
         ],
         "test:browser": [
-            "vendor/bin/pest --testsuite=Browser --group=browser"
+            "pest --testsuite=Browser --group=browser"
         ],
         "test:types": [
-            "phpstan analyse --memory-limit=512M",
+            "phpstan analyse",
             "composer test:types --working-dir=packages/runner",
             "npm run test:types"
         ],

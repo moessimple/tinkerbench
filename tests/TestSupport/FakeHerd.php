@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\Support;
+namespace Tests\TestSupport;
 
 use App\Support\Herd;
 use App\Support\ProjectSnapshot;

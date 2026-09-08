@@ -81,6 +81,7 @@ const kindCounts = computed(() => {
         FACET_KINDS.map((kind) => [kind.kind, 0]),
     ) as Record<FeedItem['kind'], number>;
 
+    /* v8 ignore next -- kindCounts is only read through filterCount under v-if="debug", so debug.value is never null here; the guard defends a future reader that isn't. */
     for (const item of debug.value?.items ?? []) {
         if (item.kind in counts) {
             counts[item.kind] += 1;

@@ -7,6 +7,7 @@ use App\Support\ProjectSnapshot;
 use Composer\Autoload\ClassLoader;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Routing\MiddlewareNameResolver;
+use Illuminate\Routing\Route as RoutingRoute;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Route;
@@ -14,6 +15,9 @@ use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Assert;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
+
+use function Pest\Laravel\mock;
+use function Pest\Laravel\postJson;
 
 /*
 |--------------------------------------------------------------------------
@@ -73,14 +77,7 @@ expect()->extend('toBeOne', fn () => $this->toBe(1));
  * behavior-level test for that.
  */
 expect()->extend('toUseType', function (string $type): self {
-    $parameters = new ReflectionMethod($this->value, '__invoke')->getParameters();
-
-    $usesType = collect($parameters)->contains(
-        fn (ReflectionParameter $parameter): bool => $parameter->getType() instanceof ReflectionNamedType
-            && $parameter->getType()->getName() === $type
-    );
-
-    Assert::assertTrue($usesType, "{$this->value}::__invoke() has no parameter of type {$type}.");
+    assertInvokableDeclaresParameterType($this->value, $type);
 
     return $this;
 });
@@ -91,8 +88,9 @@ expect()->extend('toUseType', function (string $type): self {
  */
 expect()->extend('toUseFormRequest', function (string $type): self {
     Assert::assertTrue(is_subclass_of($type, FormRequest::class), "{$type} is not a FormRequest.");
+    assertInvokableDeclaresParameterType($this->value, $type);
 
-    return $this->toUseType($type);
+    return $this;
 });
 
 /**
@@ -101,19 +99,7 @@ expect()->extend('toUseFormRequest', function (string $type): self {
  * it gathers (including names from middleware groups) down to concrete class names.
  */
 expect()->extend('toUseMiddleware', function (string $middleware): self {
-    $router = resolve(Router::class);
-    $route = $router->getRoutes()->getByAction($this->value);
-
-    Assert::assertNotNull($route, "No route is registered for {$this->value}.");
-
-    $resolved = collect($route->gatherMiddleware())
-        ->map(fn (string $name): array => Arr::wrap(
-            MiddlewareNameResolver::resolve($name, $router->getMiddleware(), $router->getMiddlewareGroups())
-        ))
-        ->flatten()
-        ->all();
-
-    Assert::assertContains($middleware, $resolved, "{$this->value}'s route does not use {$middleware}.");
+    assertInvokableRouteUsesMiddleware($this->value, $middleware);
 
     return $this;
 });
@@ -135,6 +121,53 @@ function something(): void
 }
 
 /**
+ * Backs the toUseType() / toUseFormRequest() expectations: proves $target's __invoke()
+ * declares a parameter of $type. $target is whatever expect() wrapped, a controller
+ * class-string in practice; anything that is not a class-string or object fails the test.
+ */
+function assertInvokableDeclaresParameterType(mixed $target, string $type): void
+{
+    if (! is_string($target) && ! is_object($target)) {
+        Assert::fail('expect()->toUseType() needs a class-string or object.');
+    }
+
+    $usesType = collect(new ReflectionMethod($target, '__invoke')->getParameters())->contains(
+        fn (ReflectionParameter $parameter): bool => $parameter->getType() instanceof ReflectionNamedType
+            && $parameter->getType()->getName() === $type
+    );
+
+    $target = is_string($target) ? $target : $target::class;
+
+    Assert::assertTrue($usesType, "{$target}::__invoke() has no parameter of type {$type}.");
+}
+
+/**
+ * Backs the toUseMiddleware() expectation: proves the route registered for the invokable
+ * $controller gathers $middleware, resolving middleware-group names down to concrete classes.
+ */
+function assertInvokableRouteUsesMiddleware(mixed $controller, string $middleware): void
+{
+    if (! is_string($controller)) {
+        Assert::fail('expect()->toUseMiddleware() needs a controller class-string.');
+    }
+
+    $router = resolve(Router::class);
+    $route = $router->getRoutes()->getByAction($controller);
+
+    if (! $route instanceof RoutingRoute) {
+        Assert::fail("No route is registered for {$controller}.");
+    }
+
+    $resolved = collect($route->gatherMiddleware())
+        ->flatMap(fn (mixed $name): array => is_string($name) ? Arr::wrap(
+            MiddlewareNameResolver::resolve($name, $router->getMiddleware(), $router->getMiddlewareGroups())
+        ) : [])
+        ->all();
+
+    Assert::assertContains($middleware, $resolved, "{$controller}'s route does not use {$middleware}.");
+}
+
+/**
  * Resolves a FormRequest through a real HTTP request against a throwaway route, so its
  * validation runs for real (including any authorize()/prepareForValidation() a request
  * declares) instead of validating an extracted rules() array in isolation.
@@ -147,7 +180,7 @@ function createFormRequest(string $requestClass, array $payload = []): TestRespo
 {
     Route::post('form-request-under-test', fn () => resolve($requestClass));
 
-    return test()->postJson('form-request-under-test', $payload);
+    return postJson('form-request-under-test', $payload);
 }
 
 /**
@@ -158,7 +191,7 @@ function createFormRequest(string $requestClass, array $payload = []): TestRespo
  */
 function mockKnownProject(string $project = 'my-project'): void
 {
-    test()->mock(Herd::class)
+    mock(Herd::class)
         ->shouldReceive('projectPath')->with($project)->andReturn("/path/to/{$project}");
 }
 

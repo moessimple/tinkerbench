@@ -288,6 +288,25 @@ it('runs the snippet on Ctrl/Cmd+Enter from anywhere on the page', async () => {
     expect(httpState.code).toBe("echo 'hi';");
 });
 
+it('runs the snippet on Ctrl+Enter as well as Cmd+Enter', async () => {
+    render(OpenSnippet, { props });
+    await fireEvent.update(screen.getByLabelText('Snippet code'), "echo 'hi';");
+
+    document.dispatchEvent(
+        new KeyboardEvent('keydown', {
+            key: 'Enter',
+            ctrlKey: true,
+            cancelable: true,
+            bubbles: true,
+        }),
+    );
+    await nextTick();
+
+    expect(capturedPost?.url).toBe(
+        '/api/projects/my-project/snippets/executions',
+    );
+});
+
 it('ignores an auto-repeating Ctrl/Cmd+Enter so a held chord does not stack runs', async () => {
     render(OpenSnippet, { props });
 
@@ -857,6 +876,48 @@ it('flushes the pending debounced save immediately on Ctrl/Cmd+S', async () => {
     await vi.advanceTimersByTimeAsync(500);
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
+});
+
+it('flushes the pending debounced save on Ctrl+S as well as Cmd+S', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ ok: true }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    vi.useFakeTimers();
+    render(OpenSnippet, { props });
+
+    await fireEvent.update(
+        screen.getByLabelText('Snippet code'),
+        "echo 'edited';",
+    );
+
+    document.dispatchEvent(
+        new KeyboardEvent('keydown', {
+            key: 's',
+            ctrlKey: true,
+            cancelable: true,
+            bubbles: true,
+        }),
+    );
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+});
+
+it('shows a generic message when a save is rejected without an Error', async () => {
+    const fetchMock = vi.fn().mockRejectedValue('offline');
+    vi.stubGlobal('fetch', fetchMock);
+    vi.useFakeTimers();
+    render(OpenSnippet, { props });
+
+    await fireEvent.update(
+        screen.getByLabelText('Snippet code'),
+        "echo 'edited';",
+    );
+    await vi.advanceTimersByTimeAsync(500);
+
+    await vi.waitFor(() => screen.getByText('Unable to save changes.'));
 });
 
 it('clears the feed output and any error message', async () => {

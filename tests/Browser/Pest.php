@@ -8,9 +8,9 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Vite;
 use Pest\Browser\Api\PendingAwaitablePage;
-use Tests\Support\DeadLanguageServerBridgeLauncher;
-use Tests\Support\FakeHerd;
 use Tests\TestCase;
+use Tests\TestSupport\DeadLanguageServerBridgeLauncher;
+use Tests\TestSupport\FakeHerd;
 
 /*
 |--------------------------------------------------------------------------
@@ -46,8 +46,8 @@ pest()->extend(TestCase::class)
         // built manifest for the browser suite.
         Vite::useHotFile(storage_path('framework/testing/browser-suite-no-vite-hmr'));
 
-        $this->app->bind(Herd::class, FakeHerd::class);
-        $this->app->bind(LanguageServerBridgeLauncher::class, DeadLanguageServerBridgeLauncher::class);
+        app()->bind(Herd::class, FakeHerd::class);
+        app()->bind(LanguageServerBridgeLauncher::class, DeadLanguageServerBridgeLauncher::class);
     })
     ->afterEach(function () use (&$snippetsRoot): void {
         if (is_string($snippetsRoot) && File::isDirectory($snippetsRoot)) {

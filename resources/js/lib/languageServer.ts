@@ -110,7 +110,11 @@ async function requestPort(requestPortUrl: string): Promise<number> {
 
 function toPlainText(
     content:
-        LspMarkupContent | LspMarkupContent[] | string | string[] | undefined,
+        | LspMarkupContent
+        | LspMarkupContent[]
+        | string
+        | string[]
+        | undefined,
 ): string {
     if (content === undefined) {
         return '';
@@ -137,7 +141,11 @@ function toPlainText(
 // show up as-is (backticks, brackets) instead of being rendered.
 function toMarkdown(
     content:
-        LspMarkupContent | LspMarkupContent[] | string | string[] | undefined,
+        | LspMarkupContent
+        | LspMarkupContent[]
+        | string
+        | string[]
+        | undefined,
 ): { value: string } | undefined {
     const text = toPlainText(content);
 

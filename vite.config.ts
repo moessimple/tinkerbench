@@ -9,8 +9,13 @@ import { defineConfig, lazyPlugins } from 'vite-plus';
 export default defineConfig({
     lint: {
         options: {
+            // Type-aware rules stay on; the full tsc pass is off. oxlint/tsgolint has no
+            // Vue SFC language service, so it sees every `.vue` import as DefineComponent<{}>
+            // and reports a spurious TS2353 for every render(Component, { props }) in a test.
+            // vue-tsc (the test:types gate) already type-checks the whole resources/js tree,
+            // SFC props and templates included, so nothing is lost by not doing it twice here.
             typeAware: true,
-            typeCheck: true,
+            typeCheck: false,
         },
         plugins: ['eslint', 'typescript', 'unicorn', 'oxc', 'vue'],
         ignorePatterns: [

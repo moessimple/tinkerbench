@@ -7,10 +7,9 @@
         "build:ssr": "vp build && vp build --ssr",
         "dev": "vp dev",
         "lint": "vp fmt resources/ && vp lint --fix",
-        "test": "npm run test:lint && npm run test:types && npm run test:unit",
         "test:lint": "vp fmt --check resources/ && vp lint",
-        "test:types": "vue-tsc --noEmit",
-        "test:unit": "vitest run --coverage"
+        "test:unit": "vitest run --coverage",
+        "test:types": "vue-tsc --noEmit"
     },
     "devDependencies": {
         "@laravel/vite-plugin-wayfinder": "^0.1.10",

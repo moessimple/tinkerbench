@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Support\SnippetRun\SnippetRunner;
+use Illuminate\Process\PendingProcess;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
@@ -18,22 +20,22 @@ it('invokes the runner package bin script', function (): void {
 
     new SnippetRunner()->run("<?php\n\nreturn 'unreachable';", PHP_BINARY, base_path());
 
-    Process::assertRan(fn ($process): bool => in_array(base_path('packages/runner/bin/run-snippet.php'), $process->command, true));
+    Process::assertRan(fn (PendingProcess $process): bool => in_array(base_path('packages/runner/bin/run-snippet.php'), Arr::wrap($process->command), true));
 });
 
 it('runs a snippet in a subprocess and returns its return value as a result item', function (): void {
     $result = new SnippetRunner()->run("<?php\n\nreturn 'from the subprocess';", PHP_BINARY, base_path());
 
     expect($result->output)->toBe('')
-        ->and($result->debug['items'])->toHaveCount(1)
-        ->and($result->debug['items'][0]['kind'])->toBe('result')
-        ->and($result->debug['items'][0]['html'])->toContain('from the subprocess');
+        ->and(data_get($result->debug, 'items'))->toHaveCount(1)
+        ->and(data_get($result->debug, 'items.0.kind'))->toBe('result')
+        ->and(data_get($result->debug, 'items.0.html'))->toContain('from the subprocess');
 });
 
 it('boots the target project so snippets can use its Laravel helpers', function (): void {
     $result = new SnippetRunner()->run("<?php\n\nreturn config('app.name');", PHP_BINARY, base_path());
 
-    expect($result->debug['items'][0]['html'])->toContain(config('app.name'));
+    expect(data_get($result->debug, 'items.0.html'))->toContain(config('app.name'));
 });
 
 it('lets two snippets that redeclare the same class both succeed', function (): void {
@@ -42,10 +44,10 @@ it('lets two snippets that redeclare the same class both succeed', function (): 
     $first = $runner->run("<?php\n\nclass DuplicateSnippetClass {}\n\nreturn 'first';", PHP_BINARY, base_path());
     $second = $runner->run("<?php\n\nclass DuplicateSnippetClass {}\n\nreturn 'second';", PHP_BINARY, base_path());
 
-    expect($first->debug['items'][0]['html'])->toContain('first')
-        ->and($second->debug['items'][0]['html'])->toContain('second')
-        ->and(array_column($first->debug['items'], 'kind'))->not->toContain('exception')
-        ->and(array_column($second->debug['items'], 'kind'))->not->toContain('exception');
+    expect(data_get($first->debug, 'items.0.html'))->toContain('first')
+        ->and(data_get($second->debug, 'items.0.html'))->toContain('second')
+        ->and(data_get($first->debug, 'items.*.kind'))->not->toContain('exception')
+        ->and(data_get($second->debug, 'items.*.kind'))->not->toContain('exception');
 });
 
 it('does not crash the subprocess when the snippet throws', function (): void {
@@ -122,9 +124,13 @@ it('returns an exception item in the debug data for an uncaught throw', function
 });
 
 it('returns no debug data when the debug file was left truncated by a killed subprocess', function (): void {
-    Process::fake(function ($process) {
+    Process::fake(function (PendingProcess $process) {
         // The debug path is the fifth and last argument run-snippet.php is invoked with.
-        file_put_contents($process->command[4], '{"items": [');
+        $debugPath = Arr::wrap($process->command)[4] ?? null;
+
+        if (is_string($debugPath)) {
+            file_put_contents($debugPath, '{"items": [');
+        }
 
         return Process::result(output: '');
     });

@@ -133,6 +133,46 @@ async function connectAndHandshake(
     return socket;
 }
 
+async function replyTo(
+    socket: FakeWebSocket,
+    method: string,
+    response: { result: unknown } | { error: unknown },
+): Promise<void> {
+    await vi.waitFor(() =>
+        expect(
+            socket.sent.some(
+                (raw) =>
+                    (JSON.parse(raw) as { method?: string }).method === method,
+            ),
+        ).toBe(true),
+    );
+    const request = socket.sent
+        .map((raw) => JSON.parse(raw) as { id: number; method?: string })
+        .find((message) => message.method === method)!;
+    socket.receive({ jsonrpc: '2.0', id: request.id, ...response });
+}
+
+function completionProviderOf() {
+    return vi
+        .mocked(monaco.languages.registerCompletionItemProvider)
+        .mock.calls.at(-1)![1];
+}
+
+function hoverProviderOf() {
+    return vi
+        .mocked(monaco.languages.registerHoverProvider)
+        .mock.calls.at(-1)![1];
+}
+
+function signatureHelpProviderOf() {
+    return vi
+        .mocked(monaco.languages.registerSignatureHelpProvider)
+        .mock.calls.at(-1)![1];
+}
+
+const editorStub = { getValue: () => '' } as never;
+const positionStub = { lineNumber: 1, column: 1 } as never;
+
 it('requests a port for the project and opens a WebSocket to it', async () => {
     const attaching = attachLanguageServer(
         monaco,
@@ -1173,4 +1213,231 @@ it('notifies the server of a content change with a bumped document version', asy
             contentChanges: [{ text: '<?php echo 2;' }],
         },
     ]);
+});
+
+it('resolves a pending request to null when the server answers with an error', async () => {
+    const attaching = attachLanguageServer(
+        monaco,
+        intelephenseConfig,
+        '<?php',
+        model,
+    );
+    const socket = await connectAndHandshake();
+    await attaching;
+
+    const hovering = hoverProviderOf().provideHover(
+        editorStub,
+        positionStub,
+        {} as never,
+    );
+    await replyTo(socket, 'textDocument/hover', {
+        error: { code: -32603, message: 'internal error' },
+    });
+
+    expect(await hovering).toBeNull();
+});
+
+it('falls back to an error marker for a diagnostic whose severity is out of range', async () => {
+    const attaching = attachLanguageServer(
+        monaco,
+        intelephenseConfig,
+        '<?php',
+        model,
+    );
+    const socket = await connectAndHandshake();
+    await attaching;
+
+    socket.receive({
+        jsonrpc: '2.0',
+        method: 'textDocument/publishDiagnostics',
+        params: {
+            uri: 'file:///tinkerbench-snippet.php',
+            diagnostics: [
+                {
+                    range: {
+                        start: { line: 0, character: 0 },
+                        end: { line: 0, character: 1 },
+                    },
+                    severity: 99,
+                    message: 'Unknown severity.',
+                },
+            ],
+        },
+    });
+
+    expect(monaco.editor.setModelMarkers).toHaveBeenCalledWith(
+        model,
+        'intelephense',
+        [expect.objectContaining({ severity: monaco.MarkerSeverity.Error })],
+    );
+});
+
+it('reads a bare-array completion response as the item list', async () => {
+    const attaching = attachLanguageServer(
+        monaco,
+        intelephenseConfig,
+        '<?php',
+        model,
+    );
+    const socket = await connectAndHandshake();
+    await attaching;
+
+    const completing = completionProviderOf().provideCompletionItems(
+        editorStub,
+        positionStub,
+        {} as never,
+        {} as never,
+    );
+    await replyTo(socket, 'textDocument/completion', {
+        result: [{ label: 'array_map' }],
+    });
+
+    const { suggestions } = (await completing) as {
+        suggestions: { label: string }[];
+    };
+    expect(suggestions.map((item) => item.label)).toEqual(['array_map']);
+});
+
+it('treats a null completion response as an empty list', async () => {
+    const attaching = attachLanguageServer(
+        monaco,
+        intelephenseConfig,
+        '<?php',
+        model,
+    );
+    const socket = await connectAndHandshake();
+    await attaching;
+
+    const completing = completionProviderOf().provideCompletionItems(
+        editorStub,
+        positionStub,
+        {} as never,
+        {} as never,
+    );
+    await replyTo(socket, 'textDocument/completion', { result: null });
+
+    expect((await completing) as { suggestions: unknown[] }).toMatchObject({
+        suggestions: [],
+    });
+});
+
+it('keeps the original documentation and import edits when resolve omits them', async () => {
+    const attaching = attachLanguageServer(
+        monaco,
+        intelephenseConfig,
+        '<?php',
+        model,
+    );
+    const socket = await connectAndHandshake();
+    await attaching;
+
+    const provider = completionProviderOf();
+    const completing = provider.provideCompletionItems(
+        editorStub,
+        positionStub,
+        {} as never,
+        {} as never,
+    );
+    await replyTo(socket, 'textDocument/completion', {
+        result: {
+            items: [
+                {
+                    label: 'strlen',
+                    documentation: 'Original documentation.',
+                    additionalTextEdits: [
+                        {
+                            newText: 'use App\\Str;\n',
+                            range: {
+                                start: { line: 0, character: 0 },
+                                end: { line: 0, character: 0 },
+                            },
+                        },
+                    ],
+                },
+            ],
+        },
+    });
+    const { suggestions } = (await completing) as { suggestions: unknown[] };
+
+    const resolving = provider.resolveCompletionItem!(
+        suggestions[0] as never,
+        {} as never,
+    );
+    await replyTo(socket, 'completionItem/resolve', {
+        result: { label: 'strlen' },
+    });
+
+    const resolved = (await resolving) as {
+        documentation: { value: string };
+        additionalTextEdits: unknown[];
+    };
+    expect(resolved.documentation).toEqual({
+        value: 'Original documentation.',
+    });
+    expect(resolved.additionalTextEdits).toEqual([
+        {
+            text: 'use App\\Str;\n',
+            range: {
+                startLineNumber: 1,
+                startColumn: 1,
+                endLineNumber: 1,
+                endColumn: 1,
+            },
+        },
+    ]);
+});
+
+it('returns no hover when the server sends empty contents', async () => {
+    const attaching = attachLanguageServer(
+        monaco,
+        intelephenseConfig,
+        '<?php',
+        model,
+    );
+    const socket = await connectAndHandshake();
+    await attaching;
+
+    const hovering = hoverProviderOf().provideHover(
+        editorStub,
+        positionStub,
+        {} as never,
+    );
+    await replyTo(socket, 'textDocument/hover', { result: { contents: '' } });
+
+    expect(await hovering).toBeNull();
+});
+
+it('defaults the active signature, parameter and params when the server omits them', async () => {
+    const attaching = attachLanguageServer(
+        monaco,
+        intelephenseConfig,
+        '<?php',
+        model,
+    );
+    const socket = await connectAndHandshake();
+    await attaching;
+
+    const helping = signatureHelpProviderOf().provideSignatureHelp(
+        editorStub,
+        positionStub,
+        {} as never,
+        {} as never,
+    );
+    await replyTo(socket, 'textDocument/signatureHelp', {
+        result: { signatures: [{ label: 'strlen(string $string): int' }] },
+    });
+
+    const help = (await helping) as {
+        value: {
+            activeSignature: number;
+            activeParameter: number;
+            signatures: { parameters: unknown[] }[];
+        };
+        dispose: () => void;
+    };
+    expect(help.value.activeSignature).toBe(0);
+    expect(help.value.activeParameter).toBe(0);
+    expect(help.value.signatures[0]!.parameters).toEqual([]);
+
+    expect(() => help.dispose()).not.toThrow();
 });
