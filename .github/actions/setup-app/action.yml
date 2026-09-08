@@ -1,5 +1,5 @@
 name: Setup app
-description: PHP 8.5, Node, dependencies, environment and generated route helpers for the tinkerbench Laravel app.
+description: PHP 8.5, Node, Composer + npm dependencies, environment and generated route helpers.
 
 inputs:
   coverage:
