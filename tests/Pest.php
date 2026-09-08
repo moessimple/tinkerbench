@@ -6,16 +6,20 @@ use App\Support\Herd;
 use App\Support\ProjectSnapshot;
 use Composer\Autoload\ClassLoader;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Routing\MiddlewareNameResolver;
 use Illuminate\Routing\Route as RoutingRoute;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Assert;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 
+use function Pest\Laravel\freezeTime;
 use function Pest\Laravel\mock;
 use function Pest\Laravel\postJson;
 
@@ -50,7 +54,10 @@ $loader->setPsr4('App\\', [dirname(__DIR__).'/app']);
 */
 
 pest()->extend(TestCase::class)
-    ->in('Unit', 'Http', 'Arch');
+    ->beforeEach(fn () => freezeDeterministicState())
+    ->in('Arch', 'Unit', 'Http', 'Console');
+
+pest()->use(LazilyRefreshDatabase::class)->in('Http', 'Console');
 
 // Pest's BootFiles bootstrapper only auto-includes the root tests/Pest.php, never a
 // nested one. The Browser suite keeps its own bootstrap (TestCase binding, snippets-disk
@@ -114,6 +121,22 @@ expect()->extend('toUseMiddleware', function (string $middleware): self {
 | global functions to help you to reduce the number of lines of code in your test files.
 |
 */
+
+/**
+ * Every test starts from a known baseline: real random strings and UUIDs (undoing a fake a
+ * previous test forgot to reset), a hard failure on any unfaked outbound process (the twin of
+ * essentials' PreventStrayRequests), and frozen time so time-based assertions do not race the
+ * clock. Suites that spawn real subprocesses on purpose opt back out with
+ * Process::allowStrayProcesses() in their own beforeEach.
+ */
+function freezeDeterministicState(): void
+{
+    Str::createRandomStringsNormally();
+    Str::createUuidsNormally();
+    Process::preventStrayProcesses();
+
+    freezeTime();
+}
 
 function something(): void
 {
