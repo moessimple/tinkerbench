@@ -61,6 +61,15 @@ it('renders body content passed to the default slot', () => {
     expect(screen.getByText('body text')).toBeTruthy();
 });
 
+it('renders footer content passed to the footer slot', () => {
+    render(Card, {
+        props: { label: 'Query', line: null },
+        slots: { default: 'body', footer: '<span>footer text</span>' },
+    });
+
+    expect(screen.getByText('footer text')).toBeTruthy();
+});
+
 it('offers no copy button when no copy string is given', () => {
     render(Card, {
         props: { label: 'Dump', line: null },

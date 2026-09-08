@@ -100,7 +100,7 @@ onMounted(() => {
 
     const container = editorElement.value;
 
-    editor = monaco.editor.create(container, {
+    const createdEditor = monaco.editor.create(container, {
         value: props.initialValue,
         language: 'php',
         theme: monacoThemeName(),
@@ -132,8 +132,10 @@ onMounted(() => {
         copyWithSyntaxHighlighting: false,
     });
 
-    editor.onDidChangeModelContent(() => {
-        const value = editor?.getValue() ?? '';
+    editor = createdEditor;
+
+    createdEditor.onDidChangeModelContent(() => {
+        const value = createdEditor.getValue();
 
         emit('change', value);
         intelephenseServer?.notifyContentChanged(value);
@@ -142,7 +144,7 @@ onMounted(() => {
     container.addEventListener('keydown', suppressEditorShortcuts, {
         capture: true,
     });
-    editor.focus();
+    createdEditor.focus();
 
     watch(theme, () => monaco.editor.setTheme(monacoThemeName()));
 

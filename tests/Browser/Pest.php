@@ -8,9 +8,9 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Vite;
 use Pest\Browser\Api\PendingAwaitablePage;
-use Tests\Support\DeadLanguageServerBridgeLauncher;
-use Tests\Support\FakeHerd;
 use Tests\TestCase;
+use Tests\TestSupport\DeadLanguageServerBridgeLauncher;
+use Tests\TestSupport\FakeHerd;
 
 /*
 |--------------------------------------------------------------------------
@@ -37,6 +37,8 @@ pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->group('browser')
     ->beforeEach(function () use (&$snippetsRoot): void {
+        freezeDeterministicState($this);
+
         $snippetsRoot = sys_get_temp_dir().'/tinkerbench-browser-snippets-'.bin2hex(random_bytes(8));
         File::ensureDirectoryExists($snippetsRoot);
         config(['filesystems.disks.snippets.root' => $snippetsRoot]);

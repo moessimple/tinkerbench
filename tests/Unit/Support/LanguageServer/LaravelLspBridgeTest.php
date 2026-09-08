@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Support\LanguageServer\LanguageServerBridgeLauncher;
 use App\Support\LanguageServer\LaravelLspBridge;
 use Illuminate\Support\Facades\Process;
+use PHPUnit\Framework\Assert;
 
 it('spawns a detached bridge process that survives past the request and reports its port', function (): void {
     $port = new LaravelLspBridge(new LanguageServerBridgeLauncher())->start(sys_get_temp_dir(), PHP_BINARY, PHP_BINARY);
@@ -84,5 +85,10 @@ it('resolves real config completions for the target project, not just a stub res
 
     $decoded = json_decode($result->output(), true);
 
-    expect($decoded)->not->toBeNull()->and($decoded['error'])->toBeNull()->and($decoded['count'])->toBeGreaterThan(0);
+    if (! is_array($decoded)) {
+        Assert::fail('The bridge probe did not print a JSON object.');
+    }
+
+    expect($decoded['error'] ?? null)->toBeNull()
+        ->and($decoded['count'] ?? null)->toBeGreaterThan(0);
 });

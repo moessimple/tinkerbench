@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Support\Herd;
 use App\Support\ProjectSnapshot;
+use Illuminate\Process\PendingProcess;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
@@ -72,8 +74,8 @@ it('shells out to herd only once when called repeatedly on the same instance', f
     $herd->projects();
     $herd->projects();
 
-    Process::assertRanTimes(fn ($process): bool => in_array('sites', $process->command, true), 1);
-    Process::assertRanTimes(fn ($process): bool => in_array('parked', $process->command, true), 1);
+    Process::assertRanTimes(fn (PendingProcess $process): bool => in_array('sites', Arr::wrap($process->command), true), 1);
+    Process::assertRanTimes(fn (PendingProcess $process): bool => in_array('parked', Arr::wrap($process->command), true), 1);
 });
 
 it('shares the project list cache across separate herd instances', function (): void {
@@ -88,8 +90,8 @@ it('shares the project list cache across separate herd instances', function (): 
     new Herd()->projects();
     new Herd()->projects();
 
-    Process::assertRanTimes(fn ($process): bool => in_array('sites', $process->command, true), 1);
-    Process::assertRanTimes(fn ($process): bool => in_array('parked', $process->command, true), 1);
+    Process::assertRanTimes(fn (PendingProcess $process): bool => in_array('sites', Arr::wrap($process->command), true), 1);
+    Process::assertRanTimes(fn (PendingProcess $process): bool => in_array('parked', Arr::wrap($process->command), true), 1);
 });
 
 it('re-pulls the project list from herd when asked for a fresh copy', function (): void {
@@ -266,7 +268,7 @@ it('shares the resolved php binary cache across separate herd instances', functi
     new Herd()->phpBinary('a-project');
     new Herd()->phpBinary('a-project');
 
-    Process::assertRanTimes(fn ($process): bool => in_array('which-php', $process->command, true), 1);
+    Process::assertRanTimes(fn (PendingProcess $process): bool => in_array('which-php', Arr::wrap($process->command), true), 1);
 });
 
 it('re-resolves the php binary from herd when asked for a fresh copy', function (): void {
@@ -308,7 +310,7 @@ it('reports the laravel version as unknown for a project with no vendor autoload
 
     expect(new Herd()->laravelVersion('/some/php', $projectPath))->toBe('unknown');
 
-    Process::assertNotRan(fn ($process): bool => in_array('/some/php', $process->command, true));
+    Process::assertNotRan(fn (PendingProcess $process): bool => in_array('/some/php', Arr::wrap($process->command), true));
 
     File::deleteDirectory($projectPath);
 });
@@ -319,7 +321,7 @@ it('shells out for a php version only once, sharing the cache across instances',
     new Herd()->phpVersion('/some/php');
     new Herd()->phpVersion('/some/php');
 
-    Process::assertRanTimes(fn ($process): bool => in_array('echo PHP_VERSION;', $process->command, true), 1);
+    Process::assertRanTimes(fn (PendingProcess $process): bool => in_array('echo PHP_VERSION;', Arr::wrap($process->command), true), 1);
 });
 
 it('re-resolves the php version when asked for a fresh copy', function (): void {
@@ -339,7 +341,7 @@ it('shells out for a laravel version only once, sharing the cache across instanc
     new Herd()->laravelVersion('/some/php', base_path());
     new Herd()->laravelVersion('/some/php', base_path());
 
-    Process::assertRanTimes(fn ($process): bool => in_array('/some/php', $process->command, true), 1);
+    Process::assertRanTimes(fn (PendingProcess $process): bool => in_array('/some/php', Arr::wrap($process->command), true), 1);
 });
 
 it('re-resolves the laravel version when asked for a fresh copy', function (): void {
@@ -363,9 +365,11 @@ it('bundles the project path and toolchain versions into a snapshot for a known 
         '*' => "13.0.0\n",
     ]);
 
+    $projectPath = realpath(base_path()) ?: throw new RuntimeException('base_path() must resolve to a real path for this test.');
+
     expect(new Herd()->snapshotProject('tinkerbench'))->toEqual(new ProjectSnapshot(
         name: 'tinkerbench',
-        path: realpath(base_path()),
+        path: $projectPath,
         phpBinary: '/fake/php',
         phpVersion: '8.5.0',
         laravelVersion: '13.0.0',

@@ -1531,3 +1531,60 @@ it('highlights a project row in the combined list on hover', async () => {
 
     expect(row.getAttribute('aria-selected')).toBe('true');
 });
+
+it('marks the current project in the project list and leaves the others unmarked', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], ['my-project', 'zebra']));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+    const current = await screen.findByRole('option', { name: 'my-project' });
+    const other = screen.getByRole('option', { name: 'zebra' });
+
+    expect(current.querySelector('.bg-accent')).not.toBeNull();
+    expect(other.querySelector('.bg-accent')).toBeNull();
+});
+
+it('falls back to a generic message when a create fails with no server message', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo([], []));
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    const input = await screen.findByLabelText('Search snippets');
+    await fireEvent.update(input, 'new-name');
+    await fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+    capturedCreatePost?.onHttpException?.({ status: 500, data: {} });
+
+    await screen.findByText('Unable to create the snippet.');
+});
+
+it('falls back to a generic message when a rename fails with no server message', async () => {
+    const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(jsonResponse(['scratch']))
+        .mockResolvedValueOnce(jsonResponse([]))
+        .mockResolvedValueOnce(jsonResponse({}, false));
+    vi.stubGlobal('fetch', fetchMock);
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Browse snippets' }),
+    );
+    await screen.findByText('scratch');
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Rename scratch' }),
+    );
+    const input = screen.getByLabelText('Rename scratch');
+    await fireEvent.update(input, 'renamed-name');
+    await fireEvent.keyDown(input, { key: 'Enter' });
+
+    await screen.findByText('Request failed');
+});

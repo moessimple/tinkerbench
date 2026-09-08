@@ -60,3 +60,15 @@ it('flips the theme, persists it, and toggles the dark class', async () => {
     expect(localStorage.getItem('theme')).toBe('dark');
     expect(document.documentElement.classList.contains('dark')).toBe(true);
 });
+
+it('flips a dark theme back to light', async () => {
+    stubMatchMedia(true);
+    const { useTheme } = await import('./useTheme');
+
+    const { theme, toggleTheme } = useTheme();
+    toggleTheme();
+
+    expect(theme.value).toBe('light');
+    expect(localStorage.getItem('theme')).toBe('light');
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+});

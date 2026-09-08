@@ -6,13 +6,25 @@ includes:
     - phar://phpstan.phar/conf/bleedingEdge.neon
 
 parameters:
+    bootstrapFiles:
+        - tests/TestSupport/PHPStan/register-custom-expectations.php
+
     paths:
         - app/
         - bootstrap/app.php
         - config/
         - database/
         - routes/
+        - tests/
 
     level: max
+
     phpVersion: 80500
+
     tmpDir: /tmp/phpstan
+
+services:
+    -
+        class: Tests\TestSupport\PHPStan\PestCustomExpectationMethodsExtension
+        tags:
+            - phpstan.broker.methodsClassReflectionExtension

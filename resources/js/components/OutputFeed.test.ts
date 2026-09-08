@@ -103,6 +103,23 @@ it('orders query entries slowest first when the slowest sort is set', () => {
     expect(order).toEqual(['select 2', 'select 3', 'select 1']);
 });
 
+it('treats a non-query entry as zero duration under the slowest sort', () => {
+    const { container } = renderFeed([query('select slow', 40), dump(1)], {
+        sort: 'slowest',
+    });
+
+    const kinds = [...container.querySelectorAll('[data-kind]')].map((el) =>
+        el.getAttribute('data-kind'),
+    );
+    expect(kinds).toEqual(['query', 'dump']);
+});
+
+it('renders an empty string when a non-facet filter matches nothing', () => {
+    const { container } = renderFeed([], { filter: 'result' });
+
+    expect(container.querySelector('p')?.textContent?.trim()).toBe('');
+});
+
 it('keeps execution order under the recent sort', () => {
     const { container } = renderFeed(
         [query('select 1', 50), query('select 2', 1)],
