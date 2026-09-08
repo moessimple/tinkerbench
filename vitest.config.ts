@@ -20,9 +20,9 @@ export default defineConfig({
         // ships a Playwright spec there that would otherwise be collected.
         exclude: [...configDefaults.exclude, 'vendor/**'],
         coverage: {
-            // Enforced under --coverage (the test:unit script), mirroring the PHP
-            // side's pest --coverage --exactly=100.0: every runtime module ships
-            // with a test that covers it.
+            // Line coverage only, as a single total across all files, matching the
+            // PHP side's pest --coverage --exactly=100.0 (percentageOfExecutedLines
+            // over app/). Branches, functions and statements are not gated.
             provider: 'v8',
             reporter: ['text'],
             include: ['resources/js/**/*.ts', 'resources/js/**/*.vue'],
@@ -41,7 +41,7 @@ export default defineConfig({
                 // (MonacoEditor.test.ts).
                 'resources/js/lib/monacoEditorWorker.ts',
             ],
-            thresholds: { 100: true },
+            thresholds: { lines: 100 },
         },
     },
 });

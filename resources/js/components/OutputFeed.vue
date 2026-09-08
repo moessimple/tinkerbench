@@ -42,7 +42,6 @@ watch(
     async () => {
         await nextTick();
 
-        /* v8 ignore next 3 -- feedElement.value is null only if the component unmounts during the awaited tick; the root <div> holds the ref for the whole mounted lifetime otherwise. */
         if (feedElement.value) {
             executeScripts(feedElement.value);
         }
