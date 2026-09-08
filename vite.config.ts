@@ -27,6 +27,17 @@ export default defineConfig({
             'resources/js/wayfinder/*',
             'resources/js/components/ui/*',
         ],
+        overrides: [
+            {
+                // @testing-library/vue's render() returns emitted/rerender/... as plain
+                // closures, not this-bound methods, so destructuring them off the result is
+                // safe. unbound-method can't see that and false-positives on every one.
+                files: ['resources/js/**/*.test.ts'],
+                rules: {
+                    'typescript/unbound-method': 'off',
+                },
+            },
+        ],
     },
     fmt: {
         printWidth: 80,
