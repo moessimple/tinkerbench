@@ -1,13 +1,13 @@
 
 # tinkerbench
 
-![App](images/app.png)
+![The tinkerbench editor with its output feed alongside](images/app.png)
 
 [![tests](https://github.com/moessimple/tinkerbench/actions/workflows/tests.yml/badge.svg)](https://github.com/moessimple/tinkerbench/actions/workflows/tests.yml)
 [![lint](https://github.com/moessimple/tinkerbench/actions/workflows/lint.yml/badge.svg)](https://github.com/moessimple/tinkerbench/actions/workflows/lint.yml)
 [![static analysis](https://github.com/moessimple/tinkerbench/actions/workflows/static.yml/badge.svg)](https://github.com/moessimple/tinkerbench/actions/workflows/static.yml)
 
-tinkerbench is a browser based REPL for any project linked in [Laravel Herd](https://herd.laravel.com).
+tinkerbench is a browser-based REPL for any project linked in [Laravel Herd](https://herd.laravel.com).
 Write a PHP snippet, run it against that project's own runtime, and see the output immediately, no separate setup per project.
 A take on Laravel's [`tinker`](https://github.com/laravel/tinker), inspired by [Tinkerwell](https://tinkerwell.app).
 
@@ -16,10 +16,10 @@ A take on Laravel's [`tinker`](https://github.com/laravel/tinker), inspired by [
 
 ## Features
 
-* Any Herd linked project as a target, switchable without leaving the page.
+* Any Herd-linked project as a target, switchable without leaving the page.
 * Multiple named snippets per project; create, rename, and delete them as needed.
 * Command palette (`⌘P`) to jump between snippets and projects, similar to an editor's quick open.
-* Monaco based editor with PHP syntax highlighting, autosave, and a run shortcut (`⌘Enter`).
+* Monaco-based editor with PHP syntax highlighting, autosave, and a run shortcut (`⌘Enter`).
 * PHP autocompletion, hover documentation, and signature help for the target project's own code, powered by the intelephense language server (also widely used as a VS Code extension).
 * A single chronological feed of everything a run touched, each entry its own card in execution order. Every project gets dumps, return values, exceptions, and standard output; a Laravel 12 or newer project also gets database queries, log entries, and N+1 warnings.
 * Filter the feed by kind with live counts, and click a card to jump the editor to the line that produced it.
@@ -32,7 +32,7 @@ A take on Laravel's [`tinker`](https://github.com/laravel/tinker), inspired by [
 
 * [Laravel Herd](https://herd.laravel.com) with PHP 8.5 available. Herd bundles PHP, Composer, and Node, so there is nothing else to install.
 * Target projects need PHP 8.2 or newer (`herd isolate` per project).
-* The Laravel feed (query, log, and N+1 cards) needs a Laravel 12 or newer target. Any other PHP project still produces dumps, return values, exceptions, and standard output.
+* The database query, log entry, and N+1 warning cards need a Laravel 12 or newer target. Every other PHP project still produces dumps, return values, exceptions, and standard output.
 
 ## Installation
 
