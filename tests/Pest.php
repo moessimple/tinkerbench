@@ -13,6 +13,7 @@ use Illuminate\Routing\Router;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Assert;
@@ -43,26 +44,40 @@ $loader->setPsr4('App\\', [dirname(__DIR__).'/app']);
 
 /*
 |--------------------------------------------------------------------------
-| Test Case
+| Test Case and deterministic state
 |--------------------------------------------------------------------------
 |
-| The closure you provide to your test functions is always bound to a specific PHPUnit test
-| case class. By default, that class is "PHPUnit\Framework\TestCase". Of course, you may
-| need to change it using the "pest()" function to bind different classes or traits.
+| Unit, Http, Console and Browser tests start from a known baseline: real random strings and
+| UUIDs (undoing a fake a previous test forgot to reset), a hard failure on any unfaked
+| outbound process (the twin of essentials' PreventStrayRequests), a fresh faked default
+| filesystem disk, and frozen time so time-based assertions do not race the clock.
+|
+| LazilyRefreshDatabase sits on top: it migrates and opens its transaction only when a test
+| touches the database. Browser is included because pest-plugin-browser runs the app
+| in-process through the same container and connection as the test (no artisan serve), so
+| the transaction and the fakes reach browser-driven requests. Browser tests also join the
+| `browser` group, which a bare pest or artisan test run excludes (see phpunit.xml).
+|
+| Arch tests are not extended here: they are static assertions over the codebase, need no
+| TestCase, and never open a connection. They run via the Arch testsuite in phpunit.xml.
 |
 */
 
 pest()->extend(TestCase::class)
+    ->use(LazilyRefreshDatabase::class)
     ->beforeEach(function (): void {
-        freezeDeterministicState($this);
-    })
-    ->in('Arch', 'Unit', 'Http', 'Console');
+        Str::createRandomStringsNormally();
+        Str::createUuidsNormally();
+        Process::preventStrayProcesses();
+        Storage::fake();
 
-pest()->use(LazilyRefreshDatabase::class)->in('Http', 'Console');
+        $this->freezeTime();
+    })
+    ->in('Unit', 'Http', 'Console', 'Browser');
 
 // Pest's BootFiles bootstrapper only auto-includes the root tests/Pest.php, never a
-// nested one. The Browser suite keeps its own bootstrap (TestCase binding, snippets-disk
-// isolation, external-process fakes) in tests/Browser/Pest.php; pull it in from here.
+// nested one. The Browser suite keeps its own setup (snippets-disk isolation,
+// external-process fakes, forced Vite manifest) in tests/Browser/Pest.php; pull it in from here.
 require_once __DIR__.'/Browser/Pest.php';
 
 /*
@@ -122,22 +137,6 @@ expect()->extend('toUseMiddleware', function (string $middleware): self {
 | global functions to help you to reduce the number of lines of code in your test files.
 |
 */
-
-/**
- * Every test starts from a known baseline: real random strings and UUIDs (undoing a fake a
- * previous test forgot to reset), a hard failure on any unfaked outbound process (the twin of
- * essentials' PreventStrayRequests), and frozen time so time-based assertions do not race the
- * clock. Suites that spawn real subprocesses on purpose opt back out with
- * Process::allowStrayProcesses() in their own beforeEach.
- */
-function freezeDeterministicState(TestCase $test): void
-{
-    Str::createRandomStringsNormally();
-    Str::createUuidsNormally();
-    Process::preventStrayProcesses();
-
-    $test->freezeTime();
-}
 
 function something(): void
 {

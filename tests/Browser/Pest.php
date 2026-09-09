@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 use App\Support\Herd;
 use App\Support\LanguageServer\LanguageServerBridgeLauncher;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Vite;
 use Pest\Browser\Api\PendingAwaitablePage;
-use Tests\TestCase;
 use Tests\TestSupport\DeadLanguageServerBridgeLauncher;
 use Tests\TestSupport\FakeHerd;
 
@@ -18,10 +16,12 @@ use Tests\TestSupport\FakeHerd;
 |--------------------------------------------------------------------------
 |
 | Pest's BootFiles bootstrapper only auto-includes the root tests/Pest.php, so this file
-| is pulled in from there with require_once. It makes every browser test deterministic:
-| an isolated snippets disk, a Herd that never shells out, and LSP bridges that spawn no
-| node process. The Amp HTTP server runs in the same PHP process as the test, so a
-| beforeEach config() override and container bind both reach the browser-driven request.
+| is pulled in from there with require_once. The root file already binds TestCase, the
+| deterministic baseline and LazilyRefreshDatabase to the Browser suite; this file adds the
+| browser-only pieces: an isolated snippets disk, a Herd that never shells out, and LSP
+| bridges that spawn no node process. The Amp HTTP server runs in the same PHP process as
+| the test, so a beforeEach config() override and container bind both reach the
+| browser-driven request.
 |
 */
 
@@ -33,12 +33,9 @@ $snippetsRoot = null;
 // for a loaded CI runner.
 pest()->browser()->timeout(30_000);
 
-pest()->extend(TestCase::class)
-    ->use(RefreshDatabase::class)
+pest()
     ->group('browser')
     ->beforeEach(function () use (&$snippetsRoot): void {
-        freezeDeterministicState($this);
-
         $snippetsRoot = sys_get_temp_dir().'/tinkerbench-browser-snippets-'.bin2hex(random_bytes(8));
         File::ensureDirectoryExists($snippetsRoot);
         config(['filesystems.disks.snippets.root' => $snippetsRoot]);
