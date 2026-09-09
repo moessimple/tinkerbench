@@ -44,7 +44,7 @@ cd tinkerbench
 composer setup
 ```
 
-`composer setup` installs the dependencies, creates `.env`, migrates the database, builds the frontend, and links the site to Herd at [`https://tinkerbench.test`](https://tinkerbench.test) on PHP 8.5.
+`composer setup` installs the dependencies, creates `.env`, migrates the database, downloads a headless Chromium for the browser tests, builds the frontend, and links the site to Herd at [`https://tinkerbench.test`](https://tinkerbench.test) on PHP 8.5.
 
 ## Usage
 

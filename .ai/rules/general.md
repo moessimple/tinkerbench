@@ -7,8 +7,13 @@ paths:
 
 # General
 
+## What tinkerbench is
+A local, browser-based PHP REPL for any project linked in Laravel Herd: you write a PHP snippet in the browser, it runs against the target project's own runtime (its database and services attached), and the output comes back as a single chronological feed of cards. It is a personal developer tool that runs only on the developer's own machine, never deployed or exposed (see "Never mutate the developer's saved snippets").
+
+Shape: the repo-root Laravel app is the UI and API (Inertia + Vue, a Monaco editor, the intelephense language server); `packages/runner` is a standalone package that runs each snippet in its own PHP process against the target project. Target support floor is PHP 8.2+, and Laravel 12+ for the query/log/N+1 cards (see "Target project support floor: Laravel 12+ and PHP 8.2+").
+
 ## Consistency beats personal style
-Consistency (naming, structure, testing style, mocking approach, route conventions) is the top-tier quality bar for this project, above cleverness or terseness. When a stylistic choice is ambiguous, check how the nearest comparable case was already solved in this codebase (or a cited reference project) before deciding, don't default to personal preference. Small deviations (a leading slash on a route, `test()` vs `it()`, a test name that leaks an internal collaborator name) are worth fixing, not "functionally identical, good enough".
+Consistency (naming, structure, testing style, mocking approach, route conventions) is the top-tier quality bar for this project, above cleverness or terseness. When a stylistic choice is ambiguous, check how the nearest comparable case was already solved in this codebase before deciding, don't default to personal preference. Small deviations (a leading slash on a route, `test()` vs `it()`, a test name that leaks an internal collaborator name) are worth fixing, not "functionally identical, good enough".
 
 ## Full, isolated test coverage is mandatory, no silently invented exceptions
 Every new/changed class in app/Actions|Support|Enums needs its own isolated unit test proving its behavior (see app.md); a new/changed Controller needs its own Http flow test instead, and a new/changed Request/Middleware needs its own tests/Unit/ test (see tests.md), with documented exceptions for pure framework-override glue that carries no app-specific logic (e.g. HandleInertiaRequests, see middleware.md). Every new/changed Vue component or JS module needs its own test too. This is mandatory, applies equally to PHP and JS/Vue, and includes plain enums, thin controllers, and anything else that looks "too small to test": don't invent an ad hoc exception (e.g. skipping a value-only enum's test) without flagging it to the user first and getting confirmation.
@@ -68,3 +73,6 @@ the only place the runner suite runs on a real PHP 8.2 interpreter; it calls
 `composer test:unit:no-coverage --working-dir=packages/runner` directly (static checks are
 interpreter-independent and already run on 8.5). Both lint.yml and static.yml must install
 packages/runner's Composer deps because those aliases now shell into it.
+
+## Keep the README in sync with user-visible changes, and fact-check it
+When a change alters user-visible behavior, setup steps, requirements, or the feature set, update README.md in the same change. Verify concrete claims against source, not memory: keyboard shortcuts and command-palette prefixes in resources/js, the slow-query threshold in packages/runner/src/FeedItems/QueryFeedItem.php (SLOW_THRESHOLD_MS), what `composer setup` and `composer test` actually do in composer.json's scripts, and the PHP/Laravel version floors (see "Target project support floor: Laravel 12+ and PHP 8.2+"). Rewording or polishing the prose is not the same as checking it; the verification is a separate step.

@@ -11,4 +11,4 @@ Do not chain `->name(...)` on routes. Frontend code references backend routes/co
 Avoid the `Route::inertia()` macro: Larastan can't resolve its return type (resolves to `mixed`), which forces a phpstan.neon ignore rule for any chained call. Use `Route::get($uri, fn () => Inertia::render($component))` instead, it's fully typed.
 
 ## No leading slash on route paths
-Write `Route::get('snippets/executions', ...)`, not `Route::get('/snippets/executions', ...)`. Functionally identical in Laravel, but matches the backend-playbook reference project's convention (only the bare root route is `/`). Consistency with the reference project's route style is the goal, not a technical requirement.
+Write `Route::get('snippets/executions', ...)`, not `Route::get('/snippets/executions', ...)`. Functionally identical in Laravel; the house style is that only the bare root route is `/`, every other path has no leading slash. Consistency is the goal, not a technical requirement.

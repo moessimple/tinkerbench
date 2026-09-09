@@ -10,10 +10,10 @@ paths:
 Both PNGs are screenshots of the running Herd app (https://tinkerbench.test) on the
 `demo` project's `scratch` snippet (https://tinkerbench.test/demo/scratch).
 
-Drive the browser with the **agent-browser skill** (the project's standing choice for
-browser automation). The chrome-devtools MCP also works if it is already running; the
-steps below are tool-agnostic and only need "navigate", "run JS in the page", "resize"
-and "screenshot to a file".
+Drive the browser with whatever browser-automation tooling you have (an agent-browser
+skill, the chrome-devtools MCP if it is running, Playwright directly, etc.). The steps
+below are tool-agnostic and only need "navigate", "run JS in the page", "resize" and
+"screenshot to a file".
 
 ### `demo/scratch` is a standing exception
 
