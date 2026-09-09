@@ -324,6 +324,24 @@ it('ignores an auto-repeating Ctrl/Cmd+Enter so a held chord does not stack runs
     expect(capturedPost).toBeNull();
 });
 
+it('ignores Ctrl/Cmd+Enter while a run is already in flight', async () => {
+    httpState.processing = true;
+    render(OpenSnippet, { props });
+
+    document.dispatchEvent(
+        new KeyboardEvent('keydown', {
+            key: 'Enter',
+            metaKey: true,
+            cancelable: true,
+            bubbles: true,
+        }),
+    );
+    await nextTick();
+
+    expect(capturedPost).toBeNull();
+    httpState.processing = false;
+});
+
 it('shows the run shortcut in the button tooltip', () => {
     render(OpenSnippet, { props });
 
@@ -838,6 +856,28 @@ it('does not send a redundant save on unmount when no edit is pending', () => {
     rendered.unmount();
 
     expect(fetchMock).not.toHaveBeenCalled();
+});
+
+it('does not re-save on unmount once the debounced save has already run', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ ok: true }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    vi.useFakeTimers();
+    const rendered = render(OpenSnippet, { props });
+
+    await fireEvent.update(
+        screen.getByLabelText('Snippet code'),
+        "echo 'edited';",
+    );
+    await vi.advanceTimersByTimeAsync(500);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    rendered.unmount();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
 });
 
 it('flushes the pending debounced save immediately on Ctrl/Cmd+S', async () => {

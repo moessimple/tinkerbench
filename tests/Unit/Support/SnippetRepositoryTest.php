@@ -159,6 +159,13 @@ it('throws when reading the contents of a missing snippet', function (): void {
     new SnippetRepository()->contents('my-project', 'missing');
 })->throws(RuntimeException::class, 'The snippet at my-project/missing.php is missing.');
 
+it('reports whether a snippet exists', function (): void {
+    Storage::disk(Disk::Snippets)->put('my-project/present.php', 'echo 1;');
+
+    expect(new SnippetRepository()->exists('my-project', 'present'))->toBeTrue()
+        ->and(new SnippetRepository()->exists('my-project', 'absent'))->toBeFalse();
+});
+
 it('writes the given content to a snippet', function (): void {
     expect(new SnippetRepository()->write('my-project', 'scratch', 'echo "written";'))->toBeTrue();
 

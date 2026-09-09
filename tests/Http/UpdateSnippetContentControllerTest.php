@@ -6,6 +6,7 @@ use App\Http\Controllers\UpdateSnippetContentController;
 use App\Http\Middleware\EnsureKnownProject;
 use App\Http\Requests\UpdateSnippetContentRequest;
 use App\Support\SnippetRepository;
+use Mockery\MockInterface;
 
 it('uses the right request', function (): void {
     expect(UpdateSnippetContentController::class)->toUseFormRequest(UpdateSnippetContentRequest::class);
@@ -18,8 +19,10 @@ it('uses the right middleware', function (): void {
 it('uses the right repository', function (): void {
     mockKnownProject();
 
-    $this->mock(SnippetRepository::class)
-        ->shouldReceive('write')->once()->with('my-project', 'scratch', 'echo "saved";')->andReturn(true);
+    $this->mock(SnippetRepository::class, function (MockInterface $mock): void {
+        $mock->shouldReceive('exists')->once()->with('my-project', 'scratch')->andReturn(true);
+        $mock->shouldReceive('write')->once()->with('my-project', 'scratch', 'echo "saved";')->andReturn(true);
+    });
 
     $this->putJson('/api/projects/my-project/snippets/scratch', ['content' => 'echo "saved";']);
 });
@@ -27,16 +30,35 @@ it('uses the right repository', function (): void {
 it('saves the content via the repository', function (): void {
     mockKnownProject();
 
-    $this->mock(SnippetRepository::class)->shouldReceive('write')->andReturn(true);
+    $this->mock(SnippetRepository::class, function (MockInterface $mock): void {
+        $mock->shouldReceive('exists')->andReturn(true);
+        $mock->shouldReceive('write')->andReturn(true);
+    });
 
     $this->putJson('/api/projects/my-project/snippets/scratch', ['content' => 'echo "saved";'])
         ->assertNoContent();
 });
 
+it('returns 404 without writing when the snippet no longer exists', function (): void {
+    mockKnownProject();
+
+    $this->mock(SnippetRepository::class, function (MockInterface $mock): void {
+        $mock->shouldReceive('exists')->andReturn(false);
+        $mock->shouldReceive('write')->never();
+    });
+
+    $this->putJson('/api/projects/my-project/snippets/scratch', ['content' => 'echo "saved";'])
+        ->assertNotFound()
+        ->assertJsonPath('message', 'Snippet not found');
+});
+
 it('reports a server error as JSON when the repository fails to write', function (): void {
     mockKnownProject();
 
-    $this->mock(SnippetRepository::class)->shouldReceive('write')->andReturn(false);
+    $this->mock(SnippetRepository::class, function (MockInterface $mock): void {
+        $mock->shouldReceive('exists')->andReturn(true);
+        $mock->shouldReceive('write')->andReturn(false);
+    });
 
     $this->putJson('/api/projects/my-project/snippets/scratch', ['content' => 'echo "saved";'])
         ->assertServerError()

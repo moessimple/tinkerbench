@@ -62,6 +62,11 @@ class SnippetRepository
         return $this->read($this->relativePath($project, $snippet));
     }
 
+    public function exists(string $project, string $snippet): bool
+    {
+        return Storage::disk(Disk::Snippets)->exists($this->relativePath($project, $snippet));
+    }
+
     public function write(string $project, string $snippet, string $contents): bool
     {
         $path = $this->relativePath($project, $snippet);
@@ -136,11 +141,6 @@ class SnippetRepository
         }
 
         return RenameSnippetResult::Renamed;
-    }
-
-    private function exists(string $project, string $snippet): bool
-    {
-        return Storage::disk(Disk::Snippets)->exists($this->relativePath($project, $snippet));
     }
 
     private function relativePath(string $project, string $snippet): string

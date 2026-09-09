@@ -10,6 +10,7 @@ it('rejects a non-loopback request', function (string $method, string $uri): voi
     'run snippet' => ['POST', 'api/projects/my-project/snippets/executions'],
     'list projects' => ['GET', 'api/projects'],
     'start language server' => ['POST', 'api/projects/my-project/language-server'],
+    'start laravel language server' => ['POST', 'api/projects/my-project/laravel-language-server'],
     'list snippets' => ['GET', 'api/projects/my-project/snippets'],
     'create snippet' => ['POST', 'api/projects/my-project/snippets'],
     'update snippet content' => ['PUT', 'api/projects/my-project/snippets/my-snippet'],

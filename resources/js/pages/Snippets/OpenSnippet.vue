@@ -161,7 +161,13 @@ function queueSnippetSave(content: string): void {
 function onEditorChange(content: string): void {
     http.code = content;
     window.clearTimeout(saveTimer);
-    saveTimer = window.setTimeout(() => queueSnippetSave(content), 500);
+    saveTimer = window.setTimeout(() => {
+        // Clear the handle once the debounce fires so onBeforeUnmount's `saveTimer !== undefined`
+        // check means "a save is still pending", not "the editor was touched at some point" (which
+        // would re-send an already-persisted save on every navigation away).
+        saveTimer = undefined;
+        queueSnippetSave(content);
+    }, 500);
 }
 
 function flushSave(): void {
@@ -203,6 +209,14 @@ onBeforeUnmount(() =>
 );
 
 function run(): void {
+    // useHttp starts each request without cancelling one already in flight, so a second
+    // Cmd/Ctrl+Enter before the first run returns would race two runs and let the slower
+    // response overwrite the newer one. The Run button is already disabled while processing;
+    // this guards the keyboard path too.
+    if (http.processing) {
+        return;
+    }
+
     errorMessage.value = '';
     rawOutput.value = '';
     debug.value = null;
