@@ -168,7 +168,16 @@ jobs:
           touch database/database.sqlite
           php artisan migrate --force
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+          restore-keys: ${{ runner.os }}-playwright-
+
       - name: Install Playwright Chromium
+        # A cache hit skips the browser download; --with-deps still installs the
+        # apt libraries, which the cache cannot hold.
         run: npx playwright install --with-deps chromium
 
       - name: Browser tests
