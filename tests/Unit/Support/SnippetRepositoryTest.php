@@ -120,7 +120,7 @@ it('locks the target snippet name for the duration of the create', function (): 
 
     Cache::shouldReceive('lock')
         ->once()
-        ->with('tinkerbench:snippet-create:my-project:fresh', 5)
+        ->with('tinkerbench:snippet:my-project:fresh', 5)
         ->andReturn($lock);
 
     $result = new SnippetRepository()->create('my-project', 'fresh');
@@ -213,7 +213,7 @@ it('locks the target snippet name for the duration of the rename', function (): 
 
     Cache::shouldReceive('lock')
         ->once()
-        ->with('tinkerbench:snippet-rename:my-project:new', 5)
+        ->with('tinkerbench:snippet:my-project:new', 5)
         ->andReturn($lock);
 
     $result = new SnippetRepository()->rename('my-project', 'old', 'new');
@@ -229,6 +229,44 @@ it('releases the rename lock even when the source snippet is missing', function 
     Cache::shouldReceive('lock')->once()->andReturn($lock);
 
     new SnippetRepository()->rename('my-project', 'missing', 'new');
+});
+
+it('locks the target snippet name for the duration of the delete', function (): void {
+    Storage::disk(Disk::Snippets)->put('my-project/scratch.php', 'echo 1;');
+
+    $lock = Mockery::mock(Lock::class);
+    $lock->shouldReceive('block')->once()->with(5);
+    $lock->shouldReceive('release')->once();
+
+    Cache::shouldReceive('lock')
+        ->once()
+        ->with('tinkerbench:snippet:my-project:scratch', 5)
+        ->andReturn($lock);
+
+    expect(new SnippetRepository()->delete('my-project', 'scratch'))->toBe(DeleteSnippetResult::Deleted);
+});
+
+it('serializes create, rename, and delete of the same name on a single lock key', function (): void {
+    Storage::disk(Disk::Snippets)->put('my-project/source.php', 'echo 1;');
+
+    $keys = [];
+    Cache::shouldReceive('lock')->andReturnUsing(function (string $key) use (&$keys): Lock {
+        $keys[] = $key;
+
+        $lock = Mockery::mock(Lock::class);
+        $lock->shouldReceive('block');
+        $lock->shouldReceive('release');
+
+        return $lock;
+    });
+
+    $repository = new SnippetRepository();
+    $repository->create('my-project', 'target');
+    $repository->rename('my-project', 'source', 'target');
+    $repository->delete('my-project', 'target');
+
+    expect($keys)->toHaveCount(3)
+        ->and(array_unique($keys))->toBe(['tinkerbench:snippet:my-project:target']);
 });
 
 it('reports a missing source snippet when renaming', function (): void {

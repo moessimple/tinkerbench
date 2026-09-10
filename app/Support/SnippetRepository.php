@@ -8,6 +8,7 @@ use App\Enums\CreateSnippetResult;
 use App\Enums\DeleteSnippetResult;
 use App\Enums\Disk;
 use App\Enums\RenameSnippetResult;
+use Closure;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
@@ -47,14 +48,11 @@ class SnippetRepository
 
     public function create(string $project, string $snippet): CreateSnippetResult
     {
-        $lock = Cache::lock("tinkerbench:snippet-create:{$project}:{$snippet}", 5);
-        $lock->block(5);
-
-        try {
-            return $this->createWhileLocked($project, $snippet);
-        } finally {
-            $lock->release();
-        }
+        return $this->withSnippetLock(
+            $project,
+            $snippet,
+            fn (): CreateSnippetResult => $this->createWhileLocked($project, $snippet),
+        );
     }
 
     public function contents(string $project, string $snippet): string
@@ -67,6 +65,11 @@ class SnippetRepository
         return Storage::disk(Disk::Snippets)->exists($this->relativePath($project, $snippet));
     }
 
+    /**
+     * Overwrites the snippet's content, creating the file if it does not exist. Deliberately not
+     * serialized by withSnippetLock(): a content autosave that races a delete/rename is guarded at
+     * the controller with an existence check, and the worst case is a resurrected scratch file.
+     */
     public function write(string $project, string $snippet, string $contents): bool
     {
         $path = $this->relativePath($project, $snippet);
@@ -81,17 +84,50 @@ class SnippetRepository
 
     public function rename(string $project, string $from, string $to): RenameSnippetResult
     {
-        $lock = Cache::lock("tinkerbench:snippet-rename:{$project}:{$to}", 5);
+        // Locks only the target name. A concurrent create()/rename()/delete() aimed at the same
+        // target is what corrupts (two writers passing the "does it exist?" check, then clobbering
+        // each other); a race on the source name instead resolves to a clean Failed result, since
+        // the second move() finds nothing to move.
+        return $this->withSnippetLock(
+            $project,
+            $to,
+            fn (): RenameSnippetResult => $this->renameWhileLocked($project, $from, $to),
+        );
+    }
+
+    public function delete(string $project, string $snippet): DeleteSnippetResult
+    {
+        return $this->withSnippetLock(
+            $project,
+            $snippet,
+            fn (): DeleteSnippetResult => $this->deleteWhileLocked($project, $snippet),
+        );
+    }
+
+    /**
+     * Serializes every operation that creates, moves, or removes the snippet file at
+     * "{project}/{snippet}.php" against every other such operation on the same path. The key names
+     * the target resource, not the operation, so a concurrent create() and rename() both aiming at
+     * the same name cannot each pass their existence check and then overwrite one another.
+     *
+     * @template TResult
+     *
+     * @param  Closure(): TResult  $callback
+     * @return TResult
+     */
+    private function withSnippetLock(string $project, string $snippet, Closure $callback): mixed
+    {
+        $lock = Cache::lock("tinkerbench:snippet:{$project}:{$snippet}", 5);
         $lock->block(5);
 
         try {
-            return $this->renameWhileLocked($project, $from, $to);
+            return $callback();
         } finally {
             $lock->release();
         }
     }
 
-    public function delete(string $project, string $snippet): DeleteSnippetResult
+    private function deleteWhileLocked(string $project, string $snippet): DeleteSnippetResult
     {
         if (! $this->exists($project, $snippet)) {
             return DeleteSnippetResult::Missing;
