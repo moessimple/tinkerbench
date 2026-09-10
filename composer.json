@@ -59,6 +59,8 @@
         "setup": [
             "composer install",
             "composer install --working-dir=packages/runner",
+            "composer install --working-dir=packages/runner/tests/fixtures/plain-composer-php",
+            "composer install --working-dir=packages/runner/tests/fixtures/laravel-12",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
             "@php artisan key:generate",
             "@php artisan migrate --force",
