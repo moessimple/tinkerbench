@@ -858,6 +858,44 @@ it('does not send a redundant save on unmount when no edit is pending', () => {
     expect(fetchMock).not.toHaveBeenCalled();
 });
 
+it('flushes a pending debounced save with keepalive when the page is hidden', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal('fetch', fetchMock);
+    vi.useFakeTimers();
+    render(OpenSnippet, { props });
+
+    await fireEvent.update(
+        screen.getByLabelText('Snippet code'),
+        "echo 'edited';",
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    window.dispatchEvent(new Event('pagehide'));
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+        '/api/projects/my-project/snippets/scratch',
+        expect.objectContaining({
+            method: 'PUT',
+            keepalive: true,
+            body: JSON.stringify({ content: "echo 'edited';" }),
+        }),
+    );
+
+    await vi.advanceTimersByTimeAsync(500);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+});
+
+it('does not save on page hide when no edit is pending', () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal('fetch', fetchMock);
+    render(OpenSnippet, { props });
+
+    window.dispatchEvent(new Event('pagehide'));
+
+    expect(fetchMock).not.toHaveBeenCalled();
+});
+
 it('does not re-save on unmount once the debounced save has already run', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
         ok: true,

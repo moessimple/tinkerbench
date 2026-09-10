@@ -123,7 +123,7 @@ const saveError = ref('');
 let saveTimer: ReturnType<typeof window.setTimeout> | undefined;
 let pendingSave = Promise.resolve();
 
-function persistSnippet(content: string): Promise<void> {
+function persistSnippet(content: string, keepalive = false): Promise<void> {
     return fetch(
         UpdateSnippetContentController.url([
             props.currentProject,
@@ -133,6 +133,7 @@ function persistSnippet(content: string): Promise<void> {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', ...xsrfHeader() },
             body: JSON.stringify({ content }),
+            keepalive,
         },
     ).then((response) => {
         if (!response.ok) {
@@ -176,11 +177,29 @@ function flushSave(): void {
     queueSnippetSave(http.code);
 }
 
+// A hard reload, tab close, or external navigation tears the page down before the debounce fires
+// and before onBeforeUnmount's Vue-navigation flush runs. keepalive lets this last save outlive
+// the document. Guarded on saveTimer so it only fires while an edit is still unpersisted.
+function flushSaveOnPageHide(): void {
+    if (saveTimer === undefined) {
+        return;
+    }
+
+    window.clearTimeout(saveTimer);
+    saveTimer = undefined;
+    void persistSnippet(http.code, true);
+}
+
 onBeforeUnmount(() => {
     if (saveTimer !== undefined) {
         flushSave();
     }
 });
+
+onMounted(() => window.addEventListener('pagehide', flushSaveOnPageHide));
+onBeforeUnmount(() =>
+    window.removeEventListener('pagehide', flushSaveOnPageHide),
+);
 
 function onGlobalKeydown(event: KeyboardEvent): void {
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
