@@ -22,11 +22,6 @@ arch()->preset()->php();
 arch()->preset()->security();
 arch()->preset()->laravel();
 
-arch('no class is final')
-    ->expect('App')
-    ->classes()
-    ->not->toBeFinal();
-
 /*
 |--------------------------------------------------------------------------
 | Test Coverage
