@@ -19,7 +19,7 @@ class SnippetRunner
      *                                         isolated path when a caller needs the run's temp files
      *                                         kept away from other processes' tinkerbench-* files.
      */
-    public function __construct(private ?string $scratchDirectory = null) {}
+    public function __construct(private readonly ?string $scratchDirectory = null) {}
 
     public function run(string $code, string $phpBinary, string $projectPath, int $timeoutSeconds = self::DEFAULT_TIMEOUT_SECONDS): SnippetRunResult
     {

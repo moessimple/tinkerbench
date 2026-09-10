@@ -40,9 +40,9 @@ class SnippetRunRecorder
      *                                   errors into items, it does not listen to an event.
      */
     public function __construct(
-        private array $watchers,
-        private ExceptionMapper $exceptionMapper,
-        private SourceLocator $source,
+        private readonly array $watchers,
+        private readonly ExceptionMapper $exceptionMapper,
+        private readonly SourceLocator $source,
     ) {}
 
     /**

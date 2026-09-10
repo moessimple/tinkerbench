@@ -18,9 +18,9 @@ class ValueRenderer
     private const MAX_TEXT_LENGTH = 20_000;
 
     public function __construct(
-        private VarCloner $cloner = new VarCloner(),
-        private HtmlDumper $htmlDumper = new HtmlDumper(),
-        private CliDumper $textDumper = new CliDumper(),
+        private readonly VarCloner $cloner = new VarCloner(),
+        private readonly HtmlDumper $htmlDumper = new HtmlDumper(),
+        private readonly CliDumper $textDumper = new CliDumper(),
     ) {
         $this->textDumper->setColors(false);
     }

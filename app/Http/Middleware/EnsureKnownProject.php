@@ -11,7 +11,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EnsureKnownProject
 {
-    public function __construct(private Herd $herd) {}
+    public function __construct(private readonly Herd $herd) {}
 
     /** @param Closure(Request): Response $next */
     public function handle(Request $request, Closure $next): Response

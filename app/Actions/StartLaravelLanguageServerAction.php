@@ -9,7 +9,7 @@ use App\Support\LanguageServer\LaravelLspBridge;
 
 class StartLaravelLanguageServerAction
 {
-    public function __construct(private Herd $herd, private LaravelLspBridge $bridge) {}
+    public function __construct(private readonly Herd $herd, private readonly LaravelLspBridge $bridge) {}
 
     public function handle(string $project): int
     {

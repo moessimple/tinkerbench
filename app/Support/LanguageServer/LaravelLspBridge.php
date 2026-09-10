@@ -6,7 +6,7 @@ namespace App\Support\LanguageServer;
 
 class LaravelLspBridge
 {
-    public function __construct(private LanguageServerBridgeLauncher $launcher) {}
+    public function __construct(private readonly LanguageServerBridgeLauncher $launcher) {}
 
     public function start(string $projectPath, string $phpBinary, string $targetPhpBinary): int
     {

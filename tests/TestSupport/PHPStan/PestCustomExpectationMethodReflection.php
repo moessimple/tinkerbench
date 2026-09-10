@@ -21,8 +21,8 @@ use PHPStan\Type\Type;
 final class PestCustomExpectationMethodReflection implements MethodReflection
 {
     public function __construct(
-        private ClassReflection $classReflection,
-        private string $methodName,
+        private readonly ClassReflection $classReflection,
+        private readonly string $methodName,
     ) {}
 
     public function getDeclaringClass(): ClassReflection

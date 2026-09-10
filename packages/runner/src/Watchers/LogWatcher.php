@@ -12,7 +12,7 @@ use Tinkerbench\Runner\ValueRenderer;
 
 class LogWatcher implements Watcher
 {
-    public function __construct(private ValueRenderer $renderer) {}
+    public function __construct(private readonly ValueRenderer $renderer) {}
 
     public function register(Application $app, callable $emit): void
     {

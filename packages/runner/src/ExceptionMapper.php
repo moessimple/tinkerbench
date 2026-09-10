@@ -25,8 +25,8 @@ class ExceptionMapper
      *                               shown as "snippet" instead of a throwaway temp path.
      */
     public function __construct(
-        private string $applicationPath,
-        private string $snippetPath,
+        private readonly string $applicationPath,
+        private readonly string $snippetPath,
     ) {}
 
     /**

@@ -10,7 +10,7 @@ use App\Support\SnippetRun\SnippetRunResult;
 
 class RunSnippetAction
 {
-    public function __construct(private Herd $herd, private SnippetRunner $runner) {}
+    public function __construct(private readonly Herd $herd, private readonly SnippetRunner $runner) {}
 
     public function handle(string $project, string $code): SnippetRunResult
     {

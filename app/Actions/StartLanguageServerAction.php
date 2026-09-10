@@ -9,7 +9,7 @@ use App\Support\LanguageServer\LanguageServerBridge;
 
 class StartLanguageServerAction
 {
-    public function __construct(private Herd $herd, private LanguageServerBridge $bridge) {}
+    public function __construct(private readonly Herd $herd, private readonly LanguageServerBridge $bridge) {}
 
     public function handle(string $project): int
     {
