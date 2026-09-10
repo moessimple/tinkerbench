@@ -12,6 +12,11 @@ const output = computed(() => detectOutput(props.entry.text));
 
 <template>
     <Card label="Output" :line="null" :copy="entry.text">
+        <!--
+            Snippet stdout is untrusted (see detectOutput). HTML-looking output renders only in
+            this sandboxed iframe so its scripts stay isolated from tinkerbench's page; the JSON
+            branch below is pre-escaped by highlightJson, so its v-html is safe.
+        -->
         <iframe
             v-if="output.type === 'html'"
             class="h-64 w-full border-0 bg-white"
@@ -24,7 +29,6 @@ const output = computed(() => detectOutput(props.entry.text));
             class="whitespace-pre-wrap"
             v-html="highlightJson(output.pretty)"
         />
-        <div v-else-if="output.type === 'dump'" v-html="entry.text" />
         <pre v-else class="whitespace-pre-wrap">{{ entry.text }}</pre>
     </Card>
 </template>

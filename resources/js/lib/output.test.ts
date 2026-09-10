@@ -1,10 +1,10 @@
 import { expect, it } from 'vitest';
 import { detectOutput, executeScripts, highlightJson } from './output';
 
-it('detects an Symfony VarDumper HTML dump', () => {
+it('routes stdout that looks like markup to the sandboxed HTML path, including a VarDumper dump printed to stdout', () => {
     const text = '<script>Sfdump("sf-dump-1")</script>';
 
-    expect(detectOutput(text)).toEqual({ type: 'dump', raw: text });
+    expect(detectOutput(text)).toEqual({ type: 'html', raw: text });
 });
 
 it('detects a JSON object and pretty-prints it', () => {

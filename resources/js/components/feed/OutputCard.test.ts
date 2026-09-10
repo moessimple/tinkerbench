@@ -52,14 +52,19 @@ it('renders leading-angle-bracket output in a sandboxed iframe', () => {
     expect(frame?.getAttribute('srcdoc')).toBe('<h1>Hi</h1>');
 });
 
-it('renders a Symfony dump payload as raw html', () => {
+it('sandboxes stdout carrying a VarDumper marker and a script instead of rendering it into the card', () => {
+    const text =
+        '<span>Sfdump("x")</span><script>window.__pwned = true</script>';
+
     const { container } = render(OutputCard, {
-        props: { entry: { kind: 'output', text: '<span>Sfdump("x")</span>' } },
+        props: { entry: { kind: 'output', text } },
     });
 
-    expect(
-        container.querySelector('[data-label="Output"]')?.innerHTML,
-    ).toContain('<span>Sfdump("x")</span>');
-    expect(container.querySelector('iframe')).toBeNull();
-    expect(container.querySelector('pre')).toBeNull();
+    const frame = container.querySelector('iframe');
+    expect(frame?.getAttribute('sandbox')).toBe('allow-scripts');
+    expect(frame?.getAttribute('srcdoc')).toBe(text);
+    // The payload lives only inside the iframe's srcdoc string, never as a live node in the
+    // card, so OutputFeed's executeScripts() sweep of the feed root cannot reach it.
+    expect(container.querySelector('script')).toBeNull();
+    expect(container.querySelector('[data-label="Output"] > div')).toBeNull();
 });

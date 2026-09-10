@@ -1,5 +1,5 @@
 export type OutputResult =
-    | { raw: string; type: 'dump' | 'html' | 'text' }
+    | { raw: string; type: 'html' | 'text' }
     | { pretty: string; raw: string; type: 'json' };
 
 function escapeHtml(text: string): string {
@@ -9,12 +9,16 @@ function escapeHtml(text: string): string {
         .replaceAll('>', '&gt;');
 }
 
+/**
+ * Classifies a snippet's raw process stdout for rendering. Raw stdout is untrusted: it can carry
+ * data the snippet did not author (`echo $model->bio`), so it is never rendered as trusted HTML.
+ * A `'json'` result is escaped before highlighting, `'text'` is shown verbatim in a <pre>, and
+ * `'html'` is rendered only inside a sandboxed <iframe> (see OutputCard.vue) so its scripts cannot
+ * reach tinkerbench's own page. VarDumper HTML printed straight to stdout lands in the `'html'`
+ * branch too; the interactive dump path is the structural DumpCard/ResultCard, not this one.
+ */
 export function detectOutput(text: string): OutputResult {
     const trimmed = text.trim();
-
-    if (trimmed.includes('Sfdump(')) {
-        return { type: 'dump', raw: text };
-    }
 
     try {
         const parsed: unknown = JSON.parse(trimmed);
