@@ -24,7 +24,7 @@ it('uses the right action', function (): void {
     mockKnownProject();
 
     $this->mock(RunSnippetAction::class)
-        ->shouldReceive('execute')->once()->with('my-project', 'echo 1;')->andReturn(new SnippetRunResult('output', null));
+        ->shouldReceive('handle')->once()->with('my-project', 'echo 1;')->andReturn(new SnippetRunResult('output', null));
 
     $this->postJson('/api/projects/my-project/snippets/executions', ['code' => 'echo 1;']);
 });
@@ -48,7 +48,7 @@ it('returns the debug data from the result', function (): void {
         $mock->shouldReceive('projectPath')->with('my-project')->andReturn(base_path());
     });
     $this->mock(RunSnippetAction::class)
-        ->shouldReceive('execute')->andReturn(new SnippetRunResult('output', ['queries' => ['count' => 1]]));
+        ->shouldReceive('handle')->andReturn(new SnippetRunResult('output', ['queries' => ['count' => 1]]));
 
     $this->postJson('/api/projects/my-project/snippets/executions', ['code' => 'echo 1;'])
         ->assertOk()

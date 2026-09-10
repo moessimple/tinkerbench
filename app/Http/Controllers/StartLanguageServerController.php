@@ -11,6 +11,6 @@ class StartLanguageServerController
 {
     public function __invoke(StartLanguageServerAction $action, string $project): JsonResponse
     {
-        return response()->json(['port' => $action->execute($project)]);
+        return response()->json(['port' => $action->handle($project)]);
     }
 }

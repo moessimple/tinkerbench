@@ -12,7 +12,7 @@ class RunSnippetAction
 {
     public function __construct(private Herd $herd, private SnippetRunner $runner) {}
 
-    public function execute(string $project, string $code): SnippetRunResult
+    public function handle(string $project, string $code): SnippetRunResult
     {
         $projectPath = $this->herd->projectPathOrFail($project);
 

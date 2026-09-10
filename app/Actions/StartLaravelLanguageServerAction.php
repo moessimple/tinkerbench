@@ -11,7 +11,7 @@ class StartLaravelLanguageServerAction
 {
     public function __construct(private Herd $herd, private LaravelLspBridge $bridge) {}
 
-    public function execute(string $project): int
+    public function handle(string $project): int
     {
         $projectPath = $this->herd->projectPathOrFail($project);
 

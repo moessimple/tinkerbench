@@ -10,7 +10,7 @@ it('uses the right action', function (): void {
     mockKnownProject();
 
     $this->mock(StartLaravelLanguageServerAction::class)
-        ->shouldReceive('execute')->once()->with('my-project')->andReturn(54213);
+        ->shouldReceive('handle')->once()->with('my-project')->andReturn(54213);
 
     $this->postJson('/api/projects/my-project/laravel-language-server');
 });
@@ -22,7 +22,7 @@ it('uses the right middleware', function (): void {
 it('returns the port for a known project', function (): void {
     mockKnownProject();
 
-    $this->mock(StartLaravelLanguageServerAction::class)->shouldReceive('execute')->andReturn(54213);
+    $this->mock(StartLaravelLanguageServerAction::class)->shouldReceive('handle')->andReturn(54213);
 
     $this->postJson('/api/projects/my-project/laravel-language-server')
         ->assertOk()

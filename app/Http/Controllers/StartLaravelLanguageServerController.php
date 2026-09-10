@@ -11,6 +11,6 @@ class StartLaravelLanguageServerController
 {
     public function __invoke(StartLaravelLanguageServerAction $action, string $project): JsonResponse
     {
-        return response()->json(['port' => $action->execute($project)]);
+        return response()->json(['port' => $action->handle($project)]);
     }
 }

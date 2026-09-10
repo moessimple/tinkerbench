@@ -17,7 +17,7 @@ it('starts the language server bridge for the given project', function (): void 
         $mock->shouldReceive('start')->once()->with('/path/to/other-project', '8.3.1')->andReturn(54213);
     });
 
-    $port = resolve(StartLanguageServerAction::class)->execute('other-project');
+    $port = resolve(StartLanguageServerAction::class)->handle('other-project');
 
     expect($port)->toBe(54213);
 });
@@ -27,5 +27,5 @@ it('propagates the failure when the given project is unknown to herd', function 
         $mock->shouldReceive('projectPathOrFail')->once()->with('unknown')->andThrow(new RuntimeException('Unknown Herd project: unknown'));
     });
 
-    resolve(StartLanguageServerAction::class)->execute('unknown');
+    resolve(StartLanguageServerAction::class)->handle('unknown');
 })->throws(RuntimeException::class, 'Unknown Herd project: unknown');
