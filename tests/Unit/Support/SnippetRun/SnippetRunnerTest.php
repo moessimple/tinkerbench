@@ -73,6 +73,17 @@ it('clears its own configuration variables for the target process without touchi
         && $process->path === base_path());
 });
 
+it('blanks no variables for the target process when tinkerbench loaded no environment file', function (): void {
+    app()->loadEnvironmentFrom('.env.'.Str::random(16));
+    Process::fake();
+
+    new SnippetRunner()->run("<?php\n\nreturn 'unreachable';", PHP_BINARY, base_path());
+
+    Process::assertRan(fn (PendingProcess $process): bool => array_keys($process->environment) === ['PWD', 'VAR_DUMPER_FORMAT']
+        && $process->environment['PWD'] === base_path()
+        && $process->environment['VAR_DUMPER_FORMAT'] === 'html');
+});
+
 it('lets two snippets that redeclare the same class both succeed', function (): void {
     $runner = new SnippetRunner();
 
