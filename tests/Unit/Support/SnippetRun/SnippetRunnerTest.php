@@ -38,6 +38,41 @@ it('boots the target project so snippets can use its Laravel helpers', function 
     expect(data_get($result->debug, 'items.0.html'))->toContain(config('app.name'));
 });
 
+it('lets a target Laravel project load its own environment values', function (): void {
+    $target = base_path('packages/runner/tests/fixtures/laravel-12');
+    $environmentPath = $target.'/.env';
+
+    expect(File::exists($environmentPath))->toBeFalse();
+
+    File::put($environmentPath, "APP_NAME=target-project\n");
+
+    try {
+        $result = new SnippetRunner()->run("<?php\n\nreturn [env('APP_NAME'), env('APP_URL'), getcwd()];", PHP_BINARY, $target);
+    } finally {
+        File::delete($environmentPath);
+    }
+
+    expect($result->output)->toBe('')
+        ->and(data_get($result->debug, 'items.0.kind'))->toBe('result')
+        ->and(data_get($result->debug, 'items.0.html'))->toContain('target-project')
+        ->toContain($target)
+        ->not->toContain('tinkerbench.test');
+});
+
+it('clears its own configuration variables for the target process without touching host variables', function (): void {
+    Process::fake();
+
+    new SnippetRunner()->run("<?php\n\nreturn 'unreachable';", PHP_BINARY, base_path());
+
+    Process::assertRan(fn (PendingProcess $process): bool => ($process->environment['APP_NAME'] ?? null) === false
+        && ($process->environment['DB_CONNECTION'] ?? null) === false
+        && ($process->environment['CACHE_STORE'] ?? null) === false
+        && ! array_key_exists('PATH', $process->environment)
+        && ($process->environment['PWD'] ?? null) === base_path()
+        && ($process->environment['VAR_DUMPER_FORMAT'] ?? null) === 'html'
+        && $process->path === base_path());
+});
+
 it('lets two snippets that redeclare the same class both succeed', function (): void {
     $runner = new SnippetRunner();
 

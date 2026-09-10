@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support\SnippetRun;
 
+use Dotenv\Dotenv;
 use Illuminate\Process\Exceptions\ProcessTimedOutException;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
@@ -38,13 +39,16 @@ class SnippetRunner
             // Without this, Symfony VarDumper defaults to its plain-text CliDumper under the CLI SAPI
             // this subprocess runs under, so dd()/dump()/var_dump() output couldn't be told apart from
             // plain text and rendered as an interactive dump.
-            $result = Process::timeout($timeoutSeconds)->env(['VAR_DUMPER_FORMAT' => 'html'])->run([
-                $phpBinary,
-                base_path('packages/runner/bin/run-snippet.php'),
-                $projectPath,
-                $snippetPath,
-                $debugPath,
-            ]);
+            $result = Process::path($projectPath)
+                ->timeout($timeoutSeconds)
+                ->env($this->isolatedEnvironment($projectPath))
+                ->run([
+                    $phpBinary,
+                    base_path('packages/runner/bin/run-snippet.php'),
+                    $projectPath,
+                    $snippetPath,
+                    $debugPath,
+                ]);
 
             $debug = $this->readDebugData($debugPath);
         } catch (ProcessTimedOutException $processTimedOutException) {
@@ -64,6 +68,41 @@ class SnippetRunner
         }
 
         return new SnippetRunResult($result->output(), $debug);
+    }
+
+    /**
+     * Blanks out every variable tinkerbench's own .env defines so the target's bootstrap sets
+     * those keys from its .env. phpdotenv keeps an already-set variable, so a leaked APP_NAME,
+     * DB_CONNECTION or CACHE_STORE would otherwise shadow the target's value. Variables tinkerbench
+     * does not define (PATH, HOME, SSH agent, proxy) stay in place for snippets that shell out.
+     *
+     * @return array<string, string|false>
+     */
+    private function isolatedEnvironment(string $projectPath): array
+    {
+        return [
+            ...array_fill_keys($this->ownEnvironmentKeys(), false),
+            'PWD' => $projectPath,
+            'VAR_DUMPER_FORMAT' => 'html',
+        ];
+    }
+
+    /**
+     * Parses the single env file Laravel loaded for tinkerbench: environmentFilePath() is
+     * `.env.{APP_ENV}` when that path applies, otherwise `.env`. A cached config loads no file,
+     * so the path may be absent; the empty list is then correct because nothing was set from one.
+     *
+     * @return list<string>
+     */
+    private function ownEnvironmentKeys(): array
+    {
+        $path = app()->environmentFilePath();
+
+        if (! is_file($path)) {
+            return [];
+        }
+
+        return array_keys(Dotenv::parse((string) file_get_contents($path)));
     }
 
     /** @return array<array-key, mixed>|null */
