@@ -17,6 +17,7 @@ import ListSnippetsController from '@/actions/App/Http/Controllers/ListSnippetsC
 import OpenSnippetController from '@/actions/App/Http/Controllers/OpenSnippetController';
 import UpdateSnippetNameController from '@/actions/App/Http/Controllers/UpdateSnippetNameController';
 import { xsrfHeader } from '@/lib/csrf';
+import { rankByFuzzyMatch } from '@/lib/fuzzy';
 import { shortcuts } from '@/lib/shortcuts';
 
 const props = defineProps<{ currentProject: string; currentSnippet: string }>();
@@ -107,51 +108,6 @@ createForm.transform((data) => ({
     ...data,
     name: snippetNameFromInput(data.name),
 }));
-
-// Subsequence match with light ranking: every query character must occur in
-// order, and contiguous runs plus matches at the start or after a word boundary
-// score higher, so the closest name sorts to the top and receives the initial
-// highlight. Returns null when the name is not a match at all.
-function fuzzyScore(name: string, query: string): number | null {
-    const haystack = name.toLowerCase();
-    let score = 0;
-    let queryIndex = 0;
-    let previousMatchIndex = -2;
-
-    for (let i = 0; i < haystack.length && queryIndex < query.length; i++) {
-        if (haystack[i] !== query[queryIndex]) {
-            continue;
-        }
-
-        if (i === previousMatchIndex + 1) {
-            score += 4;
-        }
-
-        if (i === 0 || /[-_/. ]/.test(haystack[i - 1])) {
-            score += 3;
-        }
-
-        score += 1;
-        previousMatchIndex = i;
-        queryIndex++;
-    }
-
-    return queryIndex === query.length ? score : null;
-}
-
-function rankByFuzzyMatch(candidates: string[], query: string): string[] {
-    if (query === '') {
-        return candidates;
-    }
-
-    return candidates
-        .map((name) => ({ name, score: fuzzyScore(name, query) }))
-        .filter((scored): scored is { name: string; score: number } => {
-            return scored.score !== null;
-        })
-        .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
-        .map((scored) => scored.name);
-}
 
 const visibleSnippetNames = computed(() => {
     if (scope.value === 'projects') {
