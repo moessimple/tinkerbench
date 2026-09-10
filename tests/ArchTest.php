@@ -27,6 +27,10 @@ arch('no class is final')
     ->classes()
     ->not->toBeFinal();
 
+arch('no blocking sleeps')
+    ->expect(['sleep', 'usleep'])
+    ->not->toBeUsed();
+
 /*
 |--------------------------------------------------------------------------
 | Test Coverage

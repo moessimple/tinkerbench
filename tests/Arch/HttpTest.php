@@ -2,16 +2,22 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Http\FormRequest;
-
 /*
 |--------------------------------------------------------------------------
-| Controllers and Middleware
+| Controllers, Requests, and HTTP Context
 |--------------------------------------------------------------------------
 |
-| Controllers are single-action: __invoke() plus an optional __construct(),
-| stricter than the laravel preset's full REST allowance. Nothing outside the
-| routing layer references a controller class directly.
+| The laravel preset already covers the generic HTTP shape rules (controller
+| suffix, middleware handle(), form requests extend FormRequest and declare
+| rules()). What stays here is the intent that is stricter than the preset:
+|
+| - Controllers are single-action: __invoke() plus an optional __construct(),
+|   not the preset's full REST allowance.
+| - Nothing outside the routing layer references a controller class directly.
+| - Form requests serve controllers only.
+| - session()/auth()/request()/cookie() implicitly read the current HTTP
+|   request, so they stay in App\Http and Actions/Support remain callable from
+|   any context (a job, a command, a test).
 |
 */
 
@@ -24,12 +30,10 @@ arch('controllers are only route targets, never referenced from other code')
     ->expect('App\Http\Controllers')
     ->not->toBeUsed();
 
-arch('middleware handle the request')
-    ->expect('App\Http\Middleware')
-    ->toHaveMethod('handle');
-
-arch('form requests extend the framework base, declare rules, and only serve controllers')
+arch('form requests only serve controllers')
     ->expect('App\Http\Requests')
-    ->toExtend(FormRequest::class)
-    ->toHaveMethod('rules')
     ->toOnlyBeUsedIn('App\Http\Controllers');
+
+arch('http context helpers stay in the http layer')
+    ->expect(['session', 'auth', 'request', 'cookie'])
+    ->toOnlyBeUsedIn('App\Http');

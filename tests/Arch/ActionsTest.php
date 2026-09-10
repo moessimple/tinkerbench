@@ -16,7 +16,8 @@ declare(strict_types=1);
 arch('actions are suffixed correctly')
     ->expect('App\Actions')
     ->classes()
-    ->toHaveSuffix('Action');
+    ->toHaveSuffix('Action')
+    ->toExtendNothing();
 
 arch('actions only expose handle')
     ->expect('App\Actions')
