@@ -82,9 +82,10 @@ function fixtureTargetPath(string $name): string
  * As runSnippetSubprocess(), but against an arbitrary target project path instead of tinkerbench
  * itself, so a fixture below tinkerbench's own PHP/Laravel floor can be exercised end to end.
  *
+ * @param  list<string>  $enabledWatchers
  * @return array{output: string, exitCode: int, debug: array<string, mixed>|null}
  */
-function runSnippetSubprocessAgainst(string $targetPath, string $code): array
+function runSnippetSubprocessAgainst(string $targetPath, string $code, array $enabledWatchers = []): array
 {
     $snippetPath = tempnam(sys_get_temp_dir(), 'snippet').'.php';
     $debugPath = tempnam(sys_get_temp_dir(), 'debug');
@@ -96,6 +97,7 @@ function runSnippetSubprocessAgainst(string $targetPath, string $code): array
         $targetPath,
         $snippetPath,
         $debugPath,
+        implode(',', $enabledWatchers),
     ]);
 
     $raw = is_file($debugPath) ? (string) file_get_contents($debugPath) : '';
@@ -508,6 +510,42 @@ it('classifies the snippet frame of an uncaught exception from a Laravel 12 fixt
         ->and($item['message'])->toBe('laravel 12 boom')
         ->and($item['line'])->toBe(3)
         ->and($item['frames'][0]['snippet'])->toBeTrue();
+});
+
+it('emits a view item against a Laravel 12 fixture when the view watcher is enabled via argv', function (): void {
+    $result = runSnippetSubprocessAgainst(fixtureTargetPath('laravel-12'), <<<'PHP'
+    <?php
+
+    $path = sys_get_temp_dir().'/tb-argv-view-test.blade.php';
+    file_put_contents($path, 'ok');
+
+    view()->file($path, ['x' => 1])->render();
+
+    unlink($path);
+
+    return 'done';
+    PHP, ['view']);
+
+    expect($result['exitCode'])->toBe(0)
+        ->and(array_column($result['debug']['items'], 'kind'))->toContain('view');
+});
+
+it('emits no view item against a Laravel 12 fixture when no watcher is enabled via argv', function (): void {
+    $result = runSnippetSubprocessAgainst(fixtureTargetPath('laravel-12'), <<<'PHP'
+    <?php
+
+    $path = sys_get_temp_dir().'/tb-argv-view-test.blade.php';
+    file_put_contents($path, 'ok');
+
+    view()->file($path, ['x' => 1])->render();
+
+    unlink($path);
+
+    return 'done';
+    PHP);
+
+    expect($result['exitCode'])->toBe(0)
+        ->and(array_column($result['debug']['items'], 'kind'))->not->toContain('view');
 });
 
 it('detects an N+1 lazy load against a Laravel 12 fixture', function (): void {

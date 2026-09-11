@@ -21,7 +21,8 @@ class SnippetRunner
      */
     public function __construct(private readonly ?string $scratchDirectory = null) {}
 
-    public function run(string $code, string $phpBinary, string $projectPath, int $timeoutSeconds = self::DEFAULT_TIMEOUT_SECONDS): SnippetRunResult
+    /** @param  list<string>  $enabledWatchers */
+    public function run(string $code, string $phpBinary, string $projectPath, array $enabledWatchers = [], int $timeoutSeconds = self::DEFAULT_TIMEOUT_SECONDS): SnippetRunResult
     {
         // The child process is a snippet the caller wrote, bounded to $timeoutSeconds below so a runaway
         // infinite loop can't tie up this request (and the php-fpm worker handling it) forever. This request
@@ -48,6 +49,7 @@ class SnippetRunner
                     $projectPath,
                     $snippetPath,
                     $debugPath,
+                    implode(',', $enabledWatchers),
                 ]);
 
             $debug = $this->readDebugData($debugPath);

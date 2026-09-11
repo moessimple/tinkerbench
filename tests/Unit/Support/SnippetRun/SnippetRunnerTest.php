@@ -23,6 +23,22 @@ it('invokes the runner package bin script', function (): void {
     Process::assertRan(fn (PendingProcess $process): bool => in_array(base_path('packages/runner/bin/run-snippet.php'), Arr::wrap($process->command), true));
 });
 
+it('passes the enabled watchers as a comma-separated sixth argument', function (): void {
+    Process::fake();
+
+    new SnippetRunner()->run("<?php\n\nreturn 'unreachable';", PHP_BINARY, base_path(), ['view']);
+
+    Process::assertRan(fn (PendingProcess $process): bool => Arr::wrap($process->command)[5] === 'view');
+});
+
+it('passes an empty sixth argument when no watcher is enabled', function (): void {
+    Process::fake();
+
+    new SnippetRunner()->run("<?php\n\nreturn 'unreachable';", PHP_BINARY, base_path());
+
+    Process::assertRan(fn (PendingProcess $process): bool => Arr::wrap($process->command)[5] === '');
+});
+
 it('runs a snippet in a subprocess and returns its return value as a result item', function (): void {
     $result = new SnippetRunner()->run("<?php\n\nreturn 'from the subprocess';", PHP_BINARY, base_path());
 
@@ -171,7 +187,7 @@ it('returns an exception item in the debug data for an uncaught throw', function
 
 it('returns no debug data when the debug file was left truncated by a killed subprocess', function (): void {
     Process::fake(function (PendingProcess $process) {
-        // The debug path is the fifth and last argument run-snippet.php is invoked with.
+        // The debug path is the fifth of six arguments run-snippet.php is invoked with.
         $debugPath = Arr::wrap($process->command)[4] ?? null;
 
         if (is_string($debugPath)) {
