@@ -267,6 +267,7 @@ function run(): void {
     rawOutput.value = '';
     debug.value = null;
     hasRun.value = true;
+    activeFilter.value = 'all';
     http.enabled_watchers = enabledWatchers.value;
 
     http.post(RunSnippetController.url(props.currentProject), {
@@ -551,6 +552,7 @@ function toggleMaximize(): void {
                             }}</span>
                         </template>
                         <WatcherToggleMenu
+                            v-if="isLaravelTarget"
                             class="ml-auto"
                             :watchers="watcherToggleItems"
                             @toggle="toggleWatcher"

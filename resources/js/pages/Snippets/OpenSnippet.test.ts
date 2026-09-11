@@ -176,6 +176,15 @@ it('shows only the PHP version when the Laravel version is unknown', () => {
     expect(screen.queryByText(/Laravel/)).toBeNull();
 });
 
+it('hides the optional watchers menu for a non-Laravel target', () => {
+    const unknownProps = { ...props, laravelVersion: 'unknown' };
+    render(OpenSnippet, { props: unknownProps });
+
+    expect(
+        screen.queryByRole('button', { name: 'Optional watchers' }),
+    ).toBeNull();
+});
+
 it('never offers query, log, or n+1 filters for a non-Laravel target, even with matching items', async () => {
     const unknownProps = { ...props, laravelVersion: 'unknown' };
     render(OpenSnippet, { props: unknownProps });
@@ -755,6 +764,39 @@ it('resets the active filter when the output is cleared', async () => {
 
     const allTab = await screen.findByRole('tab', { name: 'All 0' });
     expect(allTab.getAttribute('aria-selected')).toBe('true');
+});
+
+it('resets the active filter to All when a new run starts, even if its tab disappears', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({
+        output: '',
+        debug: payload({
+            items: [
+                {
+                    connection: 'sqlite',
+                    duplicate: false,
+                    duration_ms: 4,
+                    duration_str: '4.00ms',
+                    kind: 'query',
+                    line: null,
+                    slow: false,
+                    sql: 'select 1',
+                },
+            ],
+        }),
+    });
+    await fireEvent.click(
+        await screen.findByRole('tab', { name: 'Queries 1' }),
+    );
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '', debug: payload() });
+
+    const allTab = await screen.findByRole('tab', { name: 'All 0' });
+    expect(allTab.getAttribute('aria-selected')).toBe('true');
+    expect(screen.queryByRole('tab', { name: /queries/i })).toBeNull();
 });
 
 it('reveals the line in the editor when the feed emits navigate', async () => {
