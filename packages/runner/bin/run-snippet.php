@@ -14,10 +14,12 @@ if (PHP_SAPI !== 'cli') {
 require __DIR__.'/../vendor/autoload.php';
 
 if (! isset($argv[1], $argv[2], $argv[3])) {
-    fwrite(STDERR, "Usage: run-snippet.php <projectPath> <snippetPath> <debugPath>\n");
+    fwrite(STDERR, "Usage: run-snippet.php <projectPath> <snippetPath> <debugPath> [enabledWatchers]\n");
     exit(1);
 }
 
-[, $projectPath, $snippetPath, $debugPath] = $argv;
+[, $projectPath, $snippetPath, $debugPath, $enabledWatchersArg] = $argv + [4 => ''];
 
-(new SnippetRunner())->run($projectPath, $snippetPath, $debugPath);
+$enabledWatchers = $enabledWatchersArg !== '' ? explode(',', $enabledWatchersArg) : [];
+
+(new SnippetRunner())->run($projectPath, $snippetPath, $debugPath, $enabledWatchers);

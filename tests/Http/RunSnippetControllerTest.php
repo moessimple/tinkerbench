@@ -24,9 +24,18 @@ it('uses the right action', function (): void {
     mockKnownProject();
 
     $this->mock(RunSnippetAction::class)
-        ->shouldReceive('handle')->once()->with('my-project', 'echo 1;')->andReturn(new SnippetRunResult('output', null));
+        ->shouldReceive('handle')->once()->with('my-project', 'echo 1;', [])->andReturn(new SnippetRunResult('output', null));
 
     $this->postJson('/api/projects/my-project/snippets/executions', ['code' => 'echo 1;']);
+});
+
+it('passes the enabled watchers to the action', function (): void {
+    mockKnownProject();
+
+    $this->mock(RunSnippetAction::class)
+        ->shouldReceive('handle')->once()->with('my-project', 'echo 1;', ['view'])->andReturn(new SnippetRunResult('output', null));
+
+    $this->postJson('/api/projects/my-project/snippets/executions', ['code' => 'echo 1;', 'enabled_watchers' => ['view']]);
 });
 
 it('returns the right output', function (): void {

@@ -18,6 +18,7 @@ let capturedTitle: string | undefined;
 // component and reads in this test observe the same reactive state.
 const httpState = reactive({
     code: '',
+    enabled_watchers: [] as string[],
     processing: false,
     post: (
         url: string,
@@ -51,8 +52,9 @@ vi.mock('@inertiajs/vue3', () => ({
 
         return null;
     },
-    useHttp: (initial: { code: string }) => {
+    useHttp: (initial: { code: string; enabled_watchers: string[] }) => {
         httpState.code = initial.code;
+        httpState.enabled_watchers = initial.enabled_watchers;
 
         return httpState;
     },
@@ -141,6 +143,7 @@ beforeEach(() => {
     mockTheme.value = 'dark';
     toggleTheme.mockClear();
     revealLineSpy.mockClear();
+    localStorage.clear();
 });
 
 afterEach(() => {
@@ -173,7 +176,16 @@ it('shows only the PHP version when the Laravel version is unknown', () => {
     expect(screen.queryByText(/Laravel/)).toBeNull();
 });
 
-it('offers only the dump and exception filters for a non-Laravel target', async () => {
+it('hides the optional watchers menu for a non-Laravel target', () => {
+    const unknownProps = { ...props, laravelVersion: 'unknown' };
+    render(OpenSnippet, { props: unknownProps });
+
+    expect(
+        screen.queryByRole('button', { name: 'Optional watchers' }),
+    ).toBeNull();
+});
+
+it('never offers query, log, or n+1 filters for a non-Laravel target, even with matching items', async () => {
     const unknownProps = { ...props, laravelVersion: 'unknown' };
     render(OpenSnippet, { props: unknownProps });
 
@@ -181,12 +193,21 @@ it('offers only the dump and exception filters for a non-Laravel target', async 
     capturedPost?.onSuccess({
         output: '',
         debug: payload({
-            items: [{ html: '<i>x</i>', kind: 'dump', line: 1, text: 'x' }],
+            items: [
+                { html: '<i>x</i>', kind: 'dump', line: 1, text: 'x' },
+                {
+                    frames: [],
+                    kind: 'exception',
+                    line: 1,
+                    message: 'boom',
+                    type: 'RuntimeException',
+                },
+            ],
         }),
     });
 
     await screen.findByRole('tab', { name: 'Dumps 1' });
-    screen.getByRole('tab', { name: 'Exceptions 0' });
+    screen.getByRole('tab', { name: 'Exceptions 1' });
     expect(screen.queryByRole('tab', { name: /queries/i })).toBeNull();
     expect(screen.queryByRole('tab', { name: /logs/i })).toBeNull();
     expect(screen.queryByRole('tab', { name: /n\+1/i })).toBeNull();
@@ -477,7 +498,7 @@ it('labels each filter tab with its live entry count', async () => {
     await screen.findByRole('tab', { name: 'All 3' });
     screen.getByRole('tab', { name: 'Queries 2' });
     screen.getByRole('tab', { name: 'Dumps 1' });
-    screen.getByRole('tab', { name: 'Logs 0' });
+    expect(screen.queryByRole('tab', { name: /logs/i })).toBeNull();
 });
 
 it('counts the raw stdout Output card in the All tab total', async () => {
@@ -511,6 +532,48 @@ it('counts a result entry under All but gives it no facet tab of its own', async
 
     await screen.findByRole('tab', { name: 'All 2' });
     expect(screen.queryByRole('tab', { name: /result/i })).toBeNull();
+});
+
+it('sends no enabled watchers by default', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+
+    expect(httpState.enabled_watchers).toEqual([]);
+});
+
+it('sends the view watcher once it is toggled on', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(
+        screen.getByRole('button', { name: 'Optional watchers' }),
+    );
+    await fireEvent.click(screen.getByRole('checkbox', { name: 'Views' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+
+    expect(httpState.enabled_watchers).toEqual(['view']);
+});
+
+it('shows a Views facet tab only when the run produced a view item', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({
+        output: '',
+        debug: payload({
+            items: [
+                {
+                    data_html: '<i>x: 1</i>',
+                    data_text: 'x: 1',
+                    kind: 'view',
+                    line: null,
+                    path: '/x.blade.php',
+                },
+            ],
+        }),
+    });
+
+    await screen.findByRole('tab', { name: 'Views 1' });
 });
 
 it('tells the feed which kind to show when a filter tab is selected', async () => {
@@ -701,6 +764,39 @@ it('resets the active filter when the output is cleared', async () => {
 
     const allTab = await screen.findByRole('tab', { name: 'All 0' });
     expect(allTab.getAttribute('aria-selected')).toBe('true');
+});
+
+it('resets the active filter to All when a new run starts, even if its tab disappears', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({
+        output: '',
+        debug: payload({
+            items: [
+                {
+                    connection: 'sqlite',
+                    duplicate: false,
+                    duration_ms: 4,
+                    duration_str: '4.00ms',
+                    kind: 'query',
+                    line: null,
+                    slow: false,
+                    sql: 'select 1',
+                },
+            ],
+        }),
+    });
+    await fireEvent.click(
+        await screen.findByRole('tab', { name: 'Queries 1' }),
+    );
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '', debug: payload() });
+
+    const allTab = await screen.findByRole('tab', { name: 'All 0' });
+    expect(allTab.getAttribute('aria-selected')).toBe('true');
+    expect(screen.queryByRole('tab', { name: /queries/i })).toBeNull();
 });
 
 it('reveals the line in the editor when the feed emits navigate', async () => {

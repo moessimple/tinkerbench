@@ -5,9 +5,14 @@ import RunSnippetController from '@/actions/App/Http/Controllers/RunSnippetContr
 import UpdateSnippetContentController from '@/actions/App/Http/Controllers/UpdateSnippetContentController';
 import CommandPalette from '@/components/CommandPalette.vue';
 import { FACET_KINDS } from '@/components/feed/kinds';
+import WatcherToggleMenu from '@/components/feed/WatcherToggleMenu.vue';
 import MonacoEditor from '@/components/MonacoEditor.vue';
 import OutputFeed from '@/components/OutputFeed.vue';
 import { useTheme } from '@/composables/useTheme';
+import {
+    OPTIONAL_WATCHERS,
+    useWatcherToggles,
+} from '@/composables/useWatcherToggles';
 import { xsrfHeader } from '@/lib/csrf';
 import { buildFeed } from '@/lib/feed';
 import type { FeedEntry, FeedFilter, FeedSort } from '@/lib/feed';
@@ -52,16 +57,37 @@ const editorRef = useTemplateRef<{ revealLine: (line: number) => void }>(
 );
 
 const { theme, toggleTheme } = useTheme();
+const { isEnabled: isWatcherEnabled, toggle: toggleWatcher } =
+    useWatcherToggles(props.currentProject);
+
+const watcherToggleItems = computed(() =>
+    OPTIONAL_WATCHERS.map((watcher) => ({
+        ...watcher,
+        enabled: isWatcherEnabled(watcher.id),
+    })),
+);
+
+const enabledWatchers = computed(() =>
+    OPTIONAL_WATCHERS.filter((watcher) => isWatcherEnabled(watcher.id)).map(
+        (watcher) => watcher.id,
+    ),
+);
 
 // The basic pipeline never emits query/log/N+1 items, so a non-Laravel target's feed offers no
-// tabs for them.
-const visibleFacetKinds = computed(() =>
-    isLaravelTarget.value
+// tabs for them. A facet tab with no items for the current run is hidden too, whether that's
+// because the pipeline never produces that kind or because this particular run just didn't. Only
+// read once debug is set (see the tablist's v-if below), so kindCounts always reflects a real run.
+const visibleFacetKinds = computed(() => {
+    const supportedKinds = isLaravelTarget.value
         ? FACET_KINDS
         : FACET_KINDS.filter(
               (kind) => kind.kind === 'dump' || kind.kind === 'exception',
-          ),
-);
+          );
+
+    return supportedKinds.filter(
+        (kind) => kindCounts.value[kind.kind as FeedItem['kind']] > 0,
+    );
+});
 
 const feedFilters = computed<{ label: string; value: FeedFilter }[]>(() => [
     { label: 'All', value: 'all' },
@@ -112,10 +138,11 @@ const ranWithoutOutput = computed(
 );
 
 const http = useHttp<
-    { code: string },
+    { code: string; enabled_watchers: string[] },
     { debug: SnippetDebugPayload | null; output: string }
 >({
     code: props.content,
+    enabled_watchers: [],
 });
 
 const saveError = ref('');
@@ -240,6 +267,8 @@ function run(): void {
     rawOutput.value = '';
     debug.value = null;
     hasRun.value = true;
+    activeFilter.value = 'all';
+    http.enabled_watchers = enabledWatchers.value;
 
     http.post(RunSnippetController.url(props.currentProject), {
         onSuccess: (data) => {
@@ -522,6 +551,12 @@ function toggleMaximize(): void {
                                 debug.peak_memory_str
                             }}</span>
                         </template>
+                        <WatcherToggleMenu
+                            v-if="isLaravelTarget"
+                            class="ml-auto"
+                            :watchers="watcherToggleItems"
+                            @toggle="toggleWatcher"
+                        />
                     </div>
                     <div
                         v-if="debug"

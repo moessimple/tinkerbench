@@ -12,10 +12,11 @@ class RunSnippetAction
 {
     public function __construct(private readonly Herd $herd, private readonly SnippetRunner $runner) {}
 
-    public function handle(string $project, string $code): SnippetRunResult
+    /** @param  list<string>  $enabledWatchers */
+    public function handle(string $project, string $code, array $enabledWatchers = []): SnippetRunResult
     {
         $projectPath = $this->herd->projectPathOrFail($project);
 
-        return $this->runner->run($code, $this->herd->phpBinary($project), $projectPath);
+        return $this->runner->run($code, $this->herd->phpBinary($project), $projectPath, $enabledWatchers);
     }
 }

@@ -42,6 +42,13 @@ export type FeedItem =
           line: number | null;
           model: string;
           relation: string;
+      }
+    | {
+          data_html: string;
+          data_text: string;
+          kind: 'view';
+          line: number | null;
+          path: string;
       };
 
 export interface SnippetDebugPayload {

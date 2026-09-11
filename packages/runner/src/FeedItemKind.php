@@ -12,4 +12,5 @@ enum FeedItemKind: string
     case NPlusOne = 'n_plus_one';
     case Exception = 'exception';
     case Result = 'result';
+    case View = 'view';
 }

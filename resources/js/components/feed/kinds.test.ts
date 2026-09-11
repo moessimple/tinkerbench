@@ -7,6 +7,7 @@ import NPlusOneCard from './NPlusOneCard.vue';
 import OutputCard from './OutputCard.vue';
 import QueryCard from './QueryCard.vue';
 import ResultCard from './ResultCard.vue';
+import ViewCard from './ViewCard.vue';
 
 it('maps every kind to its renderer', () => {
     expect(rendererFor('dump')).toBe(DumpCard);
@@ -14,6 +15,7 @@ it('maps every kind to its renderer', () => {
     expect(rendererFor('log')).toBe(LogCard);
     expect(rendererFor('exception')).toBe(ExceptionCard);
     expect(rendererFor('n_plus_one')).toBe(NPlusOneCard);
+    expect(rendererFor('view')).toBe(ViewCard);
     expect(rendererFor('result')).toBe(ResultCard);
     expect(rendererFor('output')).toBe(OutputCard);
 });
@@ -38,6 +40,7 @@ it('keeps the facet-less Result and Output entries out of the facet list', () =>
         'log',
         'exception',
         'n_plus_one',
+        'view',
     ]);
     expect(FACET_KINDS.every((kind) => typeof kind.facet === 'string')).toBe(
         true,
