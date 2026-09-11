@@ -15,13 +15,27 @@ it('runs the code against the given project', function (): void {
     });
     $this->mock(SnippetRunner::class, function (MockInterface $mock): void {
         $mock->shouldReceive('run')->once()
-            ->with('return 1;', '/path/to/other-project/php', '/path/to/other-project')
+            ->with('return 1;', '/path/to/other-project/php', '/path/to/other-project', [])
             ->andReturn(new SnippetRunResult('1', null));
     });
 
     $result = resolve(RunSnippetAction::class)->handle('other-project', 'return 1;');
 
     expect($result->output)->toBe('1');
+});
+
+it('passes the enabled watchers through to the runner', function (): void {
+    $this->mock(Herd::class, function (MockInterface $mock): void {
+        $mock->shouldReceive('projectPathOrFail')->andReturn('/path/to/other-project');
+        $mock->shouldReceive('phpBinary')->andReturn('/path/to/other-project/php');
+    });
+    $this->mock(SnippetRunner::class, function (MockInterface $mock): void {
+        $mock->shouldReceive('run')->once()
+            ->with('return 1;', '/path/to/other-project/php', '/path/to/other-project', ['view'])
+            ->andReturn(new SnippetRunResult('1', null));
+    });
+
+    resolve(RunSnippetAction::class)->handle('other-project', 'return 1;', ['view']);
 });
 
 it('propagates the failure when the given project is unknown to herd', function (): void {
