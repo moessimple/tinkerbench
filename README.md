@@ -21,7 +21,7 @@ A take on Laravel's [`tinker`](https://github.com/laravel/tinker), inspired by [
 * Command palette (`⌘P`) to jump between snippets and projects, similar to an editor's quick open.
 * Monaco-based editor with PHP syntax highlighting, autosave, and a run shortcut (`⌘Enter`).
 * PHP autocompletion, hover documentation, and signature help for the target project's own code, powered by the intelephense language server (also widely used as a VS Code extension).
-* A single chronological feed of everything a run touched, each entry its own card in execution order. Every project gets dumps, return values, exceptions, and standard output; a Laravel 12 or newer project also gets database queries, log entries, and N+1 warnings.
+* A single chronological feed of everything a run touched, each entry its own card in execution order. Every project gets dumps, return values, exceptions, and standard output; a Laravel 12 or newer project also gets database queries, log entries, N+1 warnings, and optional traces of rendered views and their data.
 * Filter the feed by kind with live counts, and click a card to jump the editor to the line that produced it.
 * Output rendering adapts to the value: `dump()`/`dd()` use Symfony's interactive VarDumper, JSON is syntax highlighted, and HTML renders in a sandboxed frame.
 * Query cards pretty-print their SQL and flag it when slow (100ms or more) or repeated; sort the feed slowest first when you need to.
@@ -32,7 +32,7 @@ A take on Laravel's [`tinker`](https://github.com/laravel/tinker), inspired by [
 
 * [Laravel Herd](https://herd.laravel.com) with PHP 8.5 available. Herd bundles PHP, Composer, and Node, so there is nothing else to install.
 * Target projects need PHP 8.2 or newer (`herd isolate` per project).
-* The database query, log entry, and N+1 warning cards need a Laravel 12 or newer target. Every other PHP project still produces dumps, return values, exceptions, and standard output.
+* The database query, log entry, N+1 warning, and view-rendering cards need a Laravel 12 or newer target. Every other PHP project still produces dumps, return values, exceptions, and standard output.
 
 ## Installation
 
@@ -52,6 +52,7 @@ Open [`https://tinkerbench.test`](https://tinkerbench.test). It opens the `scrat
 
 * Write PHP in the editor and run it with the play button or `⌘Enter`.
 * In the command palette (`⌘P`): `/` switches project, `#` searches snippets, and a name that doesn't exist yet creates a snippet.
+* For Laravel projects, use the Optional watchers menu above the output feed to enable view-rendering traces. The setting is remembered per project.
 * Clear the output or maximize the editor from the sidebar icons.
 
 ## Staying Up to Date
