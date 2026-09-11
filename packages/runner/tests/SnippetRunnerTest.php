@@ -529,13 +529,17 @@ it('detects an N+1 lazy load against a Laravel 12 fixture', function (): void {
 // In-process runs exercise run()'s own wiring against tinkerbench itself. The shutdown handler
 // it registers no-ops at PHPUnit exit because run() has already persisted inline.
 
-function runInProcess(string $code): array
+/**
+ * @param  list<string>  $enabledOptionalWatchers
+ * @return array<string, mixed>
+ */
+function runInProcess(string $code, array $enabledOptionalWatchers = []): array
 {
     $snippetPath = tempnam(sys_get_temp_dir(), 'snippet').'.php';
     $debugPath = tempnam(sys_get_temp_dir(), 'debug');
     file_put_contents($snippetPath, $code);
 
-    (new SnippetRunner())->run(runnerTargetPath(), $snippetPath, $debugPath);
+    (new SnippetRunner())->run(runnerTargetPath(), $snippetPath, $debugPath, $enabledOptionalWatchers);
 
     $snapshot = json_decode((string) file_get_contents($debugPath), true);
 
@@ -543,6 +547,26 @@ function runInProcess(string $code): array
     unlink($debugPath);
 
     return is_array($snapshot) ? $snapshot : [];
+}
+
+/**
+ * A snippet that renders a throwaway Blade file, so a real 'composing:*' event fires without
+ * depending on any view that ships with tinkerbench itself (the in-process "target project" here).
+ */
+function viewRenderingSnippet(): string
+{
+    return <<<'PHP'
+    <?php
+
+    $path = sys_get_temp_dir().'/tb-snippet-runner-view-test.blade.php';
+    file_put_contents($path, 'ok');
+
+    view()->file($path, ['x' => 1])->render();
+
+    unlink($path);
+
+    return 'done';
+    PHP;
 }
 
 it('records the return value of an in-process run as a result item and writes the snapshot', function (): void {
@@ -558,6 +582,21 @@ it('records no result item for an in-process run with no return statement', func
     $snapshot = runInProcess("<?php\n\n\$x = 1 + 1;");
 
     expect($snapshot['items'])->toBe([]);
+})->skip(PHP_VERSION_ID < 80500, TARGET_REQUIRES_PHP85)->expectOutputString('');
+
+it('emits a view item when the view watcher is enabled', function (): void {
+    $snapshot = runInProcess(viewRenderingSnippet(), ['view']);
+
+    $kinds = array_column($snapshot['items'], 'kind');
+
+    expect($kinds)->toContain('view')
+        ->and(collect($snapshot['items'])->firstWhere('kind', 'view')['data_html'])->toContain('x');
+})->skip(PHP_VERSION_ID < 80500, TARGET_REQUIRES_PHP85)->expectOutputString('');
+
+it('emits no view item when the view watcher is not enabled', function (): void {
+    $snapshot = runInProcess(viewRenderingSnippet());
+
+    expect(array_column($snapshot['items'], 'kind'))->not->toContain('view');
 })->skip(PHP_VERSION_ID < 80500, TARGET_REQUIRES_PHP85)->expectOutputString('');
 
 it('records a thrown exception from an in-process run without re-throwing', function (): void {

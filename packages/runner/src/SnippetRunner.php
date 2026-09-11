@@ -12,6 +12,7 @@ use Tinkerbench\Runner\Watchers\DumpWatcher;
 use Tinkerbench\Runner\Watchers\LazyLoadWatcher;
 use Tinkerbench\Runner\Watchers\LogWatcher;
 use Tinkerbench\Runner\Watchers\QueryWatcher;
+use Tinkerbench\Runner\Watchers\ViewWatcher;
 
 class SnippetRunner
 {
@@ -20,7 +21,11 @@ class SnippetRunner
 
     private bool $persisted = false;
 
-    public function run(string $projectPath, string $snippetPath, string $debugPath): void
+    /**
+     * @param  list<string>  $enabledOptionalWatchers  Ids of the "default off" watchers to register for this
+     *                                                 run, in addition to the always-on ones (see watchers.md).
+     */
+    public function run(string $projectPath, string $snippetPath, string $debugPath, array $enabledOptionalWatchers = []): void
     {
         // Invoked as a subprocess under the target project's own Herd-pinned PHP binary, not
         // necessarily tinkerbench's own, so it boots the target project separately from this file's
@@ -41,6 +46,7 @@ class SnippetRunner
                 new QueryWatcher(),
                 new LogWatcher($valueRenderer),
                 new LazyLoadWatcher(),
+                ...in_array('view', $enabledOptionalWatchers, true) ? [new ViewWatcher($valueRenderer)] : [],
             ] : [],
             new ExceptionMapper($projectPath, $source->path()),
             $source,
