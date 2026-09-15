@@ -21,12 +21,24 @@ class LanguageServerBridgeLauncher
     // descriptor close-on-exec before that happens (https://github.com/php/php-src/issues/20084),
     // so this script closes every descriptor above 2 itself, right before exec'ing the real
     // command, leaving only the bridge's own stdio (which Process sets up separately) open.
+    // Runs under bash, not /bin/sh: Debian/Ubuntu's /bin/sh is dash, which only parses a
+    // single-digit descriptor number in a redirection (Ubuntu bug #249620, still open) and
+    // aborts the whole script on anything higher, exactly the range a busy PHP process (this
+    // one under a parallel test run, for example) routinely has open. bash has no such limit
+    // and ships on both Herd's macOS and Ubuntu CI by default.
+    //
+    // /dev/fd/* can also list a descriptor the shell only opened to read that very directory
+    // listing and already closed again by the time this loop gets to it. Closing an
+    // already-closed descriptor is a redirection error, and since exec is a POSIX special
+    // builtin, that error would otherwise kill this whole script instead of just failing the
+    // one redirection, so each descriptor is checked with a plain existence test first (no
+    // redirection involved, so it can't trigger that).
     private const string CLOSE_INHERITED_FDS_BEFORE_EXEC = <<<'SH'
         for fd in /dev/fd/*; do
             n=${fd##*/}
             case "$n" in
                 0 | 1 | 2 | *[!0-9]*) ;;
-                *) eval "exec ${n}<&-" 2>/dev/null ;;
+                *) [ -e "$fd" ] && eval "exec ${n}<&-" 2>/dev/null ;;
             esac
         done
         exec "$@"
@@ -45,12 +57,12 @@ class LanguageServerBridgeLauncher
         set_time_limit(self::START_TIMEOUT_SECONDS + 30);
 
         $invoked = Process::options(['create_new_console' => true])->timeout(self::START_TIMEOUT_SECONDS)->start([
-            '/bin/sh',
+            '/bin/bash',
             '-c',
             self::CLOSE_INHERITED_FDS_BEFORE_EXEC,
             // Becomes $0 of the script above, so it's excluded from "$@" and only the
             // actual command (nvmExec onward) gets exec'd.
-            'sh',
+            'bash',
             $this->nvmExec(),
             'node',
             $scriptPath,
