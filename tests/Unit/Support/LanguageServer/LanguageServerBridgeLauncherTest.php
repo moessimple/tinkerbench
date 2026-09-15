@@ -13,6 +13,38 @@ it('spawns a detached process and reports the port it wrote to stdout', function
     expect($port)->toBeGreaterThan(0)->and($port)->toBeLessThanOrEqual(65535);
 });
 
+it('does not leave a descriptor the caller had open still held by the detached bridge', function (): void {
+    // proc_open() hands a spawned process every descriptor the caller has open, not just the
+    // ones Process itself redirects. A socket pair stands in for that: it is open in this test
+    // process exactly like, for example, a shell capturing this test run's own output would be.
+    // If the bridge inherits it and survives (it is meant to, being detached), closing our own
+    // end is not enough to reach EOF; the still-running bridge keeps its inherited copy open.
+    $pair = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
+    throw_unless($pair, RuntimeException::class, 'Could not create a Unix socket pair.');
+    [$ours, $theirs] = $pair;
+
+    new LanguageServerBridgeLauncher()->start(
+        base_path('app/Support/bin/intelephense-bridge.mjs'),
+        [sys_get_temp_dir(), '8.5'],
+    );
+
+    fclose($theirs);
+
+    $read = [$ours];
+    $write = [];
+    $except = [];
+    $sawEof = false;
+
+    if (stream_select($read, $write, $except, 5) > 0) {
+        fread($ours, 8192);
+        $sawEof = feof($ours);
+    }
+
+    fclose($ours);
+
+    expect($sawEof)->toBeTrue();
+});
+
 it('ignores output on other streams while waiting for the port line on stdout', function (): void {
     // '-e' as the "script path" runs this inline instead of a file, the same way `node -e` would
     // on a command line - the delay guarantees the stderr write is polled on its own before the
