@@ -11,6 +11,27 @@ class LanguageServerBridgeLauncher
 {
     private const int START_TIMEOUT_SECONDS = 60;
 
+    // A spawned child inherits every file descriptor PHP has open, not just 0/1/2
+    // (https://www.php.net/manual/en/function.proc-open.php: only descriptors listed in
+    // descriptorspec are redirected, everything else passes through as-is). The bridge is
+    // detached and keeps running after this request ends, so it holds any such descriptor
+    // open for as long as it runs. If this request is itself running inside a shell pipe
+    // (e.g. PHPUnit/Pest with a CI step capturing their output), the bridge ends up holding
+    // that pipe open too, and the pipe then never sees EOF. PHP has no userland way to mark a
+    // descriptor close-on-exec before that happens (https://github.com/php/php-src/issues/20084),
+    // so this script closes every descriptor above 2 itself, right before exec'ing the real
+    // command, leaving only the bridge's own stdio (which Process sets up separately) open.
+    private const string CLOSE_INHERITED_FDS_BEFORE_EXEC = <<<'SH'
+        for fd in /dev/fd/*; do
+            n=${fd##*/}
+            case "$n" in
+                0 | 1 | 2 | *[!0-9]*) ;;
+                *) eval "exec ${n}<&-" 2>/dev/null ;;
+            esac
+        done
+        exec "$@"
+        SH;
+
     /**
      * @param  list<string>  $args
      */
@@ -24,6 +45,12 @@ class LanguageServerBridgeLauncher
         set_time_limit(self::START_TIMEOUT_SECONDS + 30);
 
         $invoked = Process::options(['create_new_console' => true])->timeout(self::START_TIMEOUT_SECONDS)->start([
+            '/bin/sh',
+            '-c',
+            self::CLOSE_INHERITED_FDS_BEFORE_EXEC,
+            // Becomes $0 of the script above, so it's excluded from "$@" and only the
+            // actual command (nvmExec onward) gets exec'd.
+            'sh',
             $this->nvmExec(),
             'node',
             $scriptPath,
