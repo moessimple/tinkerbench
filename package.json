@@ -28,7 +28,7 @@
         "@inertiajs/vue3": "^3.7.0",
         "@tailwindcss/vite": "^4.3.3",
         "@vitejs/plugin-vue": "^6.0.8",
-        "concurrently": "^9.2.4",
+        "concurrently": "^10.0.5",
         "intelephense": "^1.18.5",
         "laravel-vite-plugin": "^3.2.0",
         "monaco-editor": "^0.56.0",
