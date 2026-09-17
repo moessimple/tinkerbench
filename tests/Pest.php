@@ -39,8 +39,8 @@ use function Pest\Laravel\postJson;
 */
 
 /** @var ClassLoader $loader */
-$loader = require dirname(__DIR__).'/vendor/autoload.php';
-$loader->setPsr4('App\\', [dirname(__DIR__).'/app']);
+$loader = require __DIR__.'/../vendor/autoload.php';
+$loader->setPsr4('App\\', [__DIR__.'/../app']);
 
 /*
 |--------------------------------------------------------------------------
