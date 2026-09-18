@@ -6,6 +6,7 @@
 [![tests](https://github.com/moessimple/tinkerbench/actions/workflows/tests.yml/badge.svg)](https://github.com/moessimple/tinkerbench/actions/workflows/tests.yml)
 [![lint](https://github.com/moessimple/tinkerbench/actions/workflows/lint.yml/badge.svg)](https://github.com/moessimple/tinkerbench/actions/workflows/lint.yml)
 [![static analysis](https://github.com/moessimple/tinkerbench/actions/workflows/static.yml/badge.svg)](https://github.com/moessimple/tinkerbench/actions/workflows/static.yml)
+[![security](https://github.com/moessimple/tinkerbench/actions/workflows/security.yml/badge.svg)](https://github.com/moessimple/tinkerbench/actions/workflows/security.yml)
 
 tinkerbench is a browser-based REPL for any project linked in [Laravel Herd](https://herd.laravel.com).
 Write a PHP snippet, run it against that project's own runtime, and see the output immediately, no separate setup per project.
