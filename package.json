@@ -7,6 +7,7 @@
         "build:ssr": "vp build && vp build --ssr",
         "dev": "vp dev",
         "lint": "vp fmt resources/ && vp lint --fix",
+        "test:audit": "npm audit",
         "test:lint": "vp fmt --check resources/ && vp lint",
         "test:unit": "vitest run --coverage",
         "test:types": "vue-tsc --noEmit"

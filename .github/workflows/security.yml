@@ -1,0 +1,53 @@
+name: security
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  schedule:
+    - cron: '0 6 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dependencies:
+    # composer test:vet: fails if any dependency in composer.lock isn't recorded as
+    # trusted in vet.json (laravel/vet supply-chain audit). composer test:audit: fails
+    # on known CVEs in the root and packages/runner composer.lock (checked explicitly,
+    # not relying on Composer's implicit post-install audit) and in package-lock.json
+    # via npm audit.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup app
+        uses: ./.github/actions/setup-app
+        with:
+          build: 'false'
+
+      - name: Cache packages/runner Composer dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: packages/runner/vendor
+          key: ${{ runner.os }}-composer-runner-8.5-${{ hashFiles('packages/runner/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-runner-8.5-
+
+      - name: Install packages/runner Composer dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress --working-dir=packages/runner
+
+      - name: Vet dependencies
+        run: composer test:vet
+
+      - name: Audit dependencies
+        run: composer test:audit

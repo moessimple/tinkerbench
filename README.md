@@ -66,7 +66,7 @@ composer setup
 
 ## Testing
 
-Run the full quality gate (formatting, static analysis, type coverage, and the PHP, JS, runner, and browser test suites):
+Run the full quality gate (dependency vetting, security audit, formatting, static analysis, type coverage, and the PHP, JS, runner, and browser test suites):
 
 ```bash
 composer test

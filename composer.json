@@ -29,6 +29,7 @@
         "laravel/pao": "^1.1.5",
         "laravel/pint": "^1.32.1",
         "laravel/sail": "^1.67",
+        "laravel/vet": "^0.1.2",
         "mockery/mockery": "^1.6.15",
         "nunomaduro/collision": "^8.9.3",
         "pestphp/pest": "^5.2.0",
@@ -80,6 +81,12 @@
             "composer lint --working-dir=packages/runner",
             "npm run lint"
         ],
+        "test:vet": "vet -n",
+        "test:audit": [
+            "@composer audit --locked",
+            "@composer audit --locked --working-dir=packages/runner",
+            "npm audit"
+        ],
         "test:type-coverage": [
             "pest --type-coverage --min=100",
             "composer test:type-coverage --working-dir=packages/runner"
@@ -105,6 +112,8 @@
         ],
         "test": [
             "@php artisan config:clear --ansi",
+            "@test:vet",
+            "@test:audit",
             "@test:type-coverage",
             "@test:unit",
             "@test:lint",
@@ -142,7 +151,8 @@
         "sort-packages": true,
         "allow-plugins": {
             "pestphp/pest-plugin": true,
-            "php-http/discovery": true
+            "php-http/discovery": true,
+            "laravel/vet": true
         },
         "autoloader-suffix": "TinkerbenchInternal"
     },
