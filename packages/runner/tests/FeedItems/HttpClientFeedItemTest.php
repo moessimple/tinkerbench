@@ -125,7 +125,7 @@ it('treats a missing content type as textual', function (): void {
     ]);
 });
 
-it('treats application/xml and vendor +json content types as textual', function (string $contentType): void {
+it('treats application/xml, application/xml with parameters, and vendor +json/+xml content types as textual', function (string $contentType): void {
     $item = httpClientFeedItem(['body' => '<a/>', 'contentType' => $contentType]);
 
     expect($item->toArray()['body_preview'])->toBe('<a/>');
@@ -133,4 +133,5 @@ it('treats application/xml and vendor +json content types as textual', function 
     'application/xml',
     'application/vnd.api+json',
     'application/xml; charset=utf-8',
+    'application/rss+xml',
 ]);

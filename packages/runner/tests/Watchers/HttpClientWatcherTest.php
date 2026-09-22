@@ -2,7 +2,12 @@
 
 declare(strict_types=1);
 
+use GuzzleHttp\Psr7\Request as Psr7Request;
+use GuzzleHttp\Psr7\Response as Psr7Response;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Events\ResponseReceived;
+use Illuminate\Http\Client\Request;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Tinkerbench\Runner\FeedItems\FeedItem;
 use Tinkerbench\Runner\FeedItems\HttpClientFeedItem;
@@ -77,6 +82,20 @@ it('does not listen for connection failures, leaving them to the uncaught-except
 
     expect(fn () => Http::get('https://example.test/users'))
         ->toThrow(ConnectionException::class);
+
+    expect($emitted)->toBeEmpty();
+});
+
+it('emits nothing for a ResponseReceived with no matching RequestSending start time', function (): void {
+    $request = new Request(new Psr7Request('GET', 'https://example.test/orphan'));
+    $response = new Response(new Psr7Response(200, [], 'ok'));
+
+    $emitted = [];
+    (new HttpClientWatcher())->register(app(), function (FeedItem $item) use (&$emitted): void {
+        $emitted[] = $item;
+    });
+
+    event(new ResponseReceived($request, $response));
 
     expect($emitted)->toBeEmpty();
 });
