@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest';
 import DumpCard from './DumpCard.vue';
 import ExceptionCard from './ExceptionCard.vue';
+import HttpClientCard from './HttpClientCard.vue';
 import { FACET_KINDS, FEED_KINDS, rendererFor } from './kinds';
 import LogCard from './LogCard.vue';
 import NPlusOneCard from './NPlusOneCard.vue';
@@ -16,6 +17,7 @@ it('maps every kind to its renderer', () => {
     expect(rendererFor('exception')).toBe(ExceptionCard);
     expect(rendererFor('n_plus_one')).toBe(NPlusOneCard);
     expect(rendererFor('view')).toBe(ViewCard);
+    expect(rendererFor('http_client')).toBe(HttpClientCard);
     expect(rendererFor('result')).toBe(ResultCard);
     expect(rendererFor('output')).toBe(OutputCard);
 });
@@ -41,6 +43,7 @@ it('keeps the facet-less Result and Output entries out of the facet list', () =>
         'exception',
         'n_plus_one',
         'view',
+        'http_client',
     ]);
     expect(FACET_KINDS.every((kind) => typeof kind.facet === 'string')).toBe(
         true,

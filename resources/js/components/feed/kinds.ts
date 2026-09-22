@@ -2,6 +2,7 @@ import type { Component } from 'vue';
 import type { FeedEntry } from '@/lib/feed';
 import DumpCard from './DumpCard.vue';
 import ExceptionCard from './ExceptionCard.vue';
+import HttpClientCard from './HttpClientCard.vue';
 import LogCard from './LogCard.vue';
 import NPlusOneCard from './NPlusOneCard.vue';
 import OutputCard from './OutputCard.vue';
@@ -32,6 +33,7 @@ export const FEED_KINDS: readonly FeedKind[] = [
     { kind: 'exception', facet: 'Exceptions', component: ExceptionCard },
     { kind: 'n_plus_one', facet: 'N+1', component: NPlusOneCard },
     { kind: 'view', facet: 'Views', component: ViewCard },
+    { kind: 'http_client', facet: 'HTTP', component: HttpClientCard },
     { kind: 'result', facet: null, component: ResultCard },
     { kind: 'output', facet: null, component: OutputCard },
 ];

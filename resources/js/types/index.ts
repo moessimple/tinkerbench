@@ -49,6 +49,21 @@ export type FeedItem =
           kind: 'view';
           line: number | null;
           path: string;
+      }
+    | {
+          body_preview: string | null;
+          content_type: string | null;
+          duration_ms: number;
+          duration_str: string;
+          kind: 'http_client';
+          line: number | null;
+          method: string;
+          request_headers: Record<string, string[]>;
+          response_headers: Record<string, string[]>;
+          size: number | null;
+          status: number;
+          truncated: boolean;
+          url: string;
       };
 
 export interface SnippetDebugPayload {
