@@ -15,6 +15,14 @@ vi.mock('../Card.vue', () => ({
     },
 }));
 
+function rowValue(container: Element, label: string): string | null {
+    const dt = Array.from(container.querySelectorAll('dt')).find(
+        (el) => el.textContent?.trim() === label,
+    );
+
+    return dt?.nextElementSibling?.textContent?.trim() ?? null;
+}
+
 function httpClientEntry(
     overrides: Partial<Extract<FeedItem, { kind: 'http_client' }>> = {},
 ): Extract<FeedItem, { kind: 'http_client' }> {
@@ -48,11 +56,12 @@ it('shows the method, url, status and duration for a successful call', () => {
     });
 
     const card = container.querySelector('[data-label="HTTP"]');
+    const text = card?.textContent ?? '';
     expect(card?.getAttribute('data-variant')).toBe('default');
-    expect(card?.textContent).toContain('GET');
-    expect(card?.textContent).toContain('https://example.test/users');
-    expect(card?.textContent).toContain('200');
-    expect(card?.textContent).toContain('42.50ms');
+    expect(text).toContain('GET');
+    expect(text).toContain('https://example.test/users');
+    expect(text).toContain('200');
+    expect(text).toContain('42.50ms');
 });
 
 it('shows a warning variant for a 4xx response', () => {
@@ -79,6 +88,38 @@ it('shows a danger variant for a 5xx response', () => {
     ).toBe('danger');
 });
 
+it('reports success as true below 400 and false at or above it', () => {
+    const { container: ok } = render(HttpClientCard, {
+        props: { entry: httpClientEntry({ status: 200 }) },
+    });
+    const { container: notOk } = render(HttpClientCard, {
+        props: { entry: httpClientEntry({ status: 404 }) },
+    });
+
+    expect(rowValue(ok, 'Success')).toBe('true');
+    expect(rowValue(notOk, 'Success')).toBe('false');
+});
+
+it('reports Real Request as true for a genuine call and false for a faked one', () => {
+    const { container: real } = render(HttpClientCard, {
+        props: { entry: httpClientEntry({ faked: false }) },
+    });
+    const { container: faked } = render(HttpClientCard, {
+        props: { entry: httpClientEntry({ faked: true }) },
+    });
+
+    expect(rowValue(real, 'Real Request')).toBe('true');
+    expect(rowValue(faked, 'Real Request')).toBe('false');
+});
+
+it('shows the request type', () => {
+    const { container } = render(HttpClientCard, {
+        props: { entry: httpClientEntry({ request_type: 'Multipart' }) },
+    });
+
+    expect(container.textContent).toContain('Multipart');
+});
+
 it('shows the request and response headers', () => {
     const { container } = render(HttpClientCard, {
         props: {
@@ -90,9 +131,16 @@ it('shows the request and response headers', () => {
     });
 
     const text = container.textContent ?? '';
-    expect(text).toContain('Authorization');
-    expect(text).toContain('Bearer secret-token');
-    expect(text).toContain('Set-Cookie');
+    expect(text).toContain('Authorization: Bearer secret-token');
+    expect(text).toContain('Set-Cookie: session=abc');
+});
+
+it('shows "none" for an empty header set', () => {
+    const { container } = render(HttpClientCard, {
+        props: { entry: httpClientEntry({ request_headers: {} }) },
+    });
+
+    expect(container.textContent).toContain('none');
 });
 
 it('shows the response body preview and a truncated hint when it was cut', () => {
@@ -140,21 +188,7 @@ it('falls back to a generic label when the response content type itself is missi
     expect(container.textContent).toContain('unknown content type');
 });
 
-it('puts the response body preview on the clipboard copy button', () => {
-    const { container } = render(HttpClientCard, {
-        props: {
-            entry: httpClientEntry({ response_body_preview: '{"id":1}' }),
-        },
-    });
-
-    expect(
-        container
-            .querySelector('[data-label="HTTP"]')
-            ?.getAttribute('data-copy'),
-    ).toBe('{"id":1}');
-});
-
-it('shows the request body preview inside the details section when present', () => {
+it('shows the request body preview and a truncated hint when present', () => {
     const { container } = render(HttpClientCard, {
         props: {
             entry: httpClientEntry({
@@ -162,24 +196,14 @@ it('shows the request body preview inside the details section when present', () 
                 request_body_preview: '{"name":"Ada"}',
                 request_content_type: 'application/json',
                 request_type: 'Json',
+                request_truncated: true,
             }),
         },
     });
 
-    expect(container.textContent).toContain('{"name":"Ada"}');
-});
-
-it('shows nothing for an empty textual request body, e.g. a plain GET', () => {
-    const { container } = render(HttpClientCard, {
-        props: {
-            entry: httpClientEntry({
-                request_body_preview: '',
-                request_content_type: null,
-            }),
-        },
-    });
-
-    expect(container.textContent).not.toContain('bytes');
+    const text = container.textContent ?? '';
+    expect(text).toContain('{"name":"Ada"}');
+    expect(text.toLowerCase()).toContain('truncated');
 });
 
 it('shows request content type and size instead of a preview for a non-textual request body', () => {
@@ -198,50 +222,18 @@ it('shows request content type and size instead of a preview for a non-textual r
     expect(text).toContain('256');
 });
 
-it('falls back to a generic label when the request content type itself is missing', () => {
+it('puts the response body preview on the clipboard copy button', () => {
     const { container } = render(HttpClientCard, {
         props: {
-            entry: httpClientEntry({
-                request_body_preview: null,
-                request_content_type: null,
-                request_size: 128,
-            }),
+            entry: httpClientEntry({ response_body_preview: '{"id":1}' }),
         },
     });
 
-    expect(container.textContent).toContain('unknown content type');
-});
-
-it('shows a request type badge when the request type is classified', () => {
-    const { container } = render(HttpClientCard, {
-        props: { entry: httpClientEntry({ request_type: 'Multipart' }) },
-    });
-
-    expect(container.textContent).toContain('Multipart');
-});
-
-it('shows no request type badge when the type is Other', () => {
-    const { container } = render(HttpClientCard, {
-        props: { entry: httpClientEntry({ request_type: 'Other' }) },
-    });
-
-    expect(container.textContent).not.toContain('Other');
-});
-
-it('shows a faked badge when the request was faked', () => {
-    const { container } = render(HttpClientCard, {
-        props: { entry: httpClientEntry({ faked: true }) },
-    });
-
-    expect(container.textContent?.toLowerCase()).toContain('faked');
-});
-
-it('shows no faked badge for a real request', () => {
-    const { container } = render(HttpClientCard, {
-        props: { entry: httpClientEntry({ faked: false }) },
-    });
-
-    expect(container.textContent?.toLowerCase()).not.toContain('faked');
+    expect(
+        container
+            .querySelector('[data-label="HTTP"]')
+            ?.getAttribute('data-copy'),
+    ).toBe('{"id":1}');
 });
 
 it('re-emits navigate with the entry line', async () => {

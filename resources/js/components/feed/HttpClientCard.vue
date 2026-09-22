@@ -20,18 +20,26 @@ const variant = computed(() => {
     return 'default';
 });
 
-// A GET/HEAD/DELETE call typically sends no body; an empty textual preview then carries nothing
-// worth showing, unlike a non-null request_size, which always means an actual (non-textual) body.
-const hasRequestBody = computed(() =>
-    props.entry.request_body_preview !== null
-        ? props.entry.request_body_preview !== ''
-        : props.entry.request_size !== null,
-);
-
 function formatHeaders(headers: Record<string, string[]>): string {
-    return Object.entries(headers)
+    const entries = Object.entries(headers);
+
+    if (entries.length === 0) {
+        return 'none';
+    }
+
+    return entries
         .map(([name, values]) => `${name}: ${values.join(', ')}`)
         .join('\n');
+}
+
+function formatBody(
+    preview: string | null,
+    contentType: string | null,
+    size: number | null,
+): string {
+    return (
+        preview ?? `${contentType ?? 'unknown content type'} · ${size} bytes`
+    );
 }
 </script>
 
@@ -43,73 +51,113 @@ function formatHeaders(headers: Record<string, string[]>): string {
         :copy="entry.response_body_preview ?? ''"
         @navigate="$emit('navigate', $event)"
     >
-        <p>
-            <strong>{{ entry.method }}</strong> {{ entry.url }}
-        </p>
-        <pre
-            v-if="entry.response_body_preview !== null"
-            class="mt-1.5 break-all whitespace-pre-wrap"
-            >{{ entry.response_body_preview }}</pre>
-        <p v-else class="mt-1.5 text-muted">
-            {{ entry.response_content_type ?? 'unknown content type' }} ·
-            {{ entry.response_size }} bytes
-        </p>
-        <details class="mt-2 text-xs">
-            <summary
-                class="cursor-pointer tracking-wide text-muted uppercase select-none hover:text-fg"
+        <dl class="flex flex-col text-xs">
+            <div
+                class="flex items-start justify-between gap-3 border-b border-line/50 py-1.5"
             >
-                Details
-            </summary>
-            <div class="mt-1.5 flex flex-col gap-2">
-                <div>
-                    <p class="text-muted uppercase">Request</p>
-                    <pre class="break-all whitespace-pre-wrap">{{
+                <dt class="shrink-0 tracking-wide text-muted uppercase">URL</dt>
+                <dd class="text-right break-all text-fg">
+                    {{ entry.method }} {{ entry.url }}
+                </dd>
+            </div>
+            <div
+                class="flex items-start justify-between gap-3 border-b border-line/50 py-1.5"
+            >
+                <dt class="shrink-0 tracking-wide text-muted uppercase">
+                    Type
+                </dt>
+                <dd class="text-fg">{{ entry.request_type }}</dd>
+            </div>
+            <div
+                class="flex items-start justify-between gap-3 border-b border-line/50 py-1.5"
+            >
+                <dt class="shrink-0 tracking-wide text-muted uppercase">
+                    Real Request
+                </dt>
+                <dd class="text-fg">{{ !entry.faked }}</dd>
+            </div>
+            <div
+                class="flex items-start justify-between gap-3 border-b border-line/50 py-1.5"
+            >
+                <dt class="shrink-0 tracking-wide text-muted uppercase">
+                    Success
+                </dt>
+                <dd class="text-fg">{{ entry.status < 400 }}</dd>
+            </div>
+            <div
+                class="flex items-start justify-between gap-3 border-b border-line/50 py-1.5"
+            >
+                <dt class="shrink-0 tracking-wide text-muted uppercase">
+                    Status
+                </dt>
+                <dd class="text-fg">{{ entry.status }}</dd>
+            </div>
+            <div
+                class="flex items-start justify-between gap-3 border-b border-line/50 py-1.5"
+            >
+                <dt class="shrink-0 tracking-wide text-muted uppercase">
+                    Duration
+                </dt>
+                <dd class="text-fg">{{ entry.duration_str }}</dd>
+            </div>
+            <div class="flex flex-col gap-1 border-b border-line/50 py-1.5">
+                <dt class="tracking-wide text-muted uppercase">
+                    Request Headers
+                </dt>
+                <dd>
+                    <pre class="break-all whitespace-pre-wrap text-fg">{{
                         formatHeaders(entry.request_headers)
                     }}</pre>
-                    <pre
-                        v-if="
-                            hasRequestBody &&
-                            entry.request_body_preview !== null
-                        "
-                        class="mt-1 break-all whitespace-pre-wrap"
-                        >{{ entry.request_body_preview }}</pre>
-                    <p v-else-if="hasRequestBody" class="mt-1 text-muted">
-                        {{
-                            entry.request_content_type ?? 'unknown content type'
-                        }}
-                        · {{ entry.request_size }} bytes
+                </dd>
+            </div>
+            <div class="flex flex-col gap-1 border-b border-line/50 py-1.5">
+                <dt class="tracking-wide text-muted uppercase">Request Body</dt>
+                <dd>
+                    <pre class="break-all whitespace-pre-wrap text-fg">{{
+                        formatBody(
+                            entry.request_body_preview,
+                            entry.request_content_type,
+                            entry.request_size,
+                        )
+                    }}</pre>
+                    <p
+                        v-if="entry.request_truncated"
+                        class="mt-1 text-[10px] tracking-wide text-warn uppercase"
+                    >
+                        truncated
                     </p>
-                </div>
-                <div>
-                    <p class="text-muted uppercase">Response</p>
-                    <pre class="break-all whitespace-pre-wrap">{{
+                </dd>
+            </div>
+            <div class="flex flex-col gap-1 border-b border-line/50 py-1.5">
+                <dt class="tracking-wide text-muted uppercase">
+                    Response Headers
+                </dt>
+                <dd>
+                    <pre class="break-all whitespace-pre-wrap text-fg">{{
                         formatHeaders(entry.response_headers)
                     }}</pre>
-                </div>
+                </dd>
             </div>
-        </details>
-        <template #footer>
-            <span
-                v-if="entry.faked"
-                class="rounded bg-line/50 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-muted uppercase"
-            >
-                faked
-            </span>
-            <span
-                v-if="entry.request_type !== 'Other'"
-                class="rounded bg-line/50 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-muted uppercase"
-            >
-                {{ entry.request_type }}
-            </span>
-            <span
-                v-if="entry.response_truncated"
-                class="rounded bg-warn/10 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-warn uppercase"
-            >
-                truncated
-            </span>
-            <span>{{ entry.status }}</span>
-            <span aria-hidden="true">·</span>
-            <span>{{ entry.duration_str }}</span>
-        </template>
+            <div class="flex flex-col gap-1 py-1.5">
+                <dt class="tracking-wide text-muted uppercase">
+                    Response Body
+                </dt>
+                <dd>
+                    <pre class="break-all whitespace-pre-wrap text-fg">{{
+                        formatBody(
+                            entry.response_body_preview,
+                            entry.response_content_type,
+                            entry.response_size,
+                        )
+                    }}</pre>
+                    <p
+                        v-if="entry.response_truncated"
+                        class="mt-1 text-[10px] tracking-wide text-warn uppercase"
+                    >
+                        truncated
+                    </p>
+                </dd>
+            </div>
+        </dl>
     </Card>
 </template>
