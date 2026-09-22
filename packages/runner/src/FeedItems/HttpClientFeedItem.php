@@ -33,42 +33,41 @@ class HttpClientFeedItem extends FeedItem
     public function __construct(
         public string $method,
         public string $url,
+        public bool $faked,
         public int $status,
         public float $durationMs,
         public array $requestHeaders,
         public array $responseHeaders,
-        public string $body,
-        public ?string $contentType,
+        public string $requestBody,
+        public ?string $requestContentType,
+        public string $responseBody,
+        public ?string $responseContentType,
     ) {}
 
     public function toArray(): array
     {
-        $bodyPreview = null;
-        $truncated = false;
-        $size = null;
-
-        if ($this->isTextual()) {
-            $truncated = mb_strwidth($this->body, 'UTF-8') > ValueRenderer::MAX_TEXT_LENGTH;
-            $bodyPreview = $truncated
-                ? mb_strimwidth($this->body, 0, ValueRenderer::MAX_TEXT_LENGTH, '', 'UTF-8').'...'
-                : $this->body;
-        } else {
-            $size = mb_strlen($this->body);
-        }
+        $request = $this->preview($this->requestBody, $this->requestContentType);
+        $response = $this->preview($this->responseBody, $this->responseContentType);
 
         return [
             'kind' => FeedItemKind::HttpClient->value,
             'method' => $this->method,
             'url' => $this->url,
+            'request_type' => $this->requestType(),
+            'faked' => $this->faked,
             'status' => $this->status,
             'duration_str' => Duration::format($this->durationMs),
             'duration_ms' => $this->durationMs,
             'request_headers' => $this->redact($this->requestHeaders),
             'response_headers' => $this->redact($this->responseHeaders),
-            'body_preview' => $bodyPreview,
-            'truncated' => $truncated,
-            'content_type' => $this->contentType,
-            'size' => $size,
+            'request_body_preview' => $request['preview'],
+            'request_truncated' => $request['truncated'],
+            'request_content_type' => $this->requestContentType,
+            'request_size' => $request['size'],
+            'response_body_preview' => $response['preview'],
+            'response_truncated' => $response['truncated'],
+            'response_content_type' => $this->responseContentType,
+            'response_size' => $response['size'],
             'line' => $this->line,
         ];
     }
@@ -91,24 +90,76 @@ class HttpClientFeedItem extends FeedItem
     }
 
     /**
+     * @return array{preview: string|null, truncated: bool, size: int|null}
+     */
+    private function preview(string $body, ?string $contentType): array
+    {
+        if (! $this->isTextual($contentType)) {
+            return ['preview' => null, 'truncated' => false, 'size' => mb_strlen($body)];
+        }
+
+        $truncated = mb_strwidth($body, 'UTF-8') > ValueRenderer::MAX_TEXT_LENGTH;
+
+        return [
+            'preview' => $truncated
+                ? mb_strimwidth($body, 0, ValueRenderer::MAX_TEXT_LENGTH, '', 'UTF-8').'...'
+                : $body,
+            'truncated' => $truncated,
+            'size' => null,
+        ];
+    }
+
+    /**
      * No content type is treated as textual: it is the common case for a quick local test call
      * (e.g. Http::fake() without an explicit header), and hiding the preview by default would lose
      * useful debug output for no proven reason.
      */
-    private function isTextual(): bool
+    private function isTextual(?string $contentType): bool
     {
-        if ($this->contentType === null) {
+        if ($contentType === null) {
             return true;
         }
 
-        // No trim(): Pint's mb_str_functions rule would rewrite it to mb_trim(), which is PHP
-        // 8.4+ and this package's floor is 8.2 (see ValueRenderer::limit()'s same constraint).
-        $type = mb_strtolower(preg_replace('/\s+$/', '', explode(';', $this->contentType)[0]) ?? '');
+        $type = $this->baseType($contentType);
 
         return str_starts_with($type, 'text/')
             || $type === 'application/json'
             || $type === 'application/xml'
             || str_ends_with($type, '+json')
             || str_ends_with($type, '+xml');
+    }
+
+    /**
+     * A request with a raw body and no recognized content type is neither JSON, multipart, nor
+     * form data, so it falls back to Other rather than being mislabelled as one of those.
+     */
+    private function requestType(): string
+    {
+        if ($this->requestContentType === null) {
+            return 'Other';
+        }
+
+        $type = $this->baseType($this->requestContentType);
+
+        if (str_contains($type, 'json')) {
+            return 'Json';
+        }
+
+        if (str_contains($type, 'multipart')) {
+            return 'Multipart';
+        }
+
+        if ($type === 'application/x-www-form-urlencoded') {
+            return 'Form';
+        }
+
+        return 'Other';
+    }
+
+    private function baseType(string $contentType): string
+    {
+        // No trim(): Pint's mb_str_functions rule would rewrite it to mb_trim(), which is PHP
+        // 8.4+ and this package's floor is 8.2 (see ValueRenderer::limit()'s same constraint).
+        return mb_strtolower(preg_replace('/\s+$/', '', explode(';', $contentType)[0]) ?? '');
     }
 }
