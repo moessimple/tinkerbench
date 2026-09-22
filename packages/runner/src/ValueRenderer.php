@@ -13,9 +13,11 @@ class ValueRenderer
 {
     /**
      * Keeps a runaway dump out of the clipboard when the copy button reads this. Native
-     * class-constant types need PHP 8.3+; this package's floor is 8.2.
+     * class-constant types need PHP 8.3+; this package's floor is 8.2. Public: other feed-item
+     * classes with their own text to truncate (e.g. HttpClientFeedItem's response body) reuse this
+     * limit instead of inventing a second one.
      */
-    private const MAX_TEXT_LENGTH = 20_000;
+    public const MAX_TEXT_LENGTH = 20_000;
 
     public function __construct(
         private readonly VarCloner $cloner = new VarCloner(),

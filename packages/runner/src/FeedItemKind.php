@@ -13,4 +13,5 @@ enum FeedItemKind: string
     case Exception = 'exception';
     case Result = 'result';
     case View = 'view';
+    case HttpClient = 'http_client';
 }
