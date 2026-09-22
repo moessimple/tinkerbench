@@ -515,7 +515,7 @@ it('emits an http_client item against a Laravel 12 fixture, always on with no ar
         ->and($item['method'])->toBe('GET')
         ->and($item['url'])->toBe('https://example.test/users')
         ->and($item['status'])->toBe(200)
-        ->and($item['request_headers']['Authorization'])->toBe(['[REDACTED]']);
+        ->and($item['request_headers']['Authorization'])->toBe(['Bearer secret']);
 });
 
 it('classifies the snippet frame of an uncaught exception from a Laravel 12 fixture', function (): void {

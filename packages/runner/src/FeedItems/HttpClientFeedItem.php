@@ -11,22 +11,6 @@ use Tinkerbench\Runner\ValueRenderer;
 class HttpClientFeedItem extends FeedItem
 {
     /**
-     * Header names (case-insensitive) whose values never reach the feed: the feed is a browser
-     * page with a copy button, unlike a native desktop app, so secrets pasted from it are a real
-     * leak vector even for a single-developer local tool.
-     *
-     * @var list<string>
-     */
-    private const REDACTED_HEADERS = [
-        'authorization',
-        'cookie',
-        'set-cookie',
-        'x-csrf-token',
-        'x-xsrf-token',
-        'proxy-authorization',
-    ];
-
-    /**
      * @param  array<string, list<string>>  $requestHeaders
      * @param  array<string, list<string>>  $responseHeaders
      */
@@ -58,8 +42,8 @@ class HttpClientFeedItem extends FeedItem
             'status' => $this->status,
             'duration_str' => Duration::format($this->durationMs),
             'duration_ms' => $this->durationMs,
-            'request_headers' => $this->redact($this->requestHeaders),
-            'response_headers' => $this->redact($this->responseHeaders),
+            'request_headers' => $this->requestHeaders,
+            'response_headers' => $this->responseHeaders,
             'request_body_preview' => $request['preview'],
             'request_truncated' => $request['truncated'],
             'request_content_type' => $this->requestContentType,
@@ -70,23 +54,6 @@ class HttpClientFeedItem extends FeedItem
             'response_size' => $response['size'],
             'line' => $this->line,
         ];
-    }
-
-    /**
-     * @param  array<string, list<string>>  $headers
-     * @return array<string, list<string>>
-     */
-    private function redact(array $headers): array
-    {
-        $redacted = [];
-
-        foreach ($headers as $name => $values) {
-            $redacted[$name] = in_array(mb_strtolower($name), self::REDACTED_HEADERS, true)
-                ? array_fill(0, count($values), '[REDACTED]')
-                : $values;
-        }
-
-        return $redacted;
     }
 
     /**

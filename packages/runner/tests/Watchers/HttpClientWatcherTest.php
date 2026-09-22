@@ -54,7 +54,7 @@ it('emits an http_client item built from the request and response, without a lin
         'response_content_type' => 'application/json',
         'response_size' => null,
         'line' => null,
-    ])->and($array['request_headers']['Authorization'])->toBe(['[REDACTED]'])
+    ])->and($array['request_headers']['Authorization'])->toBe(['Bearer secret'])
         ->and($array['duration_ms'])->toBeFloat()->toBeGreaterThanOrEqual(0.0);
 });
 

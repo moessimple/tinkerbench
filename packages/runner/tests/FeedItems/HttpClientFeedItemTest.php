@@ -55,7 +55,7 @@ it('serializes to the http_client feed-item shape', function (): void {
     ]);
 });
 
-it('redacts sensitive request and response headers case-insensitively, keeping the multi-value shape', function (): void {
+it('passes request and response headers through unchanged, including sensitive ones', function (): void {
     $item = httpClientFeedItem([
         'requestHeaders' => [
             'Authorization' => ['Bearer secret-token'],
@@ -70,28 +70,13 @@ it('redacts sensitive request and response headers case-insensitively, keeping t
     $array = $item->toArray();
 
     expect($array['request_headers'])->toBe([
-        'Authorization' => ['[REDACTED]'],
+        'Authorization' => ['Bearer secret-token'],
         'Accept' => ['application/json'],
     ])->and($array['response_headers'])->toBe([
-        'Set-Cookie' => ['[REDACTED]', '[REDACTED]'],
+        'Set-Cookie' => ['session=abc', 'other=def'],
         'X-Request-Id' => ['req-1'],
     ]);
 });
-
-it('redacts every header on the deny list', function (string $header): void {
-    $item = httpClientFeedItem([
-        'requestHeaders' => [$header => ['secret-value']],
-    ]);
-
-    expect($item->toArray()['request_headers'])->toBe([$header => ['[REDACTED]']]);
-})->with([
-    'authorization',
-    'cookie',
-    'set-cookie',
-    'x-csrf-token',
-    'x-xsrf-token',
-    'proxy-authorization',
-]);
 
 it('truncates a textual response body over the shared max-text-length and flags it', function (): void {
     $body = str_repeat('a', 20_001);

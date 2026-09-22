@@ -79,19 +79,19 @@ it('shows a danger variant for a 5xx response', () => {
     ).toBe('danger');
 });
 
-it('shows the redacted request and response headers', () => {
+it('shows the request and response headers', () => {
     const { container } = render(HttpClientCard, {
         props: {
             entry: httpClientEntry({
-                request_headers: { Authorization: ['[REDACTED]'] },
-                response_headers: { 'Set-Cookie': ['[REDACTED]'] },
+                request_headers: { Authorization: ['Bearer secret-token'] },
+                response_headers: { 'Set-Cookie': ['session=abc'] },
             }),
         },
     });
 
     const text = container.textContent ?? '';
     expect(text).toContain('Authorization');
-    expect(text).toContain('[REDACTED]');
+    expect(text).toContain('Bearer secret-token');
     expect(text).toContain('Set-Cookie');
 });
 
