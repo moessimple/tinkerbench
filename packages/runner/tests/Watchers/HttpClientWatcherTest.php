@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 use GuzzleHttp\Psr7\Request as Psr7Request;
 use GuzzleHttp\Psr7\Response as Psr7Response;
+use GuzzleHttp\TransferStats;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Events\RequestSending;
 use Illuminate\Http\Client\Events\ResponseReceived;
 use Illuminate\Http\Client\Request;
 use Illuminate\Http\Client\Response;
@@ -45,14 +47,53 @@ it('emits an http_client item built from the request and response, without a lin
         'kind' => 'http_client',
         'method' => 'GET',
         'url' => 'https://example.test/users',
+        'faked' => true,
         'status' => 200,
-        'body_preview' => '{"id":1}',
-        'truncated' => false,
-        'content_type' => 'application/json',
-        'size' => null,
+        'response_body_preview' => '{"id":1}',
+        'response_truncated' => false,
+        'response_content_type' => 'application/json',
+        'response_size' => null,
         'line' => null,
     ])->and($array['request_headers']['Authorization'])->toBe(['[REDACTED]'])
         ->and($array['duration_ms'])->toBeFloat()->toBeGreaterThanOrEqual(0.0);
+});
+
+it('captures the request body and content type alongside the response', function (): void {
+    Http::fake([
+        'https://example.test/*' => Http::response('ok', 200),
+    ]);
+
+    $items = captureHttpClientItems(
+        fn () => Http::withHeaders(['Content-Type' => 'application/json'])
+            ->withBody('{"name":"Ada"}', 'application/json')
+            ->post('https://example.test/users'),
+    );
+
+    $array = $items[0]->toArray();
+
+    expect($array['request_body_preview'])->toBe('{"name":"Ada"}')
+        ->and($array['request_content_type'])->toBe('application/json')
+        ->and($array['request_type'])->toBe('Json');
+});
+
+it('reports faked as false for a response carrying real handler stats', function (): void {
+    $psrRequest = new Psr7Request('GET', 'https://example.test/users');
+    $psrResponse = new Psr7Response(200, [], 'ok');
+
+    $request = new Request($psrRequest);
+    $response = new Response($psrResponse);
+    $response->transferStats = new TransferStats($psrRequest, $psrResponse, 0.05, null, ['total_time' => 0.05]);
+
+    $emitted = [];
+    (new HttpClientWatcher())->register(app(), function (FeedItem $item) use (&$emitted): void {
+        $emitted[] = $item;
+    });
+
+    event(new RequestSending($request));
+    event(new ResponseReceived($request, $response));
+
+    expect($emitted)->toHaveCount(1)
+        ->and($emitted[0]->toArray()['faked'])->toBeFalse();
 });
 
 it('emits one item per request when multiple requests happen in the same run', function (): void {

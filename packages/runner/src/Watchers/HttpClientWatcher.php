@@ -47,13 +47,18 @@ class HttpClientWatcher implements Watcher
             /** @var array<string, list<string>> $responseHeaders */
             $responseHeaders = $event->response->headers();
 
+            // handlerStats() comes from the cURL handler Guzzle actually drove; Http::fake()
+            // never touches cURL, so a faked response always reports empty stats here.
             $emit(new HttpClientFeedItem(
                 $event->request->method(),
                 $event->request->url(),
+                empty($event->response->handlerStats()),
                 $event->response->status(),
                 $durationMs,
                 $requestHeaders,
                 $responseHeaders,
+                $event->request->body(),
+                $requestHeaders['Content-Type'][0] ?? null,
                 $event->response->body(),
                 $event->response->header('Content-Type') ?: null,
             ));
