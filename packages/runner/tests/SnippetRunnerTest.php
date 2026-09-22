@@ -497,6 +497,27 @@ it('captures dump, log, query, and result against a Laravel 12 fixture', functio
         ->and($items->firstWhere('kind', 'dump')['html'])->toContain('from laravel 12');
 });
 
+it('emits an http_client item against a Laravel 12 fixture, always on with no argv needed', function (): void {
+    $result = runSnippetSubprocessAgainst(fixtureTargetPath('laravel-12'), <<<'PHP'
+    <?php
+
+    use Illuminate\Support\Facades\Http;
+
+    Http::fake(['https://example.test/*' => Http::response(['id' => 1], 200)]);
+
+    Http::withHeaders(['Authorization' => 'Bearer secret'])->get('https://example.test/users');
+    PHP);
+
+    $item = collect($result['debug']['items'] ?? [])->firstWhere('kind', 'http_client');
+
+    expect($result['exitCode'])->toBe(0)
+        ->and($item)->not->toBeNull()
+        ->and($item['method'])->toBe('GET')
+        ->and($item['url'])->toBe('https://example.test/users')
+        ->and($item['status'])->toBe(200)
+        ->and($item['request_headers']['Authorization'])->toBe(['[REDACTED]']);
+});
+
 it('classifies the snippet frame of an uncaught exception from a Laravel 12 fixture', function (): void {
     $result = runSnippetSubprocessAgainst(
         fixtureTargetPath('laravel-12'),
