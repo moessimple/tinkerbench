@@ -51,18 +51,24 @@ export type FeedItem =
           path: string;
       }
     | {
-          body_preview: string | null;
-          content_type: string | null;
           duration_ms: number;
           duration_str: string;
+          faked: boolean;
           kind: 'http_client';
           line: number | null;
           method: string;
+          request_body_preview: string | null;
+          request_content_type: string | null;
           request_headers: Record<string, string[]>;
+          request_size: number | null;
+          request_truncated: boolean;
+          request_type: string;
+          response_body_preview: string | null;
+          response_content_type: string | null;
           response_headers: Record<string, string[]>;
-          size: number | null;
+          response_size: number | null;
+          response_truncated: boolean;
           status: number;
-          truncated: boolean;
           url: string;
       };
 
