@@ -9,6 +9,7 @@ use Illuminate\Contracts\Foundation\Application;
 use Throwable;
 use Tinkerbench\Runner\FeedItems\DumpFeedItem;
 use Tinkerbench\Runner\FeedItems\FeedItem;
+use Tinkerbench\Runner\FeedItems\HttpClientFeedItem;
 use Tinkerbench\Runner\FeedItems\NPlusOneFeedItem;
 use Tinkerbench\Runner\FeedItems\QueryFeedItem;
 use Tinkerbench\Runner\FeedItems\ResultFeedItem;
@@ -93,17 +94,54 @@ class SnippetRunRecorder
     }
 
     /**
-     * @return array{items: list<array<string, mixed>>, duration_str: string, peak_memory_str: string}
+     * The snippet duration is split into query, http, and other time so the numbers add up:
+     * each part is rounded to hundredths first and other is the remainder of the rounded values,
+     * so duration = query + http + other holds exactly for the displayed figures. Query and http
+     * time are the plain sums of their feed items, which keeps them checkable against the cards.
+     *
+     * @return array{
+     *     items: list<array<string, mixed>>,
+     *     duration_str: string,
+     *     duration_ms: float,
+     *     peak_memory_str: string,
+     *     query_count: int,
+     *     duplicate_query_count: int,
+     *     query_duration_str: string,
+     *     query_duration_ms: float,
+     *     http_request_count: int,
+     *     http_duration_str: string,
+     *     http_duration_ms: float,
+     *     other_duration_str: string,
+     *     other_duration_ms: float,
+     * }
      */
     public function snapshot(): array
     {
+        $queries = array_values(array_filter($this->items, static fn (FeedItem $item): bool => $item instanceof QueryFeedItem));
+        $httpCalls = array_values(array_filter($this->items, static fn (FeedItem $item): bool => $item instanceof HttpClientFeedItem));
+
+        $durationMs = round($this->elapsedMilliseconds(), 2);
+        $queryDurationMs = round(array_sum(array_map(static fn (QueryFeedItem $query): float => $query->durationMs, $queries)), 2);
+        $httpDurationMs = round(array_sum(array_map(static fn (HttpClientFeedItem $call): float => $call->durationMs, $httpCalls)), 2);
+        $otherDurationMs = round($durationMs - $queryDurationMs - $httpDurationMs, 2);
+
         return [
             'items' => array_map(
                 static fn (FeedItem $item): array => $item->toArray(),
                 $this->itemsWithoutSingleLazyLoads(),
             ),
-            'duration_str' => Duration::format($this->elapsedMilliseconds()),
+            'duration_str' => Duration::format($durationMs),
+            'duration_ms' => $durationMs,
             'peak_memory_str' => ByteSize::format(memory_get_peak_usage(true)),
+            'query_count' => count($queries),
+            'duplicate_query_count' => count(array_filter($queries, static fn (QueryFeedItem $query): bool => $query->duplicate)),
+            'query_duration_str' => Duration::format($queryDurationMs),
+            'query_duration_ms' => $queryDurationMs,
+            'http_request_count' => count($httpCalls),
+            'http_duration_str' => Duration::format($httpDurationMs),
+            'http_duration_ms' => $httpDurationMs,
+            'other_duration_str' => Duration::format($otherDurationMs),
+            'other_duration_ms' => $otherDurationMs,
         ];
     }
 

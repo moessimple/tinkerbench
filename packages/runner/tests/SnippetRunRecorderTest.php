@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 use Illuminate\Contracts\Foundation\Application;
+use Tinkerbench\Runner\Duration;
 use Tinkerbench\Runner\ExceptionMapper;
 use Tinkerbench\Runner\FeedItems\DumpFeedItem;
 use Tinkerbench\Runner\FeedItems\ExceptionFeedItem;
+use Tinkerbench\Runner\FeedItems\HttpClientFeedItem;
 use Tinkerbench\Runner\FeedItems\LogFeedItem;
 use Tinkerbench\Runner\FeedItems\NPlusOneFeedItem;
 use Tinkerbench\Runner\FeedItems\QueryFeedItem;
@@ -41,6 +43,23 @@ function runRecorder(Closure $run, ?ExceptionMapper $mapper = null, ?SourceLocat
     });
 
     return $recorder;
+}
+
+/**
+ * An outgoing HTTP call item where only the duration matters to the test.
+ */
+function recordedHttpCall(float $durationMs): HttpClientFeedItem
+{
+    return new HttpClientFeedItem('GET', 'https://example.test', false, 200, $durationMs, [], [], '', null, '', null);
+}
+
+/**
+ * Milliseconds as an integer count of hundredths, so sums of two-decimal values compare exactly
+ * instead of through float addition.
+ */
+function hundredths(float $milliseconds): int
+{
+    return (int) round($milliseconds * 100);
 }
 
 it('collects emitted items in order and assembles a snapshot', function (): void {
@@ -153,6 +172,75 @@ it('does not let lazy-load folding touch the duplicate-query bookkeeping', funct
         ->and($items[1])->toBe(['kind' => 'n_plus_one', 'model' => 'Some\Fixture\Model', 'relation' => 'posts', 'count' => 2, 'line' => 99])
         ->and($items[2]['kind'])->toBe('query')
         ->and($items[2]['duplicate'])->toBeTrue();
+});
+
+it('sums the query durations and counts the queries of a run', function (): void {
+    $recorder = runRecorder(function (callable $emit): void {
+        $emit(new QueryFeedItem('select * from users', 1.25, 'sqlite'));
+        $emit(new QueryFeedItem('select * from posts', 2.5, 'sqlite'));
+    });
+
+    $snapshot = $recorder->snapshot();
+
+    expect($snapshot['query_count'])->toBe(2)
+        ->and($snapshot['query_duration_ms'])->toBe(3.75)
+        ->and($snapshot['query_duration_str'])->toBe('3.75ms');
+});
+
+it('counts the duplicate queries of a run', function (): void {
+    $recorder = runRecorder(function (callable $emit): void {
+        $emit(new QueryFeedItem('select * from users', 1.0, 'sqlite'));
+        $emit(new QueryFeedItem('select * from users', 1.0, 'sqlite'));
+        $emit(new QueryFeedItem('select * from users', 1.0, 'sqlite'));
+        $emit(new QueryFeedItem('select * from posts', 1.0, 'sqlite'));
+    });
+
+    expect($recorder->snapshot()['duplicate_query_count'])->toBe(2);
+});
+
+it('sums the http client durations and counts the requests of a run', function (): void {
+    $recorder = runRecorder(function (callable $emit): void {
+        $emit(recordedHttpCall(40.0));
+        $emit(recordedHttpCall(2.5));
+    });
+
+    $snapshot = $recorder->snapshot();
+
+    expect($snapshot['http_request_count'])->toBe(2)
+        ->and($snapshot['http_duration_ms'])->toBe(42.5)
+        ->and($snapshot['http_duration_str'])->toBe('42.50ms');
+});
+
+it('splits the snippet duration exactly into query, http, and other time after rounding', function (): void {
+    $recorder = runRecorder(function (callable $emit): void {
+        $emit(new QueryFeedItem('select * from users', 0.334, 'sqlite'));
+        $emit(new QueryFeedItem('select * from posts', 0.333, 'sqlite'));
+        $emit(recordedHttpCall(0.125));
+    });
+
+    $snapshot = $recorder->snapshot();
+
+    expect($snapshot['query_duration_ms'])->toBe(0.67)
+        ->and($snapshot['http_duration_ms'])->toBe(0.13)
+        ->and(hundredths($snapshot['duration_ms']))->toBe(
+            hundredths($snapshot['query_duration_ms']) + hundredths($snapshot['http_duration_ms']) + hundredths($snapshot['other_duration_ms']),
+        )
+        ->and($snapshot['other_duration_str'])->toBe(Duration::format($snapshot['other_duration_ms']));
+});
+
+it('attributes the whole snippet duration to other time when the run made no queries or http calls', function (): void {
+    $recorder = runRecorder(function (callable $emit): void {
+        $emit(new DumpFeedItem('<a/>', 'a'));
+    });
+
+    $snapshot = $recorder->snapshot();
+
+    expect($snapshot['query_count'])->toBe(0)
+        ->and($snapshot['duplicate_query_count'])->toBe(0)
+        ->and($snapshot['query_duration_ms'])->toBe(0.0)
+        ->and($snapshot['http_request_count'])->toBe(0)
+        ->and($snapshot['http_duration_ms'])->toBe(0.0)
+        ->and($snapshot['other_duration_ms'])->toBe($snapshot['duration_ms']);
 });
 
 it('reports a zero duration when snapshot is taken before a run', function (): void {

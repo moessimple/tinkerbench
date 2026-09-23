@@ -150,7 +150,21 @@ it('records no result item for a literal return of 1, which it cannot tell from 
 it('writes the run snapshot to the debug path', function (): void {
     $result = runSnippetSubprocess("<?php\n\n\$x = 'ok';");
 
-    expect($result['debug'])->toHaveKeys(['items', 'duration_str', 'peak_memory_str'])
+    expect($result['debug'])->toHaveKeys([
+        'items',
+        'duration_str',
+        'duration_ms',
+        'peak_memory_str',
+        'query_count',
+        'duplicate_query_count',
+        'query_duration_str',
+        'query_duration_ms',
+        'http_request_count',
+        'http_duration_str',
+        'http_duration_ms',
+        'other_duration_str',
+        'other_duration_ms',
+    ])
         ->and($result['debug']['items'])->toBe([])
         ->and($result['debug']['duration_str'])->toMatch('/^\d+\.\d{2}(ms|s)$/')
         ->and($result['debug']['peak_memory_str'])->toMatch('/^[\d,]+\.\d{2} MB$/');

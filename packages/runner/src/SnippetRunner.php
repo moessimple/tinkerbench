@@ -109,7 +109,21 @@ class SnippetRunner
         // such value makes json_encode() return false and the whole feed is lost for the run.
         $json = json_encode($recorder->snapshot(), JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
 
-        $fallback = (string) json_encode(['items' => [], 'duration_str' => '', 'peak_memory_str' => '']);
+        $fallback = (string) json_encode([
+            'items' => [],
+            'duration_str' => '',
+            'duration_ms' => 0.0,
+            'peak_memory_str' => '',
+            'query_count' => 0,
+            'duplicate_query_count' => 0,
+            'query_duration_str' => '',
+            'query_duration_ms' => 0.0,
+            'http_request_count' => 0,
+            'http_duration_str' => '',
+            'http_duration_ms' => 0.0,
+            'other_duration_str' => '',
+            'other_duration_ms' => 0.0,
+        ]);
 
         file_put_contents($debugPath, $json !== false ? $json : $fallback);
 
