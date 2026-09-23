@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use GuzzleHttp\Promise\FulfilledPromise;
+use GuzzleHttp\Psr7\NoSeekStream;
 use GuzzleHttp\Psr7\Response as Psr7Response;
+use GuzzleHttp\Psr7\Utils;
 use GuzzleHttp\TransferStats;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
@@ -127,6 +129,20 @@ it('leaves the response body readable for the snippet that made the request', fu
     });
 
     expect($body)->toBe('{"id":1}');
+});
+
+it('leaves a streamed response body to the snippet and records it as empty', function (): void {
+    $transport = fn (RequestInterface $request, array $options): FulfilledPromise => new FulfilledPromise(
+        new Psr7Response(200, [], new NoSeekStream(Utils::streamFor('streamed'))),
+    );
+
+    $body = null;
+    $items = captureHttpClientItems(function () use ($transport, &$body): void {
+        $body = Http::setHandler($transport)->get('https://example.test/stream')->body();
+    });
+
+    expect($items[0]->toArray()['response_body_preview'])->toBe('')
+        ->and($body)->toBe('streamed');
 });
 
 it('emits nothing for a request that fails to connect, leaving it to the uncaught-exception path', function (): void {
