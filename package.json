@@ -16,7 +16,7 @@
         "@laravel/vite-plugin-wayfinder": "^0.1.10",
         "@testing-library/vue": "^8.1.0",
         "@types/node": "^26.6.2",
-        "@vitest/coverage-v8": "^4.1.11",
+        "@vitest/coverage-v8": "^5.0.1",
         "fontaine": "^0.8.2",
         "jsdom": "^30.1.1",
         "playwright": "^1.63.0",
