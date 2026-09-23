@@ -39,11 +39,15 @@ class SnippetRunRecorder
      * @param  list<Watcher>  $watchers  Every feed-item source for the run. ExceptionMapper is not
      *                                   one of these: it turns caught throwables and fatal shutdown
      *                                   errors into items, it does not listen to an event.
+     * @param  float  $runStartedAt  hrtime(true) taken when the run began, before the target was
+     *                               booted. Boot time is measured from here to the snippet start,
+     *                               on the same clock, so boot and snippet time leave no gap.
      */
     public function __construct(
         private readonly array $watchers,
         private readonly ExceptionMapper $exceptionMapper,
         private readonly SourceLocator $source,
+        private readonly float $runStartedAt,
     ) {}
 
     /**
@@ -99,10 +103,17 @@ class SnippetRunRecorder
      * so duration = query + http + other holds exactly for the displayed figures. Query and http
      * time are the plain sums of their feed items, which keeps them checkable against the cards.
      *
+     * Boot time runs from the run start to the snippet start; run = boot + duration holds the same
+     * way, from the rounded values.
+     *
      * @return array{
      *     items: list<array<string, mixed>>,
      *     duration_str: string,
      *     duration_ms: float,
+     *     boot_duration_str: string,
+     *     boot_duration_ms: float,
+     *     run_duration_str: string,
+     *     run_duration_ms: float,
      *     peak_memory_str: string,
      *     query_count: int,
      *     duplicate_query_count: int,
@@ -121,6 +132,8 @@ class SnippetRunRecorder
         $httpCalls = array_values(array_filter($this->items, static fn (FeedItem $item): bool => $item instanceof HttpClientFeedItem));
 
         $durationMs = round($this->elapsedMilliseconds(), 2);
+        $bootDurationMs = round($this->bootMilliseconds(), 2);
+        $runDurationMs = round($bootDurationMs + $durationMs, 2);
         $queryDurationMs = round(array_sum(array_map(static fn (QueryFeedItem $query): float => $query->durationMs, $queries)), 2);
         $httpDurationMs = round(array_sum(array_map(static fn (HttpClientFeedItem $call): float => $call->durationMs, $httpCalls)), 2);
         $otherDurationMs = round($durationMs - $queryDurationMs - $httpDurationMs, 2);
@@ -132,6 +145,10 @@ class SnippetRunRecorder
             ),
             'duration_str' => Duration::format($durationMs),
             'duration_ms' => $durationMs,
+            'boot_duration_str' => Duration::format($bootDurationMs),
+            'boot_duration_ms' => $bootDurationMs,
+            'run_duration_str' => Duration::format($runDurationMs),
+            'run_duration_ms' => $runDurationMs,
             'peak_memory_str' => ByteSize::format(memory_get_peak_usage(true)),
             'query_count' => count($queries),
             'duplicate_query_count' => count(array_filter($queries, static fn (QueryFeedItem $query): bool => $query->duplicate)),
@@ -196,6 +213,15 @@ class SnippetRunRecorder
         }
 
         return (($this->finishedAt ?? $this->now()) - $this->startedAt) / 1_000_000;
+    }
+
+    private function bootMilliseconds(): float
+    {
+        if ($this->startedAt === null) {
+            return 0.0;
+        }
+
+        return ($this->startedAt - $this->runStartedAt) / 1_000_000;
     }
 
     private function now(): float

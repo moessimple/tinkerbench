@@ -22,7 +22,7 @@ use Tinkerbench\Runner\Watchers\Watcher;
  *
  * @param  Closure(callable): void  $run
  */
-function runRecorder(Closure $run, ?ExceptionMapper $mapper = null, ?SourceLocator $source = null): SnippetRunRecorder
+function runRecorder(Closure $run, ?ExceptionMapper $mapper = null, ?SourceLocator $source = null, ?float $runStartedAt = null): SnippetRunRecorder
 {
     $emit = null;
 
@@ -36,7 +36,7 @@ function runRecorder(Closure $run, ?ExceptionMapper $mapper = null, ?SourceLocat
         $source->shouldReceive('snippetLine')->andReturn(99);
     }
 
-    $recorder = new SnippetRunRecorder([$watcher], $mapper ?? Mockery::mock(ExceptionMapper::class), $source);
+    $recorder = new SnippetRunRecorder([$watcher], $mapper ?? Mockery::mock(ExceptionMapper::class), $source, $runStartedAt ?? hrtime(true));
 
     $recorder->record(Mockery::mock(Application::class), function () use (&$emit, $run): void {
         $run($emit);
@@ -241,12 +241,36 @@ it('attributes the whole snippet duration to other time when the run made no que
 });
 
 it('reports a zero duration when snapshot is taken before a run', function (): void {
-    $recorder = new SnippetRunRecorder([], Mockery::mock(ExceptionMapper::class), Mockery::mock(SourceLocator::class));
+    $recorder = new SnippetRunRecorder([], Mockery::mock(ExceptionMapper::class), Mockery::mock(SourceLocator::class), hrtime(true));
 
     $snapshot = $recorder->snapshot();
 
     expect($snapshot['items'])->toBe([])
-        ->and($snapshot['duration_str'])->toBe('0.00ms');
+        ->and($snapshot['duration_str'])->toBe('0.00ms')
+        ->and($snapshot['boot_duration_ms'])->toBe(0.0)
+        ->and($snapshot['run_duration_ms'])->toBe(0.0);
+});
+
+it('measures the boot time from the run start up to the start of the snippet', function (): void {
+    $fiveMillisecondsAgo = hrtime(true) - 5_000_000;
+
+    $recorder = runRecorder(function (callable $emit): void {}, runStartedAt: $fiveMillisecondsAgo);
+
+    $snapshot = $recorder->snapshot();
+
+    expect($snapshot['boot_duration_ms'])->toBeGreaterThanOrEqual(5.0)
+        ->and($snapshot['boot_duration_str'])->toBe(Duration::format($snapshot['boot_duration_ms']));
+});
+
+it('adds the boot and snippet time up to the run time exactly after rounding', function (): void {
+    $recorder = runRecorder(function (callable $emit): void {
+        $emit(new QueryFeedItem('select * from users', 0.334, 'sqlite'));
+    }, runStartedAt: hrtime(true) - 1_234_567);
+
+    $snapshot = $recorder->snapshot();
+
+    expect(hundredths($snapshot['run_duration_ms']))->toBe(hundredths($snapshot['boot_duration_ms']) + hundredths($snapshot['duration_ms']))
+        ->and($snapshot['run_duration_str'])->toBe(Duration::format($snapshot['run_duration_ms']));
 });
 
 it('appends an exception item mapped from the throwable', function (): void {
@@ -286,7 +310,7 @@ it('appends a dump item stamped with the resolved snippet line', function (): vo
     $source = Mockery::mock(SourceLocator::class);
     $source->shouldReceive('snippetLine')->andReturn(7);
 
-    $recorder = new SnippetRunRecorder([], Mockery::mock(ExceptionMapper::class), $source);
+    $recorder = new SnippetRunRecorder([], Mockery::mock(ExceptionMapper::class), $source, hrtime(true));
 
     $recorder->appendDump('<a/>', 'a');
 
@@ -299,7 +323,7 @@ it('registers no watchers when record is given no application', function (): voi
     $watcher = Mockery::mock(Watcher::class);
     $watcher->shouldNotReceive('register');
 
-    $recorder = new SnippetRunRecorder([$watcher], Mockery::mock(ExceptionMapper::class), Mockery::mock(SourceLocator::class));
+    $recorder = new SnippetRunRecorder([$watcher], Mockery::mock(ExceptionMapper::class), Mockery::mock(SourceLocator::class), hrtime(true));
 
     $ran = false;
     $recorder->record(null, function () use (&$ran): void {

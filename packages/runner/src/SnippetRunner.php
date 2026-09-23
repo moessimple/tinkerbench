@@ -28,6 +28,8 @@ class SnippetRunner
      */
     public function run(string $projectPath, string $snippetPath, string $debugPath, array $enabledOptionalWatchers = []): void
     {
+        $runStartedAt = hrtime(true);
+
         // Invoked as a subprocess under the target project's own Herd-pinned PHP binary, not
         // necessarily tinkerbench's own, so it boots the target project separately from this file's
         // own, already-loaded autoloader. A plain-PHP target with no Composer has none: the basic
@@ -52,6 +54,7 @@ class SnippetRunner
             ] : [],
             new ExceptionMapper($projectPath, $source->path()),
             $source,
+            $runStartedAt,
         );
 
         // The basic pipeline registers no watchers, so it captures dumps straight into the recorder
@@ -113,6 +116,10 @@ class SnippetRunner
             'items' => [],
             'duration_str' => '',
             'duration_ms' => 0.0,
+            'boot_duration_str' => '',
+            'boot_duration_ms' => 0.0,
+            'run_duration_str' => '',
+            'run_duration_ms' => 0.0,
             'peak_memory_str' => '',
             'query_count' => 0,
             'duplicate_query_count' => 0,

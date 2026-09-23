@@ -154,6 +154,10 @@ it('writes the run snapshot to the debug path', function (): void {
         'items',
         'duration_str',
         'duration_ms',
+        'boot_duration_str',
+        'boot_duration_ms',
+        'run_duration_str',
+        'run_duration_ms',
         'peak_memory_str',
         'query_count',
         'duplicate_query_count',
@@ -530,6 +534,13 @@ it('emits an http_client item against a Laravel 12 fixture, always on with no ar
         ->and($item['url'])->toBe('https://example.test/users')
         ->and($item['status'])->toBe(200)
         ->and($item['request_headers']['Authorization'])->toBe(['Bearer secret']);
+});
+
+it('measures the time spent booting a Laravel 12 fixture before the snippet runs', function (): void {
+    $result = runSnippetSubprocessAgainst(fixtureTargetPath('laravel-12'), "<?php\n\n\$x = 'ok';");
+
+    expect($result['exitCode'])->toBe(0)
+        ->and($result['debug']['boot_duration_ms'])->toBeGreaterThan(0.0);
 });
 
 it('classifies the snippet frame of an uncaught exception from a Laravel 12 fixture', function (): void {
