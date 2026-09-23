@@ -546,16 +546,16 @@ it("runs a snippet on the target's own copy of a package the runner ships too", 
     <?php
 
     echo json_encode([
-        'collect' => (new ReflectionFunction('collect'))->getFileName(),
         'dump' => (new ReflectionFunction('dump'))->getFileName(),
+        'VarDumper' => (new ReflectionClass(Symfony\Component\VarDumper\VarDumper::class))->getFileName(),
     ]);
     PHP);
 
     $origins = json_decode($result['output'], true);
 
     expect($result['exitCode'])->toBe(0)
-        ->and($origins['collect'])->toStartWith(fixtureTargetPath('laravel-12').'/vendor/')
-        ->and($origins['dump'])->toStartWith(fixtureTargetPath('laravel-12').'/vendor/');
+        ->and($origins['dump'])->toStartWith(fixtureTargetPath('laravel-12').'/vendor/')
+        ->and($origins['VarDumper'])->toStartWith(fixtureTargetPath('laravel-12').'/vendor/');
 });
 
 it("loads none of the runner's dev packages into the target", function (): void {
