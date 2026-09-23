@@ -76,8 +76,6 @@ export interface SnippetDebugPayload {
     boot_duration_ms: number;
     boot_duration_str: string;
     duplicate_query_count: number;
-    duration_ms: number;
-    duration_str: string;
     http_duration_ms: number;
     http_duration_str: string;
     http_request_count: number;

@@ -168,7 +168,7 @@ it('cleans up the temp debug file after running', function (): void {
 it('returns the debug data collected by the subprocess', function (): void {
     $result = new SnippetRunner()->run("<?php\n\nreturn 'ok';", PHP_BINARY, base_path());
 
-    expect($result->debug)->toHaveKeys(['items', 'duration_str', 'peak_memory_str']);
+    expect($result->debug)->toHaveKeys(['items', 'run_duration_str', 'peak_memory_str']);
 });
 
 it('kills a snippet that runs past its timeout and returns a graceful result instead of hanging', function (): void {

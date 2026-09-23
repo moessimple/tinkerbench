@@ -71,7 +71,7 @@ it('collects emitted items in order and assembles a snapshot', function (): void
         ['kind' => 'dump', 'html' => '<a/>', 'text' => 'a', 'line' => 99],
         ['kind' => 'log', 'label' => 'info', 'message' => 'hi', 'context_html' => null, 'context_text' => null, 'line' => 99],
     ])
-        ->and($snapshot['duration_str'])->toMatch('/^\d+\.\d{2}(ms|s)$/')
+        ->and($snapshot['run_duration_str'])->toMatch('/^\d+\.\d{2}(ms|s)$/')
         ->and($snapshot['peak_memory_str'])->toMatch('/^[\d,]+\.\d{2} MB$/');
 });
 
@@ -208,7 +208,7 @@ it('sums the http client durations and counts the requests of a run', function (
         ->and($snapshot['http_duration_str'])->toBe('42.50ms');
 });
 
-it('splits the snippet duration exactly into query, http, and php time after rounding', function (): void {
+it('splits the snippet time exactly into query, http, and php time after rounding', function (): void {
     $recorder = runRecorder(function (callable $emit): void {
         $emit(new QueryFeedItem('select * from users', 0.334, 'sqlite'));
         $emit(new QueryFeedItem('select * from posts', 0.333, 'sqlite'));
@@ -219,7 +219,7 @@ it('splits the snippet duration exactly into query, http, and php time after rou
 
     expect($snapshot['query_duration_ms'])->toBe(0.67)
         ->and($snapshot['http_duration_ms'])->toBe(0.13)
-        ->and(hundredths($snapshot['duration_ms']))->toBe(
+        ->and(hundredths($snapshot['run_duration_ms']) - hundredths($snapshot['boot_duration_ms']))->toBe(
             hundredths($snapshot['query_duration_ms']) + hundredths($snapshot['http_duration_ms']) + hundredths($snapshot['php_duration_ms']),
         )
         ->and($snapshot['php_duration_str'])->toBe(Duration::format($snapshot['php_duration_ms']));
@@ -237,7 +237,7 @@ it('attributes the whole snippet duration to php time when the run made no queri
         ->and($snapshot['query_duration_ms'])->toBe(0.0)
         ->and($snapshot['http_request_count'])->toBe(0)
         ->and($snapshot['http_duration_ms'])->toBe(0.0)
-        ->and($snapshot['php_duration_ms'])->toBe($snapshot['duration_ms']);
+        ->and(hundredths($snapshot['php_duration_ms']))->toBe(hundredths($snapshot['run_duration_ms']) - hundredths($snapshot['boot_duration_ms']));
 });
 
 it('reports a zero duration when snapshot is taken before a run', function (): void {
@@ -246,7 +246,7 @@ it('reports a zero duration when snapshot is taken before a run', function (): v
     $snapshot = $recorder->snapshot();
 
     expect($snapshot['items'])->toBe([])
-        ->and($snapshot['duration_str'])->toBe('0.00ms')
+        ->and($snapshot['run_duration_str'])->toBe('0.00ms')
         ->and($snapshot['boot_duration_ms'])->toBe(0.0)
         ->and($snapshot['run_duration_ms'])->toBe(0.0);
 });
@@ -269,7 +269,9 @@ it('adds the boot and snippet time up to the run time exactly after rounding', f
 
     $snapshot = $recorder->snapshot();
 
-    expect(hundredths($snapshot['run_duration_ms']))->toBe(hundredths($snapshot['boot_duration_ms']) + hundredths($snapshot['duration_ms']))
+    expect(hundredths($snapshot['run_duration_ms']))->toBe(
+        hundredths($snapshot['boot_duration_ms']) + hundredths($snapshot['query_duration_ms']) + hundredths($snapshot['php_duration_ms']),
+    )
         ->and($snapshot['run_duration_str'])->toBe(Duration::format($snapshot['run_duration_ms']));
 });
 
@@ -331,7 +333,7 @@ it('registers no watchers when record is given no application', function (): voi
     });
 
     expect($ran)->toBeTrue()
-        ->and($recorder->snapshot()['duration_str'])->toMatch('/^\d+\.\d{2}(ms|s)$/');
+        ->and($recorder->snapshot()['run_duration_str'])->toMatch('/^\d+\.\d{2}(ms|s)$/');
 });
 
 it('forwards a request to omit frames to the mapper', function (): void {

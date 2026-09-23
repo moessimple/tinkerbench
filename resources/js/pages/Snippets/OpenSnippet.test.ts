@@ -112,7 +112,7 @@ vi.mock('@/components/OutputFeed.vue', () => ({
 vi.mock('@/components/RunSummary.vue', () => ({
     default: {
         props: ['debug'],
-        template: `<span data-testid="run-summary">{{ debug.duration_str }}</span>`,
+        template: `<span data-testid="run-summary">{{ debug.run_duration_str }}</span>`,
     },
 }));
 
@@ -144,8 +144,6 @@ function payload(
         boot_duration_ms: 1,
         boot_duration_str: '1.00ms',
         duplicate_query_count: 0,
-        duration_ms: 1,
-        duration_str: '1.00ms',
         http_duration_ms: 0,
         http_duration_str: '0.00ms',
         http_request_count: 0,
@@ -414,7 +412,7 @@ it('shows the run summary of the finished run', async () => {
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
     capturedPost?.onSuccess({
         output: '',
-        debug: payload({ duration_str: '12.30ms' }),
+        debug: payload({ run_duration_str: '12.30ms' }),
     });
 
     expect((await screen.findByTestId('run-summary')).textContent).toBe(
@@ -1134,7 +1132,7 @@ it('clears the run metrics strip when output is cleared', async () => {
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
     capturedPost?.onSuccess({
         output: '',
-        debug: payload({ duration_str: '9.90ms' }),
+        debug: payload({ run_duration_str: '9.90ms' }),
     });
     await screen.findByText('9.90ms');
 

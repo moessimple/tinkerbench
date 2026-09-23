@@ -102,16 +102,15 @@ class SnippetRunRecorder
      * part is rounded to hundredths first and php is the remainder of the rounded values, so
      * duration = query + http + php holds exactly for the displayed figures. Php time is
      * everything in the PHP process outside the database driver and HTTP calls, including class
-     * loading. Query and http
-     * time are the plain sums of their feed items, which keeps them checkable against the cards.
+     * loading. Query and http time are the plain sums of their feed items, which keeps them
+     * checkable against the cards.
      *
      * Boot time runs from the run start to the snippet start; run = boot + duration holds the same
-     * way, from the rounded values.
+     * way, from the rounded values. The snippet duration itself is not part of the snapshot,
+     * since the four parts already show it.
      *
      * @return array{
      *     items: list<array<string, mixed>>,
-     *     duration_str: string,
-     *     duration_ms: float,
      *     boot_duration_str: string,
      *     boot_duration_ms: float,
      *     run_duration_str: string,
@@ -145,8 +144,6 @@ class SnippetRunRecorder
                 static fn (FeedItem $item): array => $item->toArray(),
                 $this->itemsWithoutSingleLazyLoads(),
             ),
-            'duration_str' => Duration::format($durationMs),
-            'duration_ms' => $durationMs,
             'boot_duration_str' => Duration::format($bootDurationMs),
             'boot_duration_ms' => $bootDurationMs,
             'run_duration_str' => Duration::format($runDurationMs),

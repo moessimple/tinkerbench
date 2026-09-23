@@ -152,8 +152,6 @@ it('writes the run snapshot to the debug path', function (): void {
 
     expect($result['debug'])->toHaveKeys([
         'items',
-        'duration_str',
-        'duration_ms',
         'boot_duration_str',
         'boot_duration_ms',
         'run_duration_str',
@@ -170,7 +168,7 @@ it('writes the run snapshot to the debug path', function (): void {
         'php_duration_ms',
     ])
         ->and($result['debug']['items'])->toBe([])
-        ->and($result['debug']['duration_str'])->toMatch('/^\d+\.\d{2}(ms|s)$/')
+        ->and($result['debug']['run_duration_str'])->toMatch('/^\d+\.\d{2}(ms|s)$/')
         ->and($result['debug']['peak_memory_str'])->toMatch('/^[\d,]+\.\d{2} MB$/');
 })->skip(PHP_VERSION_ID < 80500, TARGET_REQUIRES_PHP85);
 
@@ -656,7 +654,7 @@ function viewRenderingSnippet(): string
 it('records the return value of an in-process run as a result item and writes the snapshot', function (): void {
     $snapshot = runInProcess("<?php\n\nreturn 'inprocess hello';");
 
-    expect($snapshot)->toHaveKeys(['items', 'duration_str', 'peak_memory_str'])
+    expect($snapshot)->toHaveKeys(['items', 'run_duration_str', 'peak_memory_str'])
         ->and($snapshot['items'])->toHaveCount(1)
         ->and($snapshot['items'][0]['kind'])->toBe('result')
         ->and($snapshot['items'][0]['html'])->toContain('inprocess hello');

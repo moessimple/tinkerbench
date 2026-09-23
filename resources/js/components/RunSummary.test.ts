@@ -10,8 +10,6 @@ function payload(
         boot_duration_ms: 180,
         boot_duration_str: '180.00ms',
         duplicate_query_count: 0,
-        duration_ms: 20,
-        duration_str: '20.00ms',
         http_duration_ms: 0,
         http_duration_str: '0.00ms',
         http_request_count: 0,
@@ -32,8 +30,6 @@ function withBreakdown(
     overrides: Partial<SnippetDebugPayload> = {},
 ): SnippetDebugPayload {
     return payload({
-        duration_ms: 100,
-        duration_str: '100.00ms',
         http_duration_ms: 30,
         http_duration_str: '30.00ms',
         http_request_count: 1,
@@ -149,7 +145,6 @@ it('draws empty bar segments for a run with no measured time', () => {
         props: {
             debug: payload({
                 boot_duration_ms: 0,
-                duration_ms: 0,
                 run_duration_ms: 0,
             }),
         },

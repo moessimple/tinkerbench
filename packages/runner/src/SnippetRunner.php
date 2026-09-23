@@ -108,29 +108,14 @@ class SnippetRunner
             $recorder->appendException($fatal, $source->throwableLine($fatal), includeFrames: false);
         }
 
+        $snapshot = $recorder->snapshot();
+
         // dump() and toRawSql() can carry binary or malformed-UTF-8 bytes; without these flags one
         // such value makes json_encode() return false and the whole feed is lost for the run.
-        $json = json_encode($recorder->snapshot(), JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
+        $json = json_encode($snapshot, JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
 
-        $fallback = (string) json_encode([
-            'items' => [],
-            'duration_str' => '',
-            'duration_ms' => 0.0,
-            'boot_duration_str' => '',
-            'boot_duration_ms' => 0.0,
-            'run_duration_str' => '',
-            'run_duration_ms' => 0.0,
-            'peak_memory_str' => '',
-            'query_count' => 0,
-            'duplicate_query_count' => 0,
-            'query_duration_str' => '',
-            'query_duration_ms' => 0.0,
-            'http_request_count' => 0,
-            'http_duration_str' => '',
-            'http_duration_ms' => 0.0,
-            'php_duration_str' => '',
-            'php_duration_ms' => 0.0,
-        ]);
+        // Only the items carry values from the snippet, so the rest of the snapshot always encodes.
+        $fallback = (string) json_encode([...$snapshot, 'items' => []]);
 
         file_put_contents($debugPath, $json !== false ? $json : $fallback);
 
