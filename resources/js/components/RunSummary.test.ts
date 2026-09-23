@@ -16,8 +16,8 @@ function payload(
         http_duration_str: '0.00ms',
         http_request_count: 0,
         items: [],
-        other_duration_ms: 12.3,
-        other_duration_str: '12.30ms',
+        php_duration_ms: 12.3,
+        php_duration_str: '12.30ms',
         peak_memory_str: '18.50 MB',
         query_count: 0,
         query_duration_ms: 0,
@@ -92,7 +92,7 @@ it('shows the other time once the run made a query or an http call', () => {
     render(RunSummary, {
         props: {
             debug: payload({
-                other_duration_str: '3.10ms',
+                php_duration_str: '3.10ms',
                 query_count: 1,
                 query_duration_str: '9.20ms',
             }),
@@ -173,7 +173,7 @@ it('adds the snippet breakdown to the calculation once the run made a query or a
                 http_duration_ms: 5,
                 http_duration_str: '5.00ms',
                 http_request_count: 1,
-                other_duration_ms: 5.9,
+                php_duration_ms: 5.9,
                 query_count: 12,
                 query_duration_ms: 31.2,
                 query_duration_str: '31.20ms',

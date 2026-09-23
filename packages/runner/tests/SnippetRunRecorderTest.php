@@ -208,7 +208,7 @@ it('sums the http client durations and counts the requests of a run', function (
         ->and($snapshot['http_duration_str'])->toBe('42.50ms');
 });
 
-it('splits the snippet duration exactly into query, http, and other time after rounding', function (): void {
+it('splits the snippet duration exactly into query, http, and php time after rounding', function (): void {
     $recorder = runRecorder(function (callable $emit): void {
         $emit(new QueryFeedItem('select * from users', 0.334, 'sqlite'));
         $emit(new QueryFeedItem('select * from posts', 0.333, 'sqlite'));
@@ -220,12 +220,12 @@ it('splits the snippet duration exactly into query, http, and other time after r
     expect($snapshot['query_duration_ms'])->toBe(0.67)
         ->and($snapshot['http_duration_ms'])->toBe(0.13)
         ->and(hundredths($snapshot['duration_ms']))->toBe(
-            hundredths($snapshot['query_duration_ms']) + hundredths($snapshot['http_duration_ms']) + hundredths($snapshot['other_duration_ms']),
+            hundredths($snapshot['query_duration_ms']) + hundredths($snapshot['http_duration_ms']) + hundredths($snapshot['php_duration_ms']),
         )
-        ->and($snapshot['other_duration_str'])->toBe(Duration::format($snapshot['other_duration_ms']));
+        ->and($snapshot['php_duration_str'])->toBe(Duration::format($snapshot['php_duration_ms']));
 });
 
-it('attributes the whole snippet duration to other time when the run made no queries or http calls', function (): void {
+it('attributes the whole snippet duration to php time when the run made no queries or http calls', function (): void {
     $recorder = runRecorder(function (callable $emit): void {
         $emit(new DumpFeedItem('<a/>', 'a'));
     });
@@ -237,7 +237,7 @@ it('attributes the whole snippet duration to other time when the run made no que
         ->and($snapshot['query_duration_ms'])->toBe(0.0)
         ->and($snapshot['http_request_count'])->toBe(0)
         ->and($snapshot['http_duration_ms'])->toBe(0.0)
-        ->and($snapshot['other_duration_ms'])->toBe($snapshot['duration_ms']);
+        ->and($snapshot['php_duration_ms'])->toBe($snapshot['duration_ms']);
 });
 
 it('reports a zero duration when snapshot is taken before a run', function (): void {

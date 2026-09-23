@@ -128,8 +128,8 @@ class SnippetRunner
             'http_request_count' => 0,
             'http_duration_str' => '',
             'http_duration_ms' => 0.0,
-            'other_duration_str' => '',
-            'other_duration_ms' => 0.0,
+            'php_duration_str' => '',
+            'php_duration_ms' => 0.0,
         ]);
 
         file_put_contents($debugPath, $json !== false ? $json : $fallback);

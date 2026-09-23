@@ -82,8 +82,8 @@ export interface SnippetDebugPayload {
     http_duration_str: string;
     http_request_count: number;
     items: FeedItem[];
-    other_duration_ms: number;
-    other_duration_str: string;
+    php_duration_ms: number;
+    php_duration_str: string;
     peak_memory_str: string;
     query_count: number;
     query_duration_ms: number;

@@ -166,8 +166,8 @@ it('writes the run snapshot to the debug path', function (): void {
         'http_request_count',
         'http_duration_str',
         'http_duration_ms',
-        'other_duration_str',
-        'other_duration_ms',
+        'php_duration_str',
+        'php_duration_ms',
     ])
         ->and($result['debug']['items'])->toBe([])
         ->and($result['debug']['duration_str'])->toMatch('/^\d+\.\d{2}(ms|s)$/')

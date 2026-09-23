@@ -36,7 +36,7 @@ const calculation = computed(() => {
 
     if (hasBreakdown.value) {
         lines.push(
-            `${milliseconds(props.debug.duration_ms)} snippet = ${milliseconds(props.debug.query_duration_ms)} DB + ${milliseconds(props.debug.http_duration_ms)} HTTP + ${milliseconds(props.debug.other_duration_ms)} other`,
+            `${milliseconds(props.debug.duration_ms)} snippet = ${milliseconds(props.debug.query_duration_ms)} DB + ${milliseconds(props.debug.http_duration_ms)} HTTP + ${milliseconds(props.debug.php_duration_ms)} other`,
         );
     }
 
@@ -77,7 +77,7 @@ const httpLabel = computed(
             <span aria-hidden="true">·</span>
             <span
                 title="Snippet time minus DB and HTTP: PHP code, building models, cache, filesystem, and tinkerbench's own capture overhead."
-                >other {{ debug.other_duration_str }}</span
+                >other {{ debug.php_duration_str }}</span
             >
         </template>
         <span aria-hidden="true">·</span>
