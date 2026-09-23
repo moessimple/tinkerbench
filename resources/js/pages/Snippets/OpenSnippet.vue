@@ -8,6 +8,7 @@ import { FACET_KINDS } from '@/components/feed/kinds';
 import WatcherToggleMenu from '@/components/feed/WatcherToggleMenu.vue';
 import MonacoEditor from '@/components/MonacoEditor.vue';
 import OutputFeed from '@/components/OutputFeed.vue';
+import RunSummary from '@/components/RunSummary.vue';
 import { useTheme } from '@/composables/useTheme';
 import {
     OPTIONAL_WATCHERS,
@@ -117,10 +118,7 @@ const kindCounts = computed(() => {
 });
 
 const feedEntries = computed<FeedEntry[]>(() =>
-    buildFeed(
-        debug.value ?? { items: [], duration_str: '', peak_memory_str: '' },
-        rawOutput.value,
-    ),
+    buildFeed(debug.value ?? { items: [] }, rawOutput.value),
 );
 
 // The "all" tab counts what the feed actually renders, so it includes the synthetic Output entry
@@ -543,13 +541,7 @@ function toggleMaximize(): void {
                         </span>
                         <template v-if="debug">
                             <span aria-hidden="true">·</span>
-                            <span class="font-medium text-fg">{{
-                                debug.duration_str
-                            }}</span>
-                            <span aria-hidden="true">·</span>
-                            <span class="font-medium text-fg">{{
-                                debug.peak_memory_str
-                            }}</span>
+                            <RunSummary :debug="debug" />
                         </template>
                         <WatcherToggleMenu
                             v-if="isLaravelTarget"

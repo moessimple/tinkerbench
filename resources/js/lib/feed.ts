@@ -26,7 +26,7 @@ export type FeedSort = 'recent' | 'slowest';
  * runner recorded it in among the items.
  */
 export function buildFeed(
-    payload: SnippetDebugPayload,
+    payload: Pick<SnippetDebugPayload, 'items'>,
     rawOutput: string,
 ): FeedEntry[] {
     const result = payload.items.filter((item) => item.kind === 'result');

@@ -45,9 +45,6 @@ function runRecorder(Closure $run, ?ExceptionMapper $mapper = null, ?SourceLocat
     return $recorder;
 }
 
-/**
- * An outgoing HTTP call item where only the duration matters to the test.
- */
 function recordedHttpCall(float $durationMs): HttpClientFeedItem
 {
     return new HttpClientFeedItem('GET', 'https://example.test', false, 200, $durationMs, [], [], '', null, '', null);
