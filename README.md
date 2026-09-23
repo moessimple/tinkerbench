@@ -26,7 +26,7 @@ A take on Laravel's [`tinker`](https://github.com/laravel/tinker), inspired by [
 * Filter the feed by kind with live counts, and click a card to jump the editor to the line that produced it.
 * Output rendering adapts to the value: `dump()`/`dd()` use Symfony's interactive VarDumper, JSON is syntax highlighted, and HTML renders in a sandboxed frame.
 * Query cards pretty-print their SQL and flag it when slow (100ms or more) or repeated; sort the feed slowest first when you need to.
-* A run summary shows where the time went: the target's boot time, then the snippet time split into database, HTTP client, and other time. The parts add up exactly (hover the duration for the calculation), and the database and HTTP figures are the sums of their cards. Boot time is measured on the console kernel without OPcache, so it is not comparable to a web request.
+* A run summary shows where the time went as a bar with a legend: the target's boot time, then the snippet time split into database, HTTP client, and PHP time. The parts add up exactly (expand "How it adds up" for the calculation and what each part measures), and the database and HTTP figures are the sums of their cards. Boot time is measured on the console kernel, which runs without OPcache by default, so it is not comparable to a web request.
 * Every card has a button to copy its contents.
 * Light and dark theme, switchable from the sidebar, following your system preference by default.
 

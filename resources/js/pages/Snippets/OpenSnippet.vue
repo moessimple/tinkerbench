@@ -539,10 +539,6 @@ function toggleMaximize(): void {
                         <span>
                             {{ versionLabel }}
                         </span>
-                        <template v-if="debug">
-                            <span aria-hidden="true">·</span>
-                            <RunSummary :debug="debug" />
-                        </template>
                         <WatcherToggleMenu
                             v-if="isLaravelTarget"
                             class="ml-auto"
@@ -550,6 +546,7 @@ function toggleMaximize(): void {
                             @toggle="toggleWatcher"
                         />
                     </div>
+                    <RunSummary v-if="debug" :debug="debug" />
                     <div
                         v-if="debug"
                         role="tablist"
