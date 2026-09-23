@@ -4,64 +4,91 @@ declare(strict_types=1);
 
 namespace Tinkerbench\Runner\Watchers;
 
-use Illuminate\Contracts\Events\Dispatcher;
+use Closure;
+use GuzzleHttp\Promise\PromiseInterface;
+use GuzzleHttp\TransferStats;
 use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Http\Client\Events\RequestSending;
-use Illuminate\Http\Client\Events\ResponseReceived;
+use Illuminate\Http\Client\Factory;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamInterface;
 use Tinkerbench\Runner\FeedItems\HttpClientFeedItem;
 
 class HttpClientWatcher implements Watcher
 {
     /**
-     * spl_object_id($event->request) => start time. RequestSending and ResponseReceived carry the
-     * same Request instance for one call (PendingRequest fires both with it), so this needs no
-     * correlation id of its own. ConnectionFailed is deliberately not listened to: a failed
-     * connection throws and reaches the feed through the existing uncaught-exception path instead.
-     *
-     * @var array<int, float>
+     * Records every network request, not every Http:: call: the global middleware sits inside
+     * Guzzle's redirect middleware, so each hop of a redirect chain passes through it on its own
+     * and gets its own item and duration. The RequestSending/ResponseReceived events cannot do
+     * this, since ResponseReceived fires once per call and only names the final hop. A connection
+     * failure rejects the promise and reaches the feed through the uncaught-exception path.
      */
-    private array $startedAt = [];
-
     public function register(Application $app, callable $emit): void
     {
-        $dispatcher = $app->make(Dispatcher::class);
+        $app->make(Factory::class)->globalMiddleware(fn (callable $handler): Closure => $this->recordRequests($handler, $emit));
+    }
 
-        $dispatcher->listen(RequestSending::class, function (RequestSending $event): void {
-            $this->startedAt[spl_object_id($event->request)] = microtime(true);
-        });
+    /**
+     * @param  callable(RequestInterface, array<mixed>): PromiseInterface  $handler
+     * @return Closure(RequestInterface, array<mixed>): PromiseInterface
+     */
+    private function recordRequests(callable $handler, callable $emit): Closure
+    {
+        return function (RequestInterface $request, array $options) use ($handler, $emit): PromiseInterface {
+            // Http::fake() answers from a stub handler that never reports transfer stats, so a
+            // request without them was faked.
+            $transferStats = null;
+            $onStats = $options['on_stats'] ?? null;
+            $options['on_stats'] = function (TransferStats $stats) use (&$transferStats, $onStats): void {
+                $transferStats = $stats;
 
-        $dispatcher->listen(ResponseReceived::class, function (ResponseReceived $event) use ($emit): void {
-            $id = spl_object_id($event->request);
+                if (is_callable($onStats)) {
+                    $onStats($stats);
+                }
+            };
 
-            if (! isset($this->startedAt[$id])) {
-                return;
-            }
+            $startedAt = hrtime(true);
 
-            $durationMs = (microtime(true) - $this->startedAt[$id]) * 1000;
-            unset($this->startedAt[$id]);
+            return $handler($request, $options)->then(function (ResponseInterface $response) use ($request, $emit, $startedAt, &$transferStats): ResponseInterface {
+                // PSR-7's MessageInterface::getHeaders() contract guarantees array<string, string[]>.
+                /** @var array<string, list<string>> $requestHeaders */
+                $requestHeaders = $request->getHeaders();
+                /** @var array<string, list<string>> $responseHeaders */
+                $responseHeaders = $response->getHeaders();
 
-            // Request/Response only declare these as `array`, but both wrap a PSR-7 message, whose
-            // getHeaders() contract guarantees array<string, string[]> (MessageInterface::getHeaders()).
-            /** @var array<string, list<string>> $requestHeaders */
-            $requestHeaders = $event->request->headers();
-            /** @var array<string, list<string>> $responseHeaders */
-            $responseHeaders = $event->response->headers();
+                $emit(new HttpClientFeedItem(
+                    $request->getMethod(),
+                    (string) $request->getUri(),
+                    ! $transferStats instanceof TransferStats || $transferStats->getHandlerStats() === [],
+                    $response->getStatusCode(),
+                    (hrtime(true) - $startedAt) / 1_000_000,
+                    $requestHeaders,
+                    $responseHeaders,
+                    $this->contents($request->getBody()),
+                    $request->getHeader('Content-Type')[0] ?? null,
+                    $this->contents($response->getBody()),
+                    $response->getHeader('Content-Type')[0] ?? null,
+                ));
 
-            // handlerStats() comes from the cURL handler Guzzle actually drove; Http::fake()
-            // never touches cURL, so a faked response always reports empty stats here.
-            $emit(new HttpClientFeedItem(
-                $event->request->method(),
-                $event->request->url(),
-                empty($event->response->handlerStats()),
-                $event->response->status(),
-                $durationMs,
-                $requestHeaders,
-                $responseHeaders,
-                $event->request->body(),
-                $requestHeaders['Content-Type'][0] ?? null,
-                $event->response->body(),
-                $event->response->header('Content-Type') ?: null,
-            ));
-        });
+                return $response;
+            });
+        };
+    }
+
+    /**
+     * Reads a body without consuming it for the caller: a streamed, non-seekable body is left
+     * untouched and recorded as empty, since reading it here would take it from the snippet.
+     */
+    private function contents(StreamInterface $body): string
+    {
+        if (! $body->isSeekable()) {
+            return '';
+        }
+
+        $body->rewind();
+        $contents = $body->getContents();
+        $body->rewind();
+
+        return $contents;
     }
 }

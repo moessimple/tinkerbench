@@ -2,15 +2,12 @@
 
 declare(strict_types=1);
 
-use GuzzleHttp\Psr7\Request as Psr7Request;
+use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Psr7\Response as Psr7Response;
 use GuzzleHttp\TransferStats;
 use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Http\Client\Events\RequestSending;
-use Illuminate\Http\Client\Events\ResponseReceived;
-use Illuminate\Http\Client\Request;
-use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use Psr\Http\Message\RequestInterface;
 use Tinkerbench\Runner\FeedItems\FeedItem;
 use Tinkerbench\Runner\FeedItems\HttpClientFeedItem;
 use Tinkerbench\Runner\Watchers\HttpClientWatcher;
@@ -76,24 +73,18 @@ it('captures the request body and content type alongside the response', function
         ->and($array['request_type'])->toBe('Json');
 });
 
-it('reports faked as false for a response carrying real handler stats', function (): void {
-    $psrRequest = new Psr7Request('GET', 'https://example.test/users');
-    $psrResponse = new Psr7Response(200, [], 'ok');
+it('reports faked as false for a request the transport answered with handler stats', function (): void {
+    $transport = function (RequestInterface $request, array $options): FulfilledPromise {
+        $response = new Psr7Response(200, [], 'ok');
+        $options['on_stats'](new TransferStats($request, $response, 0.05, null, ['total_time' => 0.05]));
 
-    $request = new Request($psrRequest);
-    $response = new Response($psrResponse);
-    $response->transferStats = new TransferStats($psrRequest, $psrResponse, 0.05, null, ['total_time' => 0.05]);
+        return new FulfilledPromise($response);
+    };
 
-    $emitted = [];
-    (new HttpClientWatcher())->register(app(), function (FeedItem $item) use (&$emitted): void {
-        $emitted[] = $item;
-    });
+    $items = captureHttpClientItems(fn () => Http::setHandler($transport)->get('https://example.test/users'));
 
-    event(new RequestSending($request));
-    event(new ResponseReceived($request, $response));
-
-    expect($emitted)->toHaveCount(1)
-        ->and($emitted[0]->toArray()['faked'])->toBeFalse();
+    expect($items)->toHaveCount(1)
+        ->and($items[0]->toArray()['faked'])->toBeFalse();
 });
 
 it('emits one item per request when multiple requests happen in the same run', function (): void {
@@ -111,7 +102,34 @@ it('emits one item per request when multiple requests happen in the same run', f
         ->and($items[1]->toArray()['url'])->toBe('https://example.test/two');
 });
 
-it('does not listen for connection failures, leaving them to the uncaught-exception path', function (): void {
+it('emits one item for every network request a redirect chain makes, in order', function (): void {
+    Http::fake([
+        'https://example.test/old' => Http::response('', 301, ['Location' => 'https://example.test/new']),
+        'https://example.test/new' => Http::response('ok', 200),
+    ]);
+
+    $items = captureHttpClientItems(fn () => Http::get('https://example.test/old'));
+
+    expect(array_map(fn (FeedItem $item): array => [$item->toArray()['url'], $item->toArray()['status']], $items))->toBe([
+        ['https://example.test/old', 301],
+        ['https://example.test/new', 200],
+    ]);
+});
+
+it('leaves the response body readable for the snippet that made the request', function (): void {
+    Http::fake([
+        'https://example.test/*' => Http::response('{"id":1}', 200),
+    ]);
+
+    $body = null;
+    captureHttpClientItems(function () use (&$body): void {
+        $body = Http::get('https://example.test/users')->body();
+    });
+
+    expect($body)->toBe('{"id":1}');
+});
+
+it('emits nothing for a request that fails to connect, leaving it to the uncaught-exception path', function (): void {
     Http::fake([
         'https://example.test/*' => fn () => throw new ConnectionException('Connection failed'),
     ]);
@@ -123,20 +141,6 @@ it('does not listen for connection failures, leaving them to the uncaught-except
 
     expect(fn () => Http::get('https://example.test/users'))
         ->toThrow(ConnectionException::class);
-
-    expect($emitted)->toBeEmpty();
-});
-
-it('emits nothing for a ResponseReceived with no matching RequestSending start time', function (): void {
-    $request = new Request(new Psr7Request('GET', 'https://example.test/orphan'));
-    $response = new Response(new Psr7Response(200, [], 'ok'));
-
-    $emitted = [];
-    (new HttpClientWatcher())->register(app(), function (FeedItem $item) use (&$emitted): void {
-        $emitted[] = $item;
-    });
-
-    event(new ResponseReceived($request, $response));
 
     expect($emitted)->toBeEmpty();
 });
