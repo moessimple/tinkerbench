@@ -102,7 +102,7 @@ class SnippetRunRecorder
      * part is rounded to hundredths first and php is the remainder of the rounded values, so
      * duration = query + http + php holds exactly for the displayed figures. Php time is
      * everything in the PHP process outside the database driver and HTTP calls, including class
-     * loading, which the CLI does without OPcache by default. Query and http
+     * loading. Query and http
      * time are the plain sums of their feed items, which keeps them checkable against the cards.
      *
      * Boot time runs from the run start to the snippet start; run = boot + duration holds the same

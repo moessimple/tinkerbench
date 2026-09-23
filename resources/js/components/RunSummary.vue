@@ -23,7 +23,7 @@ const parts = computed<RunPart[]>(() => {
             label: 'boot',
             milliseconds: props.debug.boot_duration_ms,
             text: `boot ${props.debug.boot_duration_str}`,
-            hint: 'Console boot without OPcache, not a web request',
+            hint: 'Console boot, not a web request',
             swatch: 'bg-muted/50',
         },
     ];
