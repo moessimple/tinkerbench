@@ -58,6 +58,19 @@ it('emits an http_client item built from the request and response, without a lin
         ->and($array['duration_ms'])->toBeFloat()->toBeGreaterThanOrEqual(0.0);
 });
 
+it('records when the request was handed to the transport', function (): void {
+    Http::fake([
+        'https://example.test/*' => Http::response('ok', 200),
+    ]);
+
+    $before = hrtime(true);
+    $items = captureHttpClientItems(fn () => Http::get('https://example.test/users'));
+    $after = hrtime(true);
+
+    expect($items[0])->toBeInstanceOf(HttpClientFeedItem::class)
+        ->and($items[0]->startedAt)->toBeGreaterThanOrEqual((float) $before)->toBeLessThanOrEqual((float) $after);
+});
+
 it('captures the request body and content type alongside the response', function (): void {
     Http::fake([
         'https://example.test/*' => Http::response('ok', 200),

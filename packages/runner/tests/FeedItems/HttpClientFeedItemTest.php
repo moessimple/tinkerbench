@@ -11,6 +11,7 @@ function httpClientFeedItem(array $overrides = []): HttpClientFeedItem
         'url' => 'https://example.test/users',
         'faked' => false,
         'status' => 200,
+        'startedAt' => 0.0,
         'durationMs' => 42.5,
         'requestHeaders' => ['Accept' => ['application/json']],
         'responseHeaders' => ['Content-Type' => ['application/json']],

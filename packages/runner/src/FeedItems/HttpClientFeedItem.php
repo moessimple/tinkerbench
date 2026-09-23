@@ -11,6 +11,9 @@ use Tinkerbench\Runner\ValueRenderer;
 class HttpClientFeedItem extends FeedItem
 {
     /**
+     * @param  float  $startedAt  hrtime(true) when the request was handed to the transport. Not part
+     *                            of the wire shape: the recorder uses it with $durationMs to count
+     *                            overlapping requests' time once.
      * @param  int|null  $requestSize  Byte size of the whole body when known. The body string can
      *                                 be cut short of it: the watcher reads only what the preview
      *                                 needs. Null means the body string is the whole body.
@@ -23,6 +26,7 @@ class HttpClientFeedItem extends FeedItem
         public string $url,
         public bool $faked,
         public int $status,
+        public float $startedAt,
         public float $durationMs,
         public array $requestHeaders,
         public array $responseHeaders,

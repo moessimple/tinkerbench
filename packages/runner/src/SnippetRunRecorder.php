@@ -102,8 +102,10 @@ class SnippetRunRecorder
      * part is rounded to hundredths first and php is the remainder of the rounded values, so
      * duration = query + http + php holds exactly for the displayed figures. Php time is
      * everything in the PHP process outside the database driver and HTTP calls, including class
-     * loading. Query and http time are the plain sums of their feed items, which keeps them
-     * checkable against the cards.
+     * loading. Query time is the plain sum of the query items, which keeps it checkable against
+     * the cards. Http time is the time at least one request was in flight: parallel requests
+     * (Http::pool(), async) overlap, and summing them would count the same wall time twice. For
+     * sequential requests it equals the sum of the cards.
      *
      * Boot time runs from the run start to the snippet start; run = boot + duration holds the same
      * way, from the rounded values. The snippet duration itself is not part of the snapshot,
@@ -136,7 +138,7 @@ class SnippetRunRecorder
         $bootDurationMs = round($this->bootMilliseconds(), 2);
         $runDurationMs = round($bootDurationMs + $durationMs, 2);
         $queryDurationMs = round(array_sum(array_map(static fn (QueryFeedItem $query): float => $query->durationMs, $queries)), 2);
-        $httpDurationMs = round(array_sum(array_map(static fn (HttpClientFeedItem $call): float => $call->durationMs, $httpCalls)), 2);
+        $httpDurationMs = round($this->inFlightMilliseconds($httpCalls), 2);
         $phpDurationMs = round($durationMs - $queryDurationMs - $httpDurationMs, 2);
 
         return [
@@ -212,6 +214,32 @@ class SnippetRunRecorder
         }
 
         return (($this->finishedAt ?? $this->now()) - $this->startedAt) / 1_000_000;
+    }
+
+    /**
+     * The length of the union of the calls' time spans, so overlapping calls count once.
+     *
+     * @param  list<HttpClientFeedItem>  $calls
+     */
+    private function inFlightMilliseconds(array $calls): float
+    {
+        usort($calls, static fn (HttpClientFeedItem $a, HttpClientFeedItem $b): int => $a->startedAt <=> $b->startedAt);
+
+        $inFlight = 0.0;
+        $coveredUntil = -INF;
+
+        foreach ($calls as $call) {
+            $endedAt = $call->startedAt + $call->durationMs * 1_000_000;
+
+            if ($endedAt <= $coveredUntil) {
+                continue;
+            }
+
+            $inFlight += $endedAt - max($call->startedAt, $coveredUntil);
+            $coveredUntil = $endedAt;
+        }
+
+        return $inFlight / 1_000_000;
     }
 
     private function bootMilliseconds(): float

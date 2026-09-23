@@ -49,7 +49,7 @@ const parts = computed<RunPart[]>(() => {
             label: 'HTTP',
             milliseconds: props.debug.http_duration_ms,
             text: `HTTP ${props.debug.http_duration_str} (${counted(props.debug.http_request_count, 'request', 'requests')})`,
-            hint: 'Sum of the HTTP cards',
+            hint: 'Time at least one request was in flight, so parallel requests count once',
             swatch: 'bg-warn',
         });
     }

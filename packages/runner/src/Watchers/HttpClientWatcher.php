@@ -69,6 +69,7 @@ class HttpClientWatcher implements Watcher
                     (string) $request->getUri(),
                     ! $transferStats instanceof TransferStats || $transferStats->getHandlerStats() === [],
                     $response->getStatusCode(),
+                    $startedAt,
                     (hrtime(true) - $startedAt) / 1_000_000,
                     $requestHeaders,
                     $responseHeaders,

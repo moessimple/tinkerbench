@@ -45,9 +45,9 @@ function runRecorder(Closure $run, ?ExceptionMapper $mapper = null, ?SourceLocat
     return $recorder;
 }
 
-function recordedHttpCall(float $durationMs): HttpClientFeedItem
+function recordedHttpCall(float $startedAtMs, float $durationMs): HttpClientFeedItem
 {
-    return new HttpClientFeedItem('GET', 'https://example.test', false, 200, $durationMs, [], [], '', null, null, '', null, null);
+    return new HttpClientFeedItem('GET', 'https://example.test', false, 200, $startedAtMs * 1_000_000, $durationMs, [], [], '', null, null, '', null, null);
 }
 
 /**
@@ -195,10 +195,10 @@ it('counts the duplicate queries of a run', function (): void {
     expect($recorder->snapshot()['duplicate_query_count'])->toBe(2);
 });
 
-it('sums the http client durations and counts the requests of a run', function (): void {
+it('sums the durations of sequential http client requests and counts the requests of a run', function (): void {
     $recorder = runRecorder(function (callable $emit): void {
-        $emit(recordedHttpCall(40.0));
-        $emit(recordedHttpCall(2.5));
+        $emit(recordedHttpCall(0.0, 40.0));
+        $emit(recordedHttpCall(50.0, 2.5));
     });
 
     $snapshot = $recorder->snapshot();
@@ -208,11 +208,25 @@ it('sums the http client durations and counts the requests of a run', function (
         ->and($snapshot['http_duration_str'])->toBe('42.50ms');
 });
 
+it('counts the time of overlapping http client requests once', function (): void {
+    $recorder = runRecorder(function (callable $emit): void {
+        $emit(recordedHttpCall(50.0, 20.0));
+        $emit(recordedHttpCall(0.0, 200.0));
+        $emit(recordedHttpCall(10.0, 200.0));
+        $emit(recordedHttpCall(300.0, 5.0));
+    });
+
+    $snapshot = $recorder->snapshot();
+
+    expect($snapshot['http_request_count'])->toBe(4)
+        ->and($snapshot['http_duration_ms'])->toBe(215.0);
+});
+
 it('splits the snippet time exactly into query, http, and php time after rounding', function (): void {
     $recorder = runRecorder(function (callable $emit): void {
         $emit(new QueryFeedItem('select * from users', 0.334, 'sqlite'));
         $emit(new QueryFeedItem('select * from posts', 0.333, 'sqlite'));
-        $emit(recordedHttpCall(0.125));
+        $emit(recordedHttpCall(0.0, 0.125));
     });
 
     $snapshot = $recorder->snapshot();
