@@ -62,24 +62,22 @@ it('shows the run time and the peak memory', () => {
     screen.getByText('18.50 MB');
 });
 
-it('lists the boot and snippet time when the run made no queries or http calls', () => {
+it('lists only the boot and PHP time when the run made no queries or http calls', () => {
     render(RunSummary, { props: { debug: payload() } });
 
     screen.getByText('boot 180.00ms');
-    screen.getByText('snippet 20.00ms');
+    screen.getByText('PHP 20.00ms');
     expect(screen.queryByText(/^DB /)).toBeNull();
     expect(screen.queryByText(/^HTTP /)).toBeNull();
-    expect(screen.queryByText(/^PHP /)).toBeNull();
 });
 
-it('splits the snippet into DB, HTTP, and PHP time once the run made a query or an http call', () => {
+it('splits the run into boot, DB, HTTP, and PHP time', () => {
     render(RunSummary, { props: { debug: withBreakdown() } });
 
     screen.getByText('boot 180.00ms');
     screen.getByText('DB 10.00ms (2 queries)');
     screen.getByText('HTTP 30.00ms (1 request)');
     screen.getByText('PHP 60.00ms');
-    expect(screen.queryByText(/^snippet /)).toBeNull();
 });
 
 it('leaves out the HTTP part when the run made only queries', () => {
@@ -160,38 +158,10 @@ it('draws empty bar segments for a run with no measured time', () => {
     expect(barWidths()).toEqual(['0%', '0%']);
 });
 
-it('spells out the calculation in milliseconds even when the run time shows seconds', () => {
-    render(RunSummary, {
-        props: {
-            debug: payload({
-                duration_ms: 1234.56,
-                php_duration_ms: 1234.56,
-                run_duration_ms: 1414.56,
-                run_duration_str: '1.41s',
-            }),
-        },
-    });
-
-    screen.getByText('1414.56ms run = 180.00ms boot + 1234.56ms snippet');
-});
-
-it('adds the snippet breakdown to the calculation once the run made a query or an http call', () => {
-    render(RunSummary, { props: { debug: withBreakdown() } });
-
-    screen.getByText('280.00ms run = 180.00ms boot + 100.00ms snippet');
-    screen.getByText(
-        '100.00ms snippet = 10.00ms DB + 30.00ms HTTP + 60.00ms PHP',
-    );
-});
-
-it('explains that the boot time is not comparable to a web request', () => {
+it('marks the boot time as not comparable to a web request', () => {
     render(RunSummary, { props: { debug: payload() } });
 
-    screen.getByText(/not comparable to a web request/i);
-});
-
-it('explains that PHP time includes loading classes without OPcache', () => {
-    render(RunSummary, { props: { debug: withBreakdown() } });
-
-    expect(screen.getByText(/loading classes/i).textContent).toMatch(/OPcache/);
+    expect(
+        screen.getByText('boot 180.00ms').closest('li')?.getAttribute('title'),
+    ).toMatch(/not a web request/i);
 });
