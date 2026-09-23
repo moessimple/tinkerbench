@@ -2,8 +2,8 @@
     "schema": 4,
     "require": {
         "brick/math": {
-            "version": "0.19.1",
-            "hash": "tree-v2:919b7ab388a70238dc1bdec4059affdeea148e6a1a75b0a852342f4ab0cecbf3"
+            "version": "1.0.0",
+            "hash": "tree-v2:18a4e0a903e82f19128a2a8679c0305e66f104438f01caa4b63b1cec2c6ba4dd"
         },
         "carbonphp/carbon-doctrine-types": {
             "version": "3.2.1",
@@ -18,8 +18,8 @@
             "hash": "tree-v2:220a8be0ed1b4c0fe4cb53530cec8bcbad2db49962deef2f9f5de47327d7855e"
         },
         "doctrine/lexer": {
-            "version": "3.0.1",
-            "hash": "tree-v2:5c99f3311ad501d027b045ea907935367dbb805117b30e1ccc783017df12cdd7"
+            "version": "3.0.2",
+            "hash": "tree-v2:7dabe75f6855468becf3d5a9c0ed9fdbf96f66af9776261cd2fdbeb4079f93e2"
         },
         "dragonmantank/cron-expression": {
             "version": "v3.6.0",
@@ -58,8 +58,8 @@
             "hash": "tree-v2:3327e12204fd28cdad391c7ec6040ec89806dd184f06d12c7efb24cd89a6d6c1"
         },
         "laravel/framework": {
-            "version": "v13.32.0",
-            "hash": "tree-v2:caca971b7adc38887e34db6e9a2cb3f9caadfd0ab0d6fd69b72732d32b601645"
+            "version": "v13.33.0",
+            "hash": "tree-v2:a85944118e623c2c21d0b61720d0e554d3f4601d78fa4259123ab6ede019e0d0"
         },
         "laravel/lsp": {
             "version": "v0.0.31",
@@ -70,8 +70,8 @@
             "hash": "tree-v2:af7fccf97985aef4aad89febec94cee2dce8d76a74b961c1d03a680df881ef6e"
         },
         "laravel/serializable-closure": {
-            "version": "v2.0.16",
-            "hash": "tree-v2:a18134d3b60f4ae638a7f6830ca06784d59419dd7ebb008340d99ecfcb7fd88b"
+            "version": "v2.1.0",
+            "hash": "tree-v2:46e235154eb6a796d4dc4365dc4c2fd1bc4abb91f2235b7741061116a06e0637"
         },
         "laravel/tinker": {
             "version": "v3.0.2",
@@ -82,8 +82,8 @@
             "hash": "tree-v2:877998abf30229595b0e26fa90a4b70fcb1e6682b08f7d74df8da1c550952ebb"
         },
         "league/commonmark": {
-            "version": "2.10.1",
-            "hash": "tree-v2:4de77764be349c4f80db7cf075dcc613291c00ab47b20a5437246c3ca7fade5e"
+            "version": "2.10.3",
+            "hash": "tree-v2:ee619e9faf2cbab26a72cb89c809211c91e772fecf8c1a3cbc5e98f8a1233db2"
         },
         "league/config": {
             "version": "v1.2.0",
@@ -420,8 +420,8 @@
             "hash": "tree-v2:c33bdd2e0430e4110e6ee218701bdee1b422acb2510dd198836519b9a8fcc58d"
         },
         "filp/whoops": {
-            "version": "2.18.4",
-            "hash": "tree-v2:db8671d760c94524baa207edf2fc1731a493b7074eb94f8767d821712b68188c"
+            "version": "2.18.5",
+            "hash": "tree-v2:8c32519eacbd19b8d00468e9a8aaf35efca825f90c912fd802d74494d97e1ca5"
         },
         "hamcrest/hamcrest-php": {
             "version": "v3.0.0",
@@ -440,8 +440,8 @@
             "hash": "tree-v2:760bb76fec70d2a8530c4968b49720c08824cd8eebb27dee38370d8e71ee5855"
         },
         "larastan/larastan": {
-            "version": "v3.12.1",
-            "hash": "tree-v2:cbeba792eba16ebeb1214260251023e73b995fa2c1fec7382b7bfcae017ccd7c"
+            "version": "v3.12.2",
+            "hash": "tree-v2:956b1ddfcb97f9d64ee2f0dac1e980b00506ed2a90c40eae52e122d65dd43baa"
         },
         "laravel/agent-detector": {
             "version": "v2.0.2",
@@ -472,12 +472,12 @@
             "hash": "tree-v2:da430a9f3d9fb06a3812b0e8a116d8265a06dce1bfde4182a1de7154ba15ad67"
         },
         "laravel/sail": {
-            "version": "v1.67.0",
-            "hash": "tree-v2:098a916da98da21531bdb9016496d06a11508e01619ece77195f25d92286651f"
+            "version": "v1.68.0",
+            "hash": "tree-v2:d107302d7fc1135388d95677dbe7cc895ed7d205b6771520bf3ee5db38879906"
         },
         "laravel/vet": {
-            "version": "v0.1.2",
-            "hash": "tree-v2:c7c6c4e737d8aafaa16465fb08a590b1dc0a4795675cdee6945c33ab314873e0"
+            "version": "v0.1.3",
+            "hash": "tree-v2:79974ba8112ac9f87d53f558a9fca69f8b349545110d91e8776360d6b3598272"
         },
         "league/uri-components": {
             "version": "7.8.1",
