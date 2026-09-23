@@ -1,6 +1,7 @@
 {
     "preset": "laravel",
     "exclude": [
+        "packages/runner/runtime",
         "packages/runner/tests/fixtures"
     ],
     "rules": {

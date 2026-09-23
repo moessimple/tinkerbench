@@ -73,7 +73,19 @@ export type FeedItem =
       };
 
 export interface SnippetDebugPayload {
-    duration_str: string;
+    boot_duration_ms: number;
+    boot_duration_str: string;
+    duplicate_query_count: number;
+    http_duration_ms: number;
+    http_duration_str: string;
+    http_request_count: number;
     items: FeedItem[];
+    php_duration_ms: number;
+    php_duration_str: string;
     peak_memory_str: string;
+    query_count: number;
+    query_duration_ms: number;
+    query_duration_str: string;
+    run_duration_ms: number;
+    run_duration_str: string;
 }

@@ -22,10 +22,11 @@ A take on Laravel's [`tinker`](https://github.com/laravel/tinker), inspired by [
 * Command palette (`⌘P`) to jump between snippets and projects, similar to an editor's quick open.
 * Monaco-based editor with PHP syntax highlighting, autosave, and a run shortcut (`⌘Enter`).
 * PHP autocompletion, hover documentation, and signature help for the target project's own code, powered by the intelephense language server (also widely used as a VS Code extension).
-* A single chronological feed of everything a run touched, each entry its own card in execution order. Every project gets dumps, return values, exceptions, and standard output; a Laravel 12 or newer project also gets database queries, log entries, N+1 warnings, outgoing HTTP client requests, and optional traces of rendered views and their data.
+* A single chronological feed of everything a run touched, each entry its own card in execution order. Every project gets dumps, return values, exceptions, and standard output; a Laravel 12 or newer project also gets database queries, log entries, N+1 warnings, outgoing HTTP client requests (one card per network request, so each redirect shows up with its own status and time), and optional traces of rendered views and their data.
 * Filter the feed by kind with live counts, and click a card to jump the editor to the line that produced it.
 * Output rendering adapts to the value: `dump()`/`dd()` use Symfony's interactive VarDumper, JSON is syntax highlighted, and HTML renders in a sandboxed frame.
 * Query cards pretty-print their SQL and flag it when slow (100ms or more) or repeated; sort the feed slowest first when you need to.
+* A run summary shows where the time went as a bar with a legend: boot, database, HTTP client, and PHP time, which add up exactly to the run time. The database figure is the sum of its cards. HTTP requests that run in parallel count only once in the HTTP figure. Boot time is measured on the console kernel, so it is not comparable to a web request.
 * Every card has a button to copy its contents.
 * Light and dark theme, switchable from the sidebar, following your system preference by default.
 

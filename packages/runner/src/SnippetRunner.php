@@ -23,19 +23,16 @@ class SnippetRunner
     private bool $persisted = false;
 
     /**
+     * Expects the target's autoloader, when it has one, to be loaded already, ahead of the
+     * runner's own (see bin/run-snippet.php).
+     *
+     * @param  int  $runStartedAt  hrtime(true) before the target's autoloader was loaded, so the
+     *                             boot time covers it.
      * @param  list<string>  $enabledOptionalWatchers  Ids of the "default off" watchers to register for this
      *                                                 run, in addition to the always-on ones (see watchers.md).
      */
-    public function run(string $projectPath, string $snippetPath, string $debugPath, array $enabledOptionalWatchers = []): void
+    public function run(string $projectPath, string $snippetPath, string $debugPath, int $runStartedAt, array $enabledOptionalWatchers = []): void
     {
-        // Invoked as a subprocess under the target project's own Herd-pinned PHP binary, not
-        // necessarily tinkerbench's own, so it boots the target project separately from this file's
-        // own, already-loaded autoloader. A plain-PHP target with no Composer has none: the basic
-        // pipeline then runs with only the runner's own bundled libraries.
-        if (is_file($projectPath.'/vendor/autoload.php')) {
-            require $projectPath.'/vendor/autoload.php';
-        }
-
         $app = $this->bootTargetApplication($projectPath);
 
         $source = new SourceLocator($snippetPath);
@@ -52,6 +49,7 @@ class SnippetRunner
             ] : [],
             new ExceptionMapper($projectPath, $source->path()),
             $source,
+            $runStartedAt,
         );
 
         // The basic pipeline registers no watchers, so it captures dumps straight into the recorder
@@ -105,11 +103,14 @@ class SnippetRunner
             $recorder->appendException($fatal, $source->throwableLine($fatal), includeFrames: false);
         }
 
+        $snapshot = $recorder->snapshot();
+
         // dump() and toRawSql() can carry binary or malformed-UTF-8 bytes; without these flags one
         // such value makes json_encode() return false and the whole feed is lost for the run.
-        $json = json_encode($recorder->snapshot(), JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
+        $json = json_encode($snapshot, JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
 
-        $fallback = (string) json_encode(['items' => [], 'duration_str' => '', 'peak_memory_str' => '']);
+        // Only the items carry values from the snippet, so the rest of the snapshot always encodes.
+        $fallback = (string) json_encode([...$snapshot, 'items' => []]);
 
         file_put_contents($debugPath, $json !== false ? $json : $fallback);
 

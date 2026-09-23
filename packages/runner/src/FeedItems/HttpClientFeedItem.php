@@ -11,6 +11,13 @@ use Tinkerbench\Runner\ValueRenderer;
 class HttpClientFeedItem extends FeedItem
 {
     /**
+     * @param  float  $startedAt  hrtime(true) when the request was handed to the transport. Not part
+     *                            of the wire shape: the recorder uses it with $durationMs to count
+     *                            overlapping requests' time once.
+     * @param  int|null  $requestSize  Byte size of the whole body when known. The body string can
+     *                                 be cut short of it: the watcher reads only what the preview
+     *                                 needs. Null means the body string is the whole body.
+     * @param  int|null  $responseSize  Same as $requestSize, for the response body.
      * @param  array<string, list<string>>  $requestHeaders
      * @param  array<string, list<string>>  $responseHeaders
      */
@@ -19,19 +26,22 @@ class HttpClientFeedItem extends FeedItem
         public string $url,
         public bool $faked,
         public int $status,
+        public float $startedAt,
         public float $durationMs,
         public array $requestHeaders,
         public array $responseHeaders,
         public string $requestBody,
+        public ?int $requestSize,
         public ?string $requestContentType,
         public string $responseBody,
+        public ?int $responseSize,
         public ?string $responseContentType,
     ) {}
 
     public function toArray(): array
     {
-        $request = $this->preview($this->requestBody, $this->requestContentType);
-        $response = $this->preview($this->responseBody, $this->responseContentType);
+        $request = $this->preview($this->requestBody, $this->requestSize, $this->requestContentType);
+        $response = $this->preview($this->responseBody, $this->responseSize, $this->responseContentType);
 
         return [
             'kind' => FeedItemKind::HttpClient->value,
@@ -59,13 +69,17 @@ class HttpClientFeedItem extends FeedItem
     /**
      * @return array{preview: string|null, truncated: bool, size: int|null}
      */
-    private function preview(string $body, ?string $contentType): array
+    private function preview(string $body, ?int $size, ?string $contentType): array
     {
+        // '8bit' counts bytes: Pint's mb_str_functions rule would rewrite a plain strlen().
+        $readBytes = mb_strlen($body, '8bit');
+        $size ??= $readBytes;
+
         if (! $this->isTextual($contentType)) {
-            return ['preview' => null, 'truncated' => false, 'size' => mb_strlen($body)];
+            return ['preview' => null, 'truncated' => false, 'size' => $size];
         }
 
-        $truncated = mb_strwidth($body, 'UTF-8') > ValueRenderer::MAX_TEXT_LENGTH;
+        $truncated = $readBytes < $size || mb_strwidth($body, 'UTF-8') > ValueRenderer::MAX_TEXT_LENGTH;
 
         return [
             'preview' => $truncated

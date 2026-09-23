@@ -106,6 +106,16 @@ vi.mock('@/components/OutputFeed.vue', () => ({
     },
 }));
 
+// RunSummary has its own test (RunSummary.test.ts) proving the duration, the query/HTTP/other
+// breakdown, and the memory figure; stubbed to a shell exposing the snapshot it was given, so this
+// test only proves OpenSnippet.vue hands it the finished run.
+vi.mock('@/components/RunSummary.vue', () => ({
+    default: {
+        props: ['debug'],
+        template: `<span data-testid="run-summary">{{ debug.run_duration_str }}</span>`,
+    },
+}));
+
 // useTheme has its own test (useTheme.test.ts) proving system-preference fallback,
 // persistence, and the dark-class toggle; replaced here so this test only proves
 // OpenSnippet.vue's toggle button reads/calls it correctly.
@@ -131,9 +141,21 @@ function payload(
     overrides: Partial<SnippetDebugPayload> = {},
 ): SnippetDebugPayload {
     return {
+        boot_duration_ms: 1,
+        boot_duration_str: '1.00ms',
+        duplicate_query_count: 0,
+        http_duration_ms: 0,
+        http_duration_str: '0.00ms',
+        http_request_count: 0,
         items: [],
-        duration_str: '1.00ms',
+        php_duration_ms: 1,
+        php_duration_str: '1.00ms',
         peak_memory_str: '1.00 MB',
+        query_count: 0,
+        query_duration_ms: 0,
+        query_duration_str: '0.00ms',
+        run_duration_ms: 2,
+        run_duration_str: '2.00ms',
         ...overrides,
     };
 }
@@ -384,20 +406,18 @@ it('disables the run button and shows a running label while processing', () => {
     httpState.processing = false;
 });
 
-it('shows the run duration and peak memory after a run', async () => {
+it('shows the run summary of the finished run', async () => {
     render(OpenSnippet, { props });
 
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
     capturedPost?.onSuccess({
         output: '',
-        debug: payload({
-            duration_str: '12.30ms',
-            peak_memory_str: '18.50 MB',
-        }),
+        debug: payload({ run_duration_str: '12.30ms' }),
     });
 
-    await screen.findByText('12.30ms');
-    screen.getByText('18.50 MB');
+    expect((await screen.findByTestId('run-summary')).textContent).toBe(
+        '12.30ms',
+    );
 });
 
 it('confirms a finished run that produced nothing with a no-output note', async () => {
@@ -1112,7 +1132,7 @@ it('clears the run metrics strip when output is cleared', async () => {
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
     capturedPost?.onSuccess({
         output: '',
-        debug: payload({ duration_str: '9.90ms' }),
+        debug: payload({ run_duration_str: '9.90ms' }),
     });
     await screen.findByText('9.90ms');
 

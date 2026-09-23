@@ -2,8 +2,10 @@ import { expect, it } from 'vitest';
 import type { SnippetDebugPayload } from '@/types';
 import { buildFeed } from './feed';
 
-function payload(items: SnippetDebugPayload['items']): SnippetDebugPayload {
-    return { duration_str: '1.00ms', items, peak_memory_str: '1.00 MB' };
+function payload(
+    items: SnippetDebugPayload['items'],
+): Pick<SnippetDebugPayload, 'items'> {
+    return { items };
 }
 
 it('passes the payload items through in order', () => {

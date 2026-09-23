@@ -33,6 +33,10 @@
         ]
     },
     "scripts": {
+        "build": [
+            "@putenv COMPOSER_VENDOR_DIR=runtime",
+            "@composer install --no-dev --no-interaction --no-progress"
+        ],
         "lint": [
             "rector",
             "pint --parallel"

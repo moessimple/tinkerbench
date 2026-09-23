@@ -49,9 +49,13 @@ jobs:
           restore-keys: ${{ runner.os }}-composer-fixture-laravel12-8.5-
 
       - name: Install packages/runner Composer dependencies
-        # Several app tests spawn packages/runner/bin/run-snippet.php as a real subprocess,
-        # which require()s the package's own vendor/autoload.php.
+        # `composer test:unit` descends into packages/runner, which runs its own Pest suite.
         run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress --working-dir=packages/runner
+
+      - name: Build the packages/runner runtime
+        # Several app and runner tests spawn packages/runner/bin/run-snippet.php as a real
+        # subprocess, which loads the runtime (the runner's dependencies without dev packages).
+        run: composer build --working-dir=packages/runner
 
       - name: Install runner test-fixture Composer dependencies
         # `composer test:unit` descends into packages/runner, whose SnippetRunnerTest runs
@@ -124,6 +128,9 @@ jobs:
       - name: Install packages/runner Composer dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress --working-dir=packages/runner
 
+      - name: Build the packages/runner runtime
+        run: composer build --working-dir=packages/runner
+
       - name: Install runner test-fixture Composer dependencies
         run: |
           composer install --no-interaction --prefer-dist --no-progress --working-dir=packages/runner/tests/fixtures/plain-composer-php
@@ -149,17 +156,11 @@ jobs:
       - name: Setup app
         uses: ./.github/actions/setup-app
 
-      - name: Cache packages/runner Composer dependencies
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: packages/runner/vendor
-          key: ${{ runner.os }}-composer-runner-8.5-${{ hashFiles('packages/runner/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-runner-8.5-
-
-      - name: Install packages/runner Composer dependencies
-        # SnippetRunner spawns packages/runner/bin/run-snippet.php in its own PHP process; it
-        # requires the package's own vendor/autoload.php, so the run-snippet journeys need it.
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress --working-dir=packages/runner
+      - name: Build the packages/runner runtime
+        # SnippetRunner spawns packages/runner/bin/run-snippet.php in its own PHP process, which
+        # loads the runtime (the runner's dependencies without dev packages), so the run-snippet
+        # journeys need it.
+        run: composer build --working-dir=packages/runner
 
       - name: Prepare the SQLite database
         # The run-snippet journey executes real snippets against this app as the target

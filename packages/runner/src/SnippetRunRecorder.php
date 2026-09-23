@@ -9,6 +9,7 @@ use Illuminate\Contracts\Foundation\Application;
 use Throwable;
 use Tinkerbench\Runner\FeedItems\DumpFeedItem;
 use Tinkerbench\Runner\FeedItems\FeedItem;
+use Tinkerbench\Runner\FeedItems\HttpClientFeedItem;
 use Tinkerbench\Runner\FeedItems\NPlusOneFeedItem;
 use Tinkerbench\Runner\FeedItems\QueryFeedItem;
 use Tinkerbench\Runner\FeedItems\ResultFeedItem;
@@ -38,11 +39,15 @@ class SnippetRunRecorder
      * @param  list<Watcher>  $watchers  Every feed-item source for the run. ExceptionMapper is not
      *                                   one of these: it turns caught throwables and fatal shutdown
      *                                   errors into items, it does not listen to an event.
+     * @param  float  $runStartedAt  hrtime(true) taken when the run began, before the target was
+     *                               booted. Boot time is measured from here to the snippet start,
+     *                               on the same clock, so boot and snippet time leave no gap.
      */
     public function __construct(
         private readonly array $watchers,
         private readonly ExceptionMapper $exceptionMapper,
         private readonly SourceLocator $source,
+        private readonly float $runStartedAt,
     ) {}
 
     /**
@@ -93,17 +98,68 @@ class SnippetRunRecorder
     }
 
     /**
-     * @return array{items: list<array<string, mixed>>, duration_str: string, peak_memory_str: string}
+     * The snippet duration is split into query, http, and php time so the numbers add up: each
+     * part is rounded to hundredths first and php is the remainder of the rounded values, so
+     * duration = query + http + php holds exactly for the displayed figures. Php time is
+     * everything in the PHP process outside the database driver and HTTP calls, including class
+     * loading. Query time is the plain sum of the query items, which keeps it checkable against
+     * the cards. Http time is the time at least one request was in flight: parallel requests
+     * (Http::pool(), async) overlap, and summing them would count the same wall time twice. For
+     * sequential requests it equals the sum of the cards.
+     *
+     * Boot time runs from the run start to the snippet start; run = boot + duration holds the same
+     * way, from the rounded values. The snippet duration itself is not part of the snapshot,
+     * since the four parts already show it.
+     *
+     * @return array{
+     *     items: list<array<string, mixed>>,
+     *     boot_duration_str: string,
+     *     boot_duration_ms: float,
+     *     run_duration_str: string,
+     *     run_duration_ms: float,
+     *     peak_memory_str: string,
+     *     query_count: int,
+     *     duplicate_query_count: int,
+     *     query_duration_str: string,
+     *     query_duration_ms: float,
+     *     http_request_count: int,
+     *     http_duration_str: string,
+     *     http_duration_ms: float,
+     *     php_duration_str: string,
+     *     php_duration_ms: float,
+     * }
      */
     public function snapshot(): array
     {
+        $queries = array_values(array_filter($this->items, static fn (FeedItem $item): bool => $item instanceof QueryFeedItem));
+        $httpCalls = array_values(array_filter($this->items, static fn (FeedItem $item): bool => $item instanceof HttpClientFeedItem));
+
+        $durationMs = round($this->elapsedMilliseconds(), 2);
+        $bootDurationMs = round($this->bootMilliseconds(), 2);
+        $runDurationMs = round($bootDurationMs + $durationMs, 2);
+        $queryDurationMs = round(array_sum(array_map(static fn (QueryFeedItem $query): float => $query->durationMs, $queries)), 2);
+        $httpDurationMs = round($this->inFlightMilliseconds($httpCalls), 2);
+        $phpDurationMs = round($durationMs - $queryDurationMs - $httpDurationMs, 2);
+
         return [
             'items' => array_map(
                 static fn (FeedItem $item): array => $item->toArray(),
                 $this->itemsWithoutSingleLazyLoads(),
             ),
-            'duration_str' => Duration::format($this->elapsedMilliseconds()),
+            'boot_duration_str' => Duration::format($bootDurationMs),
+            'boot_duration_ms' => $bootDurationMs,
+            'run_duration_str' => Duration::format($runDurationMs),
+            'run_duration_ms' => $runDurationMs,
             'peak_memory_str' => ByteSize::format(memory_get_peak_usage(true)),
+            'query_count' => count($queries),
+            'duplicate_query_count' => count(array_filter($queries, static fn (QueryFeedItem $query): bool => $query->duplicate)),
+            'query_duration_str' => Duration::format($queryDurationMs),
+            'query_duration_ms' => $queryDurationMs,
+            'http_request_count' => count($httpCalls),
+            'http_duration_str' => Duration::format($httpDurationMs),
+            'http_duration_ms' => $httpDurationMs,
+            'php_duration_str' => Duration::format($phpDurationMs),
+            'php_duration_ms' => $phpDurationMs,
         ];
     }
 
@@ -158,6 +214,41 @@ class SnippetRunRecorder
         }
 
         return (($this->finishedAt ?? $this->now()) - $this->startedAt) / 1_000_000;
+    }
+
+    /**
+     * The length of the union of the calls' time spans, so overlapping calls count once.
+     *
+     * @param  list<HttpClientFeedItem>  $calls
+     */
+    private function inFlightMilliseconds(array $calls): float
+    {
+        usort($calls, static fn (HttpClientFeedItem $a, HttpClientFeedItem $b): int => $a->startedAt <=> $b->startedAt);
+
+        $inFlight = 0.0;
+        $coveredUntil = -INF;
+
+        foreach ($calls as $call) {
+            $endedAt = $call->startedAt + $call->durationMs * 1_000_000;
+
+            if ($endedAt <= $coveredUntil) {
+                continue;
+            }
+
+            $inFlight += $endedAt - max($call->startedAt, $coveredUntil);
+            $coveredUntil = $endedAt;
+        }
+
+        return $inFlight / 1_000_000;
+    }
+
+    private function bootMilliseconds(): float
+    {
+        if ($this->startedAt === null) {
+            return 0.0;
+        }
+
+        return ($this->startedAt - $this->runStartedAt) / 1_000_000;
     }
 
     private function now(): float
