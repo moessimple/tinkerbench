@@ -23,21 +23,16 @@ class SnippetRunner
     private bool $persisted = false;
 
     /**
+     * Expects the target's autoloader, when it has one, to be loaded already, ahead of the
+     * runner's own (see bin/run-snippet.php).
+     *
+     * @param  int  $runStartedAt  hrtime(true) before the target's autoloader was loaded, so the
+     *                             boot time covers it.
      * @param  list<string>  $enabledOptionalWatchers  Ids of the "default off" watchers to register for this
      *                                                 run, in addition to the always-on ones (see watchers.md).
      */
-    public function run(string $projectPath, string $snippetPath, string $debugPath, array $enabledOptionalWatchers = []): void
+    public function run(string $projectPath, string $snippetPath, string $debugPath, int $runStartedAt, array $enabledOptionalWatchers = []): void
     {
-        $runStartedAt = hrtime(true);
-
-        // Invoked as a subprocess under the target project's own Herd-pinned PHP binary, not
-        // necessarily tinkerbench's own, so it boots the target project separately from this file's
-        // own, already-loaded autoloader. A plain-PHP target with no Composer has none: the basic
-        // pipeline then runs with only the runner's own bundled libraries.
-        if (is_file($projectPath.'/vendor/autoload.php')) {
-            require $projectPath.'/vendor/autoload.php';
-        }
-
         $app = $this->bootTargetApplication($projectPath);
 
         $source = new SourceLocator($snippetPath);

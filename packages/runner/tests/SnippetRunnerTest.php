@@ -541,6 +541,35 @@ it('measures the time spent booting a Laravel 12 fixture before the snippet runs
         ->and($result['debug']['boot_duration_ms'])->toBeGreaterThan(0.0);
 });
 
+it("runs a snippet on the target's own copy of a package the runner ships too", function (): void {
+    $result = runSnippetSubprocessAgainst(fixtureTargetPath('laravel-12'), <<<'PHP'
+    <?php
+
+    echo json_encode([
+        'collect' => (new ReflectionFunction('collect'))->getFileName(),
+        'dump' => (new ReflectionFunction('dump'))->getFileName(),
+    ]);
+    PHP);
+
+    $origins = json_decode($result['output'], true);
+
+    expect($result['exitCode'])->toBe(0)
+        ->and($origins['collect'])->toStartWith(fixtureTargetPath('laravel-12').'/vendor/')
+        ->and($origins['dump'])->toStartWith(fixtureTargetPath('laravel-12').'/vendor/');
+});
+
+it("loads none of the runner's dev packages into the target", function (): void {
+    $result = runSnippetSubprocessAgainst(fixtureTargetPath('laravel-12'), "<?php\n\necho json_encode(get_included_files());");
+
+    $runnerDevFiles = array_filter(
+        json_decode($result['output'], true),
+        static fn (string $file): bool => str_starts_with($file, dirname(__DIR__).'/vendor/'),
+    );
+
+    expect($result['exitCode'])->toBe(0)
+        ->and($runnerDevFiles)->toBe([]);
+});
+
 it('classifies the snippet frame of an uncaught exception from a Laravel 12 fixture', function (): void {
     $result = runSnippetSubprocessAgainst(
         fixtureTargetPath('laravel-12'),
@@ -608,8 +637,11 @@ it('detects an N+1 lazy load against a Laravel 12 fixture', function (): void {
         ->and($finding['count'])->toBe(3);
 });
 
-// In-process runs exercise run()'s own wiring against tinkerbench itself. The shutdown handler
-// it registers no-ops at PHPUnit exit because run() has already persisted inline.
+// In-process runs exercise run()'s own wiring against the Laravel 12 fixture. Like
+// bin/run-snippet.php, they load the target's vendor/autoload.php first, here into this PHPUnit
+// process, so the target must share this package's dependencies: the fixture runs the same
+// Laravel and has no PHPUnit of its own. The shutdown handler run() registers no-ops at PHPUnit
+// exit because run() has already persisted inline.
 
 /**
  * @param  list<string>  $enabledOptionalWatchers
@@ -621,7 +653,10 @@ function runInProcess(string $code, array $enabledOptionalWatchers = []): array
     $debugPath = tempnam(sys_get_temp_dir(), 'debug');
     file_put_contents($snippetPath, $code);
 
-    (new SnippetRunner())->run(runnerTargetPath(), $snippetPath, $debugPath, $enabledOptionalWatchers);
+    $runStartedAt = hrtime(true);
+    require fixtureTargetPath('laravel-12').'/vendor/autoload.php';
+
+    (new SnippetRunner())->run(fixtureTargetPath('laravel-12'), $snippetPath, $debugPath, $runStartedAt, $enabledOptionalWatchers);
 
     $snapshot = json_decode((string) file_get_contents($debugPath), true);
 
@@ -632,8 +667,26 @@ function runInProcess(string $code, array $enabledOptionalWatchers = []): array
 }
 
 /**
+ * @return array<string, string> Package name => locked version.
+ */
+function lockedVersions(string $lockPath): array
+{
+    /** @var array{packages?: list<array{name: string, version: string}>, packages-dev?: list<array{name: string, version: string}>} $lock */
+    $lock = json_decode((string) file_get_contents($lockPath), true);
+
+    return array_column([...$lock['packages'] ?? [], ...$lock['packages-dev'] ?? []], 'version', 'name');
+}
+
+it('locks every package of the in-process target at the version this package locks', function (): void {
+    $fixtureVersions = lockedVersions(fixtureTargetPath('laravel-12').'/composer.lock');
+
+    expect($fixtureVersions)->not->toBeEmpty()
+        ->and(array_diff_assoc($fixtureVersions, lockedVersions(dirname(__DIR__).'/composer.lock')))->toBe([]);
+});
+
+/**
  * A snippet that renders a throwaway Blade file, so a real 'composing:*' event fires without
- * depending on any view that ships with tinkerbench itself (the in-process "target project" here).
+ * depending on any view that ships with the in-process target project.
  */
 function viewRenderingSnippet(): string
 {
@@ -658,13 +711,13 @@ it('records the return value of an in-process run as a result item and writes th
         ->and($snapshot['items'])->toHaveCount(1)
         ->and($snapshot['items'][0]['kind'])->toBe('result')
         ->and($snapshot['items'][0]['html'])->toContain('inprocess hello');
-})->skip(PHP_VERSION_ID < 80500, TARGET_REQUIRES_PHP85)->expectOutputString('');
+})->expectOutputString('');
 
 it('records no result item for an in-process run with no return statement', function (): void {
     $snapshot = runInProcess("<?php\n\n\$x = 1 + 1;");
 
     expect($snapshot['items'])->toBe([]);
-})->skip(PHP_VERSION_ID < 80500, TARGET_REQUIRES_PHP85)->expectOutputString('');
+})->expectOutputString('');
 
 it('emits a view item when the view watcher is enabled', function (): void {
     $snapshot = runInProcess(viewRenderingSnippet(), ['view']);
@@ -673,20 +726,20 @@ it('emits a view item when the view watcher is enabled', function (): void {
 
     expect($kinds)->toContain('view')
         ->and(collect($snapshot['items'])->firstWhere('kind', 'view')['data_html'])->toContain('x');
-})->skip(PHP_VERSION_ID < 80500, TARGET_REQUIRES_PHP85)->expectOutputString('');
+})->expectOutputString('');
 
 it('emits no view item when the view watcher is not enabled', function (): void {
     $snapshot = runInProcess(viewRenderingSnippet());
 
     expect(array_column($snapshot['items'], 'kind'))->not->toContain('view');
-})->skip(PHP_VERSION_ID < 80500, TARGET_REQUIRES_PHP85)->expectOutputString('');
+})->expectOutputString('');
 
 it('records a thrown exception from an in-process run without re-throwing', function (): void {
     $snapshot = runInProcess("<?php\n\nthrow new RuntimeException('inprocess boom');");
 
     expect($snapshot['items'][0]['kind'])->toBe('exception')
         ->and($snapshot['items'][0]['message'])->toBe('inprocess boom');
-})->skip(PHP_VERSION_ID < 80500, TARGET_REQUIRES_PHP85);
+});
 
 it('persist writes the snapshot and records no exception for a null last error', function (): void {
     $debugPath = tempnam(sys_get_temp_dir(), 'persist');
@@ -821,7 +874,7 @@ function runBasicInProcess(string $code, ?string $bootstrapBody = null, bool $wi
     $debugPath = tempnam(sys_get_temp_dir(), 'debug');
     file_put_contents($snippetPath, $code);
 
-    (new SnippetRunner())->run($target, $snippetPath, $debugPath);
+    (new SnippetRunner())->run($target, $snippetPath, $debugPath, hrtime(true));
 
     $snapshot = json_decode((string) file_get_contents($debugPath), true);
 
