@@ -141,6 +141,8 @@ function payload(
     overrides: Partial<SnippetDebugPayload> = {},
 ): SnippetDebugPayload {
     return {
+        boot_duration_ms: 1,
+        boot_duration_str: '1.00ms',
         duplicate_query_count: 0,
         duration_ms: 1,
         duration_str: '1.00ms',
@@ -154,6 +156,8 @@ function payload(
         query_count: 0,
         query_duration_ms: 0,
         query_duration_str: '0.00ms',
+        run_duration_ms: 2,
+        run_duration_str: '2.00ms',
         ...overrides,
     };
 }

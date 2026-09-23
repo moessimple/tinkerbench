@@ -73,6 +73,8 @@ export type FeedItem =
       };
 
 export interface SnippetDebugPayload {
+    boot_duration_ms: number;
+    boot_duration_str: string;
     duplicate_query_count: number;
     duration_ms: number;
     duration_str: string;
@@ -86,4 +88,6 @@ export interface SnippetDebugPayload {
     query_count: number;
     query_duration_ms: number;
     query_duration_str: string;
+    run_duration_ms: number;
+    run_duration_str: string;
 }

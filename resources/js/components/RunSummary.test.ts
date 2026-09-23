@@ -7,6 +7,8 @@ function payload(
     overrides: Partial<SnippetDebugPayload> = {},
 ): SnippetDebugPayload {
     return {
+        boot_duration_ms: 180,
+        boot_duration_str: '180.00ms',
         duplicate_query_count: 0,
         duration_ms: 12.3,
         duration_str: '12.30ms',
@@ -20,6 +22,8 @@ function payload(
         query_count: 0,
         query_duration_ms: 0,
         query_duration_str: '0.00ms',
+        run_duration_ms: 192.3,
+        run_duration_str: '192.30ms',
         ...overrides,
     };
 }
@@ -126,5 +130,59 @@ it('explains what each part of the breakdown measures', () => {
     ).toMatch(/sum of the http cards/i);
     expect(screen.getByText('other 12.30ms').getAttribute('title')).toMatch(
         /snippet time minus db and http/i,
+    );
+});
+
+it('shows the boot time of the target before the snippet duration', () => {
+    render(RunSummary, { props: { debug: payload() } });
+
+    screen.getByText('boot 180.00ms');
+});
+
+it('explains that the boot time is not comparable to a web request', () => {
+    render(RunSummary, { props: { debug: payload() } });
+
+    expect(screen.getByText('boot 180.00ms').getAttribute('title')).toMatch(
+        /not comparable to a web request/i,
+    );
+});
+
+it('shows the run as boot plus snippet time in milliseconds on the duration', () => {
+    render(RunSummary, {
+        props: {
+            debug: payload({
+                boot_duration_ms: 180,
+                duration_ms: 1234.56,
+                duration_str: '1.23s',
+                run_duration_ms: 1414.56,
+            }),
+        },
+    });
+
+    expect(screen.getByText('1.23s').getAttribute('title')).toBe(
+        '1414.56ms run = 180.00ms boot + 1234.56ms snippet',
+    );
+});
+
+it('adds the snippet breakdown to the calculation once the run made a query or an http call', () => {
+    render(RunSummary, {
+        props: {
+            debug: payload({
+                duration_ms: 42.1,
+                duration_str: '42.10ms',
+                http_duration_ms: 5,
+                http_duration_str: '5.00ms',
+                http_request_count: 1,
+                other_duration_ms: 5.9,
+                query_count: 12,
+                query_duration_ms: 31.2,
+                query_duration_str: '31.20ms',
+                run_duration_ms: 222.1,
+            }),
+        },
+    });
+
+    expect(screen.getByText('42.10ms').getAttribute('title')).toBe(
+        '222.10ms run = 180.00ms boot + 42.10ms snippet\n42.10ms snippet = 31.20ms DB + 5.00ms HTTP + 5.90ms other',
     );
 });
