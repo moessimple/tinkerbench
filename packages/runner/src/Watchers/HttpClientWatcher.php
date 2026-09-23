@@ -6,6 +6,7 @@ namespace Tinkerbench\Runner\Watchers;
 
 use Closure;
 use GuzzleHttp\Promise\PromiseInterface;
+use GuzzleHttp\Psr7\Utils;
 use GuzzleHttp\TransferStats;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\Client\Factory;
@@ -13,9 +14,16 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 use Tinkerbench\Runner\FeedItems\HttpClientFeedItem;
+use Tinkerbench\Runner\ValueRenderer;
 
 class HttpClientWatcher implements Watcher
 {
+    /**
+     * Enough bytes to fill the card's preview even when every character takes four bytes, so a
+     * large body (a download into a sink file, say) is not read into memory whole.
+     */
+    private const MAX_BODY_BYTES = ValueRenderer::MAX_TEXT_LENGTH * 4;
+
     /**
      * Records every network request, not every Http:: call: the global middleware sits inside
      * Guzzle's redirect middleware, so each hop of a redirect chain passes through it on its own
@@ -65,8 +73,10 @@ class HttpClientWatcher implements Watcher
                     $requestHeaders,
                     $responseHeaders,
                     $this->contents($request->getBody()),
+                    $this->size($request->getBody()),
                     $request->getHeader('Content-Type')[0] ?? null,
                     $this->contents($response->getBody()),
+                    $this->size($response->getBody()),
                     $response->getHeader('Content-Type')[0] ?? null,
                 ));
 
@@ -76,8 +86,9 @@ class HttpClientWatcher implements Watcher
     }
 
     /**
-     * Reads a body without consuming it for the caller: a streamed, non-seekable body is left
-     * untouched and recorded as empty, since reading it here would take it from the snippet.
+     * Reads the start of a body without consuming it for the caller: a streamed, non-seekable
+     * body is left untouched and recorded as empty, since reading it here would take it from the
+     * snippet.
      */
     private function contents(StreamInterface $body): string
     {
@@ -86,9 +97,17 @@ class HttpClientWatcher implements Watcher
         }
 
         $body->rewind();
-        $contents = $body->getContents();
+        $contents = Utils::copyToString($body, self::MAX_BODY_BYTES);
         $body->rewind();
 
         return $contents;
+    }
+
+    /**
+     * The size of a body that contents() read from, null for one it left untouched.
+     */
+    private function size(StreamInterface $body): ?int
+    {
+        return $body->isSeekable() ? $body->getSize() : null;
     }
 }

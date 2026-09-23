@@ -15,8 +15,10 @@ function httpClientFeedItem(array $overrides = []): HttpClientFeedItem
         'requestHeaders' => ['Accept' => ['application/json']],
         'responseHeaders' => ['Content-Type' => ['application/json']],
         'requestBody' => '',
+        'requestSize' => null,
         'requestContentType' => null,
         'responseBody' => '{"id":1}',
+        'responseSize' => null,
         'responseContentType' => 'application/json',
     ];
 
@@ -108,7 +110,28 @@ it('hides the response body preview for a non-textual content type and reports c
         'response_body_preview' => null,
         'response_truncated' => false,
         'response_content_type' => 'application/octet-stream',
-        'response_size' => mb_strlen('binary-data'),
+        'response_size' => 11,
+    ]);
+});
+
+it('reports the size of a hidden body in bytes, not characters', function (): void {
+    $item = httpClientFeedItem(['responseBody' => 'äöü', 'responseContentType' => 'application/octet-stream']);
+
+    expect($item->toArray()['response_size'])->toBe(6);
+});
+
+it('reports the size of the whole body when only its start was read', function (): void {
+    $item = httpClientFeedItem(['responseBody' => 'abc', 'responseSize' => 1_000, 'responseContentType' => 'application/octet-stream']);
+
+    expect($item->toArray()['response_size'])->toBe(1_000);
+});
+
+it('flags a textual body as truncated when only its start was read', function (): void {
+    $item = httpClientFeedItem(['responseBody' => 'abc', 'responseSize' => 1_000, 'responseContentType' => 'text/plain']);
+
+    expect($item->toArray())->toMatchArray([
+        'response_body_preview' => 'abc...',
+        'response_truncated' => true,
     ]);
 });
 
@@ -146,7 +169,7 @@ it('truncates and hides the request body just like the response body', function 
     $binary = $item->toArray();
 
     expect($binary['request_body_preview'])->toBeNull()
-        ->and($binary['request_size'])->toBe(mb_strlen('binary'));
+        ->and($binary['request_size'])->toBe(6);
 });
 
 it('classifies the request type from its content type', function (?string $contentType, string $expected): void {

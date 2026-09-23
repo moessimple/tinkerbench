@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Http;
 use Psr\Http\Message\RequestInterface;
 use Tinkerbench\Runner\FeedItems\FeedItem;
 use Tinkerbench\Runner\FeedItems\HttpClientFeedItem;
+use Tinkerbench\Runner\ValueRenderer;
 use Tinkerbench\Runner\Watchers\HttpClientWatcher;
 
 /**
@@ -129,6 +130,18 @@ it('leaves the response body readable for the snippet that made the request', fu
     });
 
     expect($body)->toBe('{"id":1}');
+});
+
+it('reads only the start of a large body but reports its full size', function (): void {
+    Http::fake([
+        'https://example.test/*' => Http::response(str_repeat('a', 100_000), 200, ['Content-Type' => 'application/octet-stream']),
+    ]);
+
+    $items = captureHttpClientItems(fn () => Http::get('https://example.test/download'));
+
+    expect($items[0])->toBeInstanceOf(HttpClientFeedItem::class)
+        ->and(mb_strlen($items[0]->responseBody, '8bit'))->toBe(ValueRenderer::MAX_TEXT_LENGTH * 4)
+        ->and($items[0]->toArray()['response_size'])->toBe(100_000);
 });
 
 it('leaves a streamed response body to the snippet and records it as empty', function (): void {

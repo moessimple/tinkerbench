@@ -47,7 +47,7 @@ function runRecorder(Closure $run, ?ExceptionMapper $mapper = null, ?SourceLocat
 
 function recordedHttpCall(float $durationMs): HttpClientFeedItem
 {
-    return new HttpClientFeedItem('GET', 'https://example.test', false, 200, $durationMs, [], [], '', null, '', null);
+    return new HttpClientFeedItem('GET', 'https://example.test', false, 200, $durationMs, [], [], '', null, null, '', null, null);
 }
 
 /**
