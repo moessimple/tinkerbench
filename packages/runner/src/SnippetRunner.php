@@ -9,6 +9,7 @@ use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Application;
 use Throwable;
 use Tinkerbench\Runner\Watchers\DumpWatcher;
+use Tinkerbench\Runner\Watchers\HttpClientWatcher;
 use Tinkerbench\Runner\Watchers\LazyLoadWatcher;
 use Tinkerbench\Runner\Watchers\LogWatcher;
 use Tinkerbench\Runner\Watchers\QueryWatcher;
@@ -46,6 +47,7 @@ class SnippetRunner
                 new QueryWatcher(),
                 new LogWatcher($valueRenderer),
                 new LazyLoadWatcher(),
+                new HttpClientWatcher(),
                 ...in_array('view', $enabledOptionalWatchers, true) ? [new ViewWatcher($valueRenderer)] : [],
             ] : [],
             new ExceptionMapper($projectPath, $source->path()),
