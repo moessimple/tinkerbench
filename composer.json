@@ -15,7 +15,7 @@
         "php": "^8.5",
         "inertiajs/inertia-laravel": "^3.3.4",
         "laravel/framework": "^13.33.0",
-        "laravel/lsp": "^0.0.31",
+        "laravel/lsp": "^0.0.32",
         "laravel/tinker": "^3.0",
         "laravel/wayfinder": "^0.1.14",
         "nunomaduro/essentials": "^1.2"
