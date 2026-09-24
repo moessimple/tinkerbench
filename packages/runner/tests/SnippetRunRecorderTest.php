@@ -71,7 +71,7 @@ it('collects emitted items in order and assembles a snapshot', function (): void
         ['kind' => 'dump', 'html' => '<a/>', 'text' => 'a', 'line' => 99],
         ['kind' => 'log', 'label' => 'info', 'message' => 'hi', 'context_html' => null, 'context_text' => null, 'line' => 99],
     ])
-        ->and($snapshot['run_duration_str'])->toMatch('/^\d+\.\d{2}(ms|s)$/')
+        ->and($snapshot['run_duration_str'])->toMatch('/^\d+\.\d{2} (ms|s)$/')
         ->and($snapshot['peak_memory_str'])->toMatch('/^[\d,]+\.\d{2} MB$/');
 });
 
@@ -123,7 +123,7 @@ it('folds repeated lazy-loads of the same relation into one item with a count', 
     });
 
     expect($recorder->snapshot()['items'])->toBe([
-        ['kind' => 'query', 'sql' => 'select * from users', 'duration_str' => '1.00ms', 'duration_ms' => 1.0, 'connection' => 'sqlite', 'slow' => false, 'duplicate' => false, 'line' => 99],
+        ['kind' => 'query', 'sql' => 'select * from users', 'duration_str' => '1.00 ms', 'duration_ms' => 1.0, 'connection' => 'sqlite', 'slow' => false, 'duplicate' => false, 'line' => 99],
         ['kind' => 'n_plus_one', 'model' => 'Some\Fixture\Model', 'relation' => 'posts', 'count' => 2, 'line' => 99],
     ]);
 });
@@ -181,7 +181,7 @@ it('sums the query durations and counts the queries of a run', function (): void
 
     expect($snapshot['query_count'])->toBe(2)
         ->and($snapshot['query_duration_ms'])->toBe(3.75)
-        ->and($snapshot['query_duration_str'])->toBe('3.75ms');
+        ->and($snapshot['query_duration_str'])->toBe('3.75 ms');
 });
 
 it('counts the duplicate queries of a run', function (): void {
@@ -205,7 +205,7 @@ it('sums the durations of sequential http client requests and counts the request
 
     expect($snapshot['http_request_count'])->toBe(2)
         ->and($snapshot['http_duration_ms'])->toBe(42.5)
-        ->and($snapshot['http_duration_str'])->toBe('42.50ms');
+        ->and($snapshot['http_duration_str'])->toBe('42.50 ms');
 });
 
 it('counts the time of overlapping http client requests once', function (): void {
@@ -260,7 +260,7 @@ it('reports a zero duration when snapshot is taken before a run', function (): v
     $snapshot = $recorder->snapshot();
 
     expect($snapshot['items'])->toBe([])
-        ->and($snapshot['run_duration_str'])->toBe('0.00ms')
+        ->and($snapshot['run_duration_str'])->toBe('0.00 ms')
         ->and($snapshot['boot_duration_ms'])->toBe(0.0)
         ->and($snapshot['run_duration_ms'])->toBe(0.0);
 });
@@ -347,7 +347,7 @@ it('registers no watchers when record is given no application', function (): voi
     });
 
     expect($ran)->toBeTrue()
-        ->and($recorder->snapshot()['run_duration_str'])->toMatch('/^\d+\.\d{2}(ms|s)$/');
+        ->and($recorder->snapshot()['run_duration_str'])->toMatch('/^\d+\.\d{2} (ms|s)$/');
 });
 
 it('forwards a request to omit frames to the mapper', function (): void {

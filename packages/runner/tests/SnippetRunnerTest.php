@@ -15,7 +15,7 @@ use Tinkerbench\Runner\SourceLocator;
  */
 function fixtureSnapshot(): array
 {
-    return ['items' => [], 'duration_str' => '1.00ms', 'peak_memory_str' => '1.00 MB'];
+    return ['items' => [], 'duration_str' => '1.00 ms', 'peak_memory_str' => '1.00 MB'];
 }
 
 /**
@@ -168,7 +168,7 @@ it('writes the run snapshot to the debug path', function (): void {
         'php_duration_ms',
     ])
         ->and($result['debug']['items'])->toBe([])
-        ->and($result['debug']['run_duration_str'])->toMatch('/^\d+\.\d{2}(ms|s)$/')
+        ->and($result['debug']['run_duration_str'])->toMatch('/^\d+\.\d{2} (ms|s)$/')
         ->and($result['debug']['peak_memory_str'])->toMatch('/^[\d,]+\.\d{2} MB$/');
 })->skip(PHP_VERSION_ID < 80500, TARGET_REQUIRES_PHP85);
 
@@ -762,7 +762,7 @@ it('persist writes valid JSON even when the snapshot carries non-UTF-8 bytes', f
     $recorder = Mockery::mock(SnippetRunRecorder::class);
     $recorder->shouldReceive('snapshot')->andReturn([
         'items' => [['kind' => 'dump', 'html' => "bad \xff\xfe bytes", 'line' => null]],
-        'duration_str' => '1.00ms',
+        'duration_str' => '1.00 ms',
         'peak_memory_str' => '1.00 MB',
     ]);
 

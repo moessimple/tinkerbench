@@ -11,7 +11,7 @@ it('serializes to the query feed-item shape', function (): void {
     expect($item->toArray())->toBe([
         'kind' => 'query',
         'sql' => 'select * from "users" where "id" = 5',
-        'duration_str' => '4.20ms',
+        'duration_str' => '4.20 ms',
         'duration_ms' => 4.2,
         'connection' => 'sqlite',
         'slow' => false,

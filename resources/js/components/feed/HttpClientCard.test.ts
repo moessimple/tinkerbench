@@ -28,7 +28,7 @@ function httpClientEntry(
 ): Extract<FeedItem, { kind: 'http_client' }> {
     return {
         duration_ms: 42.5,
-        duration_str: '42.50ms',
+        duration_str: '42.50 ms',
         faked: false,
         kind: 'http_client',
         line: 4,
@@ -61,7 +61,7 @@ it('shows the method, url, status and duration for a successful call', () => {
     expect(text).toContain('GET');
     expect(text).toContain('https://example.test/users');
     expect(text).toContain('200');
-    expect(text).toContain('42.50ms');
+    expect(text).toContain('42.50 ms');
 });
 
 it('shows a warning variant for a 4xx response', () => {

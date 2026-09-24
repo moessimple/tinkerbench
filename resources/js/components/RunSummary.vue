@@ -16,13 +16,13 @@ function counted(count: number, singular: string, plural: string): string {
     return `${count} ${count === 1 ? singular : plural}`;
 }
 
-// boot + DB + HTTP + PHP adds up to the run time exactly, so the legend is the whole calculation.
+// Boot + DB + HTTP + PHP adds up to the run time exactly, so the legend is the whole calculation.
 const parts = computed<RunPart[]>(() => {
     const parts: RunPart[] = [
         {
-            label: 'boot',
+            label: 'Boot',
             milliseconds: props.debug.boot_duration_ms,
-            text: `boot ${props.debug.boot_duration_str}`,
+            text: `Boot ${props.debug.boot_duration_str}`,
             hint: 'Console boot, not a web request',
             swatch: 'bg-muted/50',
         },

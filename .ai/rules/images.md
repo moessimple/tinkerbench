@@ -45,9 +45,10 @@ Laravel only: operate on the Collection you already have (`->sum()`, `->flatMap`
    - build indentation with `' '.repeat(n)` in the injected script; literal leading
      whitespace in an injected function body can be stripped in transit.
 4. Click the "Run snippet" button (not a keyboard chord, see trap below).
-5. Screenshot to the file. Viewport sizes at DPR 2:
-   - `images/app.png` = 1200x760 -> 2400x1520
-   - `images/social-preview.png` = 1280x640 -> 2560x1280
+5. Screenshot to the file. Target resolutions:
+   - `images/app.png`: 2400x1520 (viewport 1200x760 at DPR 2)
+   - `images/social-preview.png`: 1280x640, GitHub's social preview size (viewport
+     1280x640 at DPR 1)
 6. Restore: dark theme, normal window size.
 
 ### Traps

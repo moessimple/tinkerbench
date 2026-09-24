@@ -20,7 +20,7 @@ function query(overrides: Partial<Extract<FeedItem, { kind: 'query' }>> = {}) {
         connection: 'sqlite',
         duplicate: false,
         duration_ms: 2,
-        duration_str: '2.00ms',
+        duration_str: '2.00 ms',
         kind: 'query' as const,
         line: 4,
         slow: false,
@@ -35,7 +35,7 @@ it('shows the sql, duration and connection for a routine query', () => {
     const card = container.querySelector('[data-label="Query"]');
     expect(card?.getAttribute('data-variant')).toBe('default');
     expect(card?.textContent).toContain('select');
-    expect(card?.textContent).toContain('2.00ms');
+    expect(card?.textContent).toContain('2.00 ms');
     expect(card?.textContent).toContain('sqlite');
     expect(card?.textContent?.toLowerCase()).not.toContain('slow');
     expect(card?.textContent?.toLowerCase()).not.toContain('duplicate');

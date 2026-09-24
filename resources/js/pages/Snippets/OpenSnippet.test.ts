@@ -142,20 +142,20 @@ function payload(
 ): SnippetDebugPayload {
     return {
         boot_duration_ms: 1,
-        boot_duration_str: '1.00ms',
+        boot_duration_str: '1.00 ms',
         duplicate_query_count: 0,
         http_duration_ms: 0,
-        http_duration_str: '0.00ms',
+        http_duration_str: '0.00 ms',
         http_request_count: 0,
         items: [],
         php_duration_ms: 1,
-        php_duration_str: '1.00ms',
+        php_duration_str: '1.00 ms',
         peak_memory_str: '1.00 MB',
         query_count: 0,
         query_duration_ms: 0,
-        query_duration_str: '0.00ms',
+        query_duration_str: '0.00 ms',
         run_duration_ms: 2,
-        run_duration_str: '2.00ms',
+        run_duration_str: '2.00 ms',
         ...overrides,
     };
 }
@@ -412,11 +412,11 @@ it('shows the run summary of the finished run', async () => {
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
     capturedPost?.onSuccess({
         output: '',
-        debug: payload({ run_duration_str: '12.30ms' }),
+        debug: payload({ run_duration_str: '12.30 ms' }),
     });
 
     expect((await screen.findByTestId('run-summary')).textContent).toBe(
-        '12.30ms',
+        '12.30 ms',
     );
 });
 
@@ -494,7 +494,7 @@ it('labels each filter tab with its live entry count', async () => {
                     connection: 'sqlite',
                     duplicate: false,
                     duration_ms: 4,
-                    duration_str: '4.00ms',
+                    duration_str: '4.00 ms',
                     kind: 'query',
                     line: null,
                     slow: false,
@@ -504,7 +504,7 @@ it('labels each filter tab with its live entry count', async () => {
                     connection: 'sqlite',
                     duplicate: true,
                     duration_ms: 4,
-                    duration_str: '4.00ms',
+                    duration_str: '4.00 ms',
                     kind: 'query',
                     line: null,
                     slow: false,
@@ -608,7 +608,7 @@ it('tells the feed which kind to show when a filter tab is selected', async () =
                     connection: 'sqlite',
                     duplicate: false,
                     duration_ms: 4,
-                    duration_str: '4.00ms',
+                    duration_str: '4.00 ms',
                     kind: 'query',
                     line: null,
                     slow: false,
@@ -697,7 +697,7 @@ it('offers the query sort control only while the queries facet is active', async
                     connection: 'sqlite',
                     duplicate: false,
                     duration_ms: 4,
-                    duration_str: '4.00ms',
+                    duration_str: '4.00 ms',
                     kind: 'query',
                     line: null,
                     slow: false,
@@ -729,7 +729,7 @@ it('tells the feed to sort queries by duration when slowest is picked', async ()
                     connection: 'sqlite',
                     duplicate: false,
                     duration_ms: 4,
-                    duration_str: '4.00ms',
+                    duration_str: '4.00 ms',
                     kind: 'query',
                     line: null,
                     slow: false,
@@ -764,7 +764,7 @@ it('resets the active filter when the output is cleared', async () => {
                     connection: 'sqlite',
                     duplicate: false,
                     duration_ms: 4,
-                    duration_str: '4.00ms',
+                    duration_str: '4.00 ms',
                     kind: 'query',
                     line: null,
                     slow: false,
@@ -798,7 +798,7 @@ it('resets the active filter to All when a new run starts, even if its tab disap
                     connection: 'sqlite',
                     duplicate: false,
                     duration_ms: 4,
-                    duration_str: '4.00ms',
+                    duration_str: '4.00 ms',
                     kind: 'query',
                     line: null,
                     slow: false,
@@ -1132,13 +1132,13 @@ it('clears the run metrics strip when output is cleared', async () => {
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
     capturedPost?.onSuccess({
         output: '',
-        debug: payload({ run_duration_str: '9.90ms' }),
+        debug: payload({ run_duration_str: '9.90 ms' }),
     });
-    await screen.findByText('9.90ms');
+    await screen.findByText('9.90 ms');
 
     await fireEvent.click(screen.getByRole('button', { name: 'Clear output' }));
 
-    expect(screen.queryByText('9.90ms')).toBeNull();
+    expect(screen.queryByText('9.90 ms')).toBeNull();
 });
 
 it('hides the header and shows an exit-fullscreen button when maximized', async () => {

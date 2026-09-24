@@ -42,7 +42,7 @@ it('serializes to the http_client feed-item shape', function (): void {
         'request_type' => 'Json',
         'faked' => false,
         'status' => 200,
-        'duration_str' => '42.50ms',
+        'duration_str' => '42.50 ms',
         'duration_ms' => 42.5,
         'request_headers' => ['Accept' => ['application/json']],
         'response_headers' => ['Content-Type' => ['application/json']],

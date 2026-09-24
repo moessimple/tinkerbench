@@ -25,7 +25,7 @@ A take on Laravel's [`tinker`](https://github.com/laravel/tinker), inspired by [
 * A single chronological feed of everything a run touched, each entry its own card in execution order. Every project gets dumps, return values, exceptions, and standard output. A Laravel 12 or newer project also gets database queries, log entries, N+1 warnings, outgoing HTTP requests (including each redirect), and optional view-rendering traces.
 * Filter the feed by kind with live counts, and click a card to jump the editor to the line that produced it.
 * Output rendering adapts to the value: `dump()`/`dd()` use Symfony's interactive VarDumper, JSON is syntax highlighted, and HTML renders in a sandboxed frame.
-* Query cards pretty-print their SQL and flag it when slow (100ms or more) or repeated. Sort the feed slowest first when you need to.
+* Query cards pretty-print their SQL and flag it when slow (100 ms or more) or repeated. Sort the feed slowest first when you need to.
 * A run summary splits the run time into boot, database, HTTP, and PHP time, shown as a bar with a legend. Boot time is how long your project takes to start, so it runs higher than in a web request.
 * Every card has a button to copy its contents.
 * Light and dark theme, switchable from the sidebar, following your system preference by default.

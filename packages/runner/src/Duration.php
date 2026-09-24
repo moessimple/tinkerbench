@@ -12,9 +12,9 @@ class Duration
     public static function format(float $milliseconds): string
     {
         if ($milliseconds >= self::MILLISECONDS_PER_SECOND) {
-            return sprintf('%.2fs', $milliseconds / self::MILLISECONDS_PER_SECOND);
+            return sprintf('%.2f s', $milliseconds / self::MILLISECONDS_PER_SECOND);
         }
 
-        return sprintf('%.2fms', $milliseconds);
+        return sprintf('%.2f ms', $milliseconds);
     }
 }
