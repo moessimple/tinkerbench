@@ -71,7 +71,7 @@ it('collects emitted items in order and assembles a snapshot', function (): void
         ['kind' => 'dump', 'html' => '<a/>', 'text' => 'a', 'line' => 99],
         ['kind' => 'log', 'label' => 'info', 'message' => 'hi', 'context_html' => null, 'context_text' => null, 'line' => 99],
     ])
-        ->and($snapshot['run_duration_str'])->toMatch('/^\d+\.\d{2} (ms|s)$/')
+        ->and($snapshot['run_duration_str'])->toMatch('/^(\d+ μs|\d+\.\d{2} (ms|s))$/u')
         ->and($snapshot['peak_memory_str'])->toMatch('/^[\d,]+\.\d{2} MB$/');
 });
 
@@ -260,7 +260,7 @@ it('reports a zero duration when snapshot is taken before a run', function (): v
     $snapshot = $recorder->snapshot();
 
     expect($snapshot['items'])->toBe([])
-        ->and($snapshot['run_duration_str'])->toBe('0.00 ms')
+        ->and($snapshot['run_duration_str'])->toBe('0 μs')
         ->and($snapshot['boot_duration_ms'])->toBe(0.0)
         ->and($snapshot['run_duration_ms'])->toBe(0.0);
 });
@@ -347,7 +347,7 @@ it('registers no watchers when record is given no application', function (): voi
     });
 
     expect($ran)->toBeTrue()
-        ->and($recorder->snapshot()['run_duration_str'])->toMatch('/^\d+\.\d{2} (ms|s)$/');
+        ->and($recorder->snapshot()['run_duration_str'])->toMatch('/^(\d+ μs|\d+\.\d{2} (ms|s))$/u');
 });
 
 it('forwards a request to omit frames to the mapper', function (): void {

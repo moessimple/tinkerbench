@@ -168,7 +168,7 @@ it('writes the run snapshot to the debug path', function (): void {
         'php_duration_ms',
     ])
         ->and($result['debug']['items'])->toBe([])
-        ->and($result['debug']['run_duration_str'])->toMatch('/^\d+\.\d{2} (ms|s)$/')
+        ->and($result['debug']['run_duration_str'])->toMatch('/^(\d+ μs|\d+\.\d{2} (ms|s))$/u')
         ->and($result['debug']['peak_memory_str'])->toMatch('/^[\d,]+\.\d{2} MB$/');
 })->skip(PHP_VERSION_ID < 80500, TARGET_REQUIRES_PHP85);
 

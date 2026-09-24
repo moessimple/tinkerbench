@@ -11,7 +11,7 @@ function payload(
         boot_duration_str: '180.00 ms',
         duplicate_query_count: 0,
         http_duration_ms: 0,
-        http_duration_str: '0.00 ms',
+        http_duration_str: '0 μs',
         http_request_count: 0,
         items: [],
         peak_memory_str: '18.50 MB',
@@ -19,7 +19,7 @@ function payload(
         php_duration_str: '20.00 ms',
         query_count: 0,
         query_duration_ms: 0,
-        query_duration_str: '0.00 ms',
+        query_duration_str: '0 μs',
         run_duration_ms: 200,
         run_duration_str: '200.00 ms',
         ...overrides,
@@ -81,7 +81,7 @@ it('leaves out the HTTP part when the run made only queries', () => {
         props: {
             debug: withBreakdown({
                 http_duration_ms: 0,
-                http_duration_str: '0.00 ms',
+                http_duration_str: '0 μs',
                 http_request_count: 0,
             }),
         },
