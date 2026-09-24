@@ -867,33 +867,72 @@ it('tells the feed to sort queries by duration when slowest is picked', async ()
     expect(feed.getAttribute('data-sort')).toBe('recent');
 });
 
-it('resets the active filter when the output is cleared', async () => {
+it('keeps the active tab when the output is cleared', async () => {
     render(OpenSnippet, { props });
 
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
-    capturedPost?.onSuccess({
-        output: '',
-        debug: payload({
-            items: [
-                {
-                    connection: 'sqlite',
-                    duplicate: false,
-                    duration_ms: 4,
-                    duration_str: '4.00 ms',
-                    kind: 'query',
-                    line: null,
-                    slow: false,
-                    sql: 'select 1',
-                },
-            ],
-        }),
-    });
+    capturedPost?.onSuccess({ output: '', debug: payload() });
+    await fireEvent.click(await screen.findByRole('tab', { name: 'Timeline' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Clear output' }));
 
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '', debug: payload() });
+
+    const timelineTab = await screen.findByRole('tab', { name: 'Timeline' });
+    expect(timelineTab.getAttribute('aria-selected')).toBe('true');
+});
+
+function queryRun(): SnippetDebugPayload {
+    return payload({
+        items: [queryItem('select 1', false)],
+        query_count: 1,
+        query_duration_str: '2.00 ms',
+    });
+}
+
+it('keeps the active tab for the next run when that run has it too', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '', debug: queryRun() });
     await fireEvent.click(
         await screen.findByRole('tab', { name: 'Queries 1' }),
     );
-    await fireEvent.click(screen.getByRole('button', { name: 'Clear output' }));
 
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '', debug: queryRun() });
+
+    const queriesTab = await screen.findByRole('tab', { name: 'Queries 1' });
+    expect(queriesTab.getAttribute('aria-selected')).toBe('true');
+});
+
+it('opens the first run after a reload on the tab last seen for the project', async () => {
+    const first = render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '', debug: payload() });
+    await fireEvent.click(await screen.findByRole('tab', { name: 'Timeline' }));
+    first.unmount();
+
+    render(OpenSnippet, { props });
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '', debug: payload() });
+
+    const timelineTab = await screen.findByRole('tab', { name: 'Timeline' });
+    expect(timelineTab.getAttribute('aria-selected')).toBe('true');
+});
+
+it('remembers the last seen tab per project', async () => {
+    const first = render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '', debug: payload() });
+    await fireEvent.click(await screen.findByRole('tab', { name: 'Timeline' }));
+    first.unmount();
+
+    render(OpenSnippet, {
+        props: { ...props, currentProject: 'other-project' },
+    });
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
     capturedPost?.onSuccess({ output: '', debug: payload() });
 
@@ -901,7 +940,7 @@ it('resets the active filter when the output is cleared', async () => {
     expect(allTab.getAttribute('aria-selected')).toBe('true');
 });
 
-it('resets the active filter to All when a new run starts, even if its tab disappears', async () => {
+it('falls back to All when the next run has no tab for the active one', async () => {
     render(OpenSnippet, { props });
 
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));

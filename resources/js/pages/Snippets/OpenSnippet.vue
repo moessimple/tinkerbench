@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { Head, useHttp } from '@inertiajs/vue3';
-import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
+import {
+    computed,
+    onBeforeUnmount,
+    onMounted,
+    ref,
+    useTemplateRef,
+    watch,
+} from 'vue';
 import RunSnippetController from '@/actions/App/Http/Controllers/RunSnippetController';
 import UpdateSnippetContentController from '@/actions/App/Http/Controllers/UpdateSnippetContentController';
 import CommandPalette from '@/components/CommandPalette.vue';
@@ -50,7 +57,14 @@ const errorMessage = ref('');
 // clears the previous output before the next response arrives. Reset only by clearOutput().
 const hasRun = ref(false);
 const isMaximized = ref(false);
-const activeTab = ref<FeedFilter | 'timeline'>('all');
+// Remembered per project across runs and reloads. A run whose feed has no tab for it falls back
+// to All, see run().
+const activeTabKey = `output-tab:${props.currentProject}`;
+const activeTab = ref<FeedFilter | 'timeline'>(
+    (localStorage.getItem(activeTabKey) as FeedFilter | 'timeline' | null) ??
+        'all',
+);
+watch(activeTab, (tab) => localStorage.setItem(activeTabKey, tab));
 const querySort = ref<FeedSort>('recent');
 const editorRef = useTemplateRef<{ revealLine: (line: number) => void }>(
     'editor',
@@ -289,7 +303,6 @@ function run(): void {
     rawOutput.value = '';
     debug.value = null;
     hasRun.value = true;
-    activeTab.value = 'all';
     http.enabled_watchers = enabledWatchers.value;
     unmeasuredKinds.value = kindsWithoutWatcher();
 
@@ -297,6 +310,15 @@ function run(): void {
         onSuccess: (data) => {
             rawOutput.value = data.output;
             debug.value = data.debug;
+
+            if (
+                activeTab.value !== 'timeline' &&
+                !feedFilters.value.some(
+                    (filter) => filter.value === activeTab.value,
+                )
+            ) {
+                activeTab.value = 'all';
+            }
         },
         onError: (errors) => {
             errorMessage.value = Object.values(errors).join(' ');
@@ -312,7 +334,6 @@ function clearOutput(): void {
     debug.value = null;
     errorMessage.value = '';
     hasRun.value = false;
-    activeTab.value = 'all';
     querySort.value = 'recent';
 }
 
