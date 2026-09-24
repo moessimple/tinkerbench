@@ -11,7 +11,7 @@ it('runs a snippet and shows its return value and the queries facet', function (
     $page->keys('.native-edit-context', ['ControlOrMeta+Enter']);
 
     $page->assertSeeIn('article[data-label="Result"]', '2')
-        ->assertSeeIn('[role="tablist"][aria-label="Filter output by kind"]', 'Queries')
+        ->assertSeeIn('[role="tablist"][aria-label="Output views"]', 'Queries')
         ->assertVisible('article[data-label="Query"]')
         ->assertNoJavaScriptErrors();
 });

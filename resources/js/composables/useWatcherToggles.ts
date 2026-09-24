@@ -17,6 +17,9 @@ export const WATCHERS: {
     { id: 'http_client', label: 'HTTP', enabledByDefault: true },
 ];
 
+/** The watchers whose time the timeline splits out of the application time. */
+export type TimedKind = 'http_client' | 'query';
+
 function storageKey(project: string): string {
     return `watcher-toggles:${project}`;
 }

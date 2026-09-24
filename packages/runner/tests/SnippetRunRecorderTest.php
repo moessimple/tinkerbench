@@ -222,7 +222,7 @@ it('counts the time of overlapping http client requests once', function (): void
         ->and($snapshot['http_duration_ms'])->toBe(215.0);
 });
 
-it('splits the snippet time exactly into query, http, and php time after rounding', function (): void {
+it('splits the application time exactly into query, http, and code time after rounding', function (): void {
     $recorder = runRecorder(function (callable $emit): void {
         $emit(new QueryFeedItem('select * from users', 0.334, 'sqlite'));
         $emit(new QueryFeedItem('select * from posts', 0.333, 'sqlite'));
@@ -231,15 +231,23 @@ it('splits the snippet time exactly into query, http, and php time after roundin
 
     $snapshot = $recorder->snapshot();
 
-    expect($snapshot['query_duration_ms'])->toBe(0.67)
-        ->and($snapshot['http_duration_ms'])->toBe(0.13)
-        ->and(hundredths($snapshot['run_duration_ms']) - hundredths($snapshot['boot_duration_ms']))->toBe(
-            hundredths($snapshot['query_duration_ms']) + hundredths($snapshot['http_duration_ms']) + hundredths($snapshot['php_duration_ms']),
-        )
-        ->and($snapshot['php_duration_str'])->toBe(Duration::format($snapshot['php_duration_ms']));
+    expect(hundredths($snapshot['application_duration_ms']))->toBe(
+        hundredths($snapshot['query_duration_ms']) + hundredths($snapshot['http_duration_ms']) + hundredths($snapshot['code_duration_ms']),
+    )
+        ->and($snapshot['code_duration_str'])->toBe(Duration::format($snapshot['code_duration_ms']));
 });
 
-it('attributes the whole snippet duration to php time when the run made no queries or http calls', function (): void {
+it('attributes the whole application time to code time when the run made no queries or http calls', function (): void {
+    $recorder = runRecorder(function (callable $emit): void {
+        $emit(new DumpFeedItem('<a/>', 'a'));
+    });
+
+    $snapshot = $recorder->snapshot();
+
+    expect($snapshot['code_duration_ms'])->toBe($snapshot['application_duration_ms']);
+});
+
+it('reports no query or http time when the run made no queries or http calls', function (): void {
     $recorder = runRecorder(function (callable $emit): void {
         $emit(new DumpFeedItem('<a/>', 'a'));
     });
@@ -250,8 +258,7 @@ it('attributes the whole snippet duration to php time when the run made no queri
         ->and($snapshot['duplicate_query_count'])->toBe(0)
         ->and($snapshot['query_duration_ms'])->toBe(0.0)
         ->and($snapshot['http_request_count'])->toBe(0)
-        ->and($snapshot['http_duration_ms'])->toBe(0.0)
-        ->and(hundredths($snapshot['php_duration_ms']))->toBe(hundredths($snapshot['run_duration_ms']) - hundredths($snapshot['boot_duration_ms']));
+        ->and($snapshot['http_duration_ms'])->toBe(0.0);
 });
 
 it('reports a zero duration when snapshot is taken before a run', function (): void {
@@ -276,7 +283,7 @@ it('measures the boot time from the run start up to the start of the snippet', f
         ->and($snapshot['boot_duration_str'])->toBe(Duration::format($snapshot['boot_duration_ms']));
 });
 
-it('adds the boot and snippet time up to the run time exactly after rounding', function (): void {
+it('adds the boot and application time up to the run time exactly after rounding', function (): void {
     $recorder = runRecorder(function (callable $emit): void {
         $emit(new QueryFeedItem('select * from users', 0.334, 'sqlite'));
     }, runStartedAt: hrtime(true) - 1_234_567);
@@ -284,8 +291,9 @@ it('adds the boot and snippet time up to the run time exactly after rounding', f
     $snapshot = $recorder->snapshot();
 
     expect(hundredths($snapshot['run_duration_ms']))->toBe(
-        hundredths($snapshot['boot_duration_ms']) + hundredths($snapshot['query_duration_ms']) + hundredths($snapshot['php_duration_ms']),
+        hundredths($snapshot['boot_duration_ms']) + hundredths($snapshot['application_duration_ms']),
     )
+        ->and($snapshot['application_duration_str'])->toBe(Duration::format($snapshot['application_duration_ms']))
         ->and($snapshot['run_duration_str'])->toBe(Duration::format($snapshot['run_duration_ms']));
 });
 

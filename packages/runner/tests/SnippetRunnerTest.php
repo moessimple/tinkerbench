@@ -157,6 +157,8 @@ it('writes the run snapshot to the debug path', function (): void {
         'items',
         'boot_duration_str',
         'boot_duration_ms',
+        'application_duration_str',
+        'application_duration_ms',
         'run_duration_str',
         'run_duration_ms',
         'peak_memory_str',
@@ -167,8 +169,8 @@ it('writes the run snapshot to the debug path', function (): void {
         'http_request_count',
         'http_duration_str',
         'http_duration_ms',
-        'php_duration_str',
-        'php_duration_ms',
+        'code_duration_str',
+        'code_duration_ms',
     ])
         ->and($result['debug']['items'])->toBe([])
         ->and($result['debug']['run_duration_str'])->toMatch('/^(\d+ μs|\d+\.\d{2} (ms|s))$/u')

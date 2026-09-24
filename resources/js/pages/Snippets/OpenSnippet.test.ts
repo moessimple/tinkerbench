@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/vue';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { nextTick, reactive, ref } from 'vue';
-import type { SnippetDebugPayload } from '@/types';
+import type { FeedItem, SnippetDebugPayload } from '@/types';
 
 let capturedPost: {
     url: string;
@@ -106,13 +106,22 @@ vi.mock('@/components/OutputFeed.vue', () => ({
     },
 }));
 
-// RunSummary has its own test (RunSummary.test.ts) proving the duration, the query/HTTP/other
-// breakdown, and the memory figure; stubbed to a shell exposing the snapshot it was given, so this
-// test only proves OpenSnippet.vue hands it the finished run.
+// RunSummary has its own test (RunSummary.test.ts) proving the run time and the memory figure;
+// stubbed to a shell exposing the snapshot it was given, so this test only proves OpenSnippet.vue
+// hands it the finished run.
 vi.mock('@/components/RunSummary.vue', () => ({
     default: {
         props: ['debug'],
         template: `<span data-testid="run-summary">{{ debug.run_duration_str }}</span>`,
+    },
+}));
+
+// RunTimeline has its own test (RunTimeline.test.ts) proving the measures, their shares, and the
+// bars; stubbed the same way, so this test only proves the Timeline tab shows it for the run.
+vi.mock('@/components/RunTimeline.vue', () => ({
+    default: {
+        props: ['debug', 'unmeasured'],
+        template: `<span data-testid="run-timeline" :data-unmeasured="unmeasured.join(',')">{{ debug.run_duration_str }}</span>`,
     },
 }));
 
@@ -141,15 +150,17 @@ function payload(
     overrides: Partial<SnippetDebugPayload> = {},
 ): SnippetDebugPayload {
     return {
+        application_duration_ms: 1,
+        application_duration_str: '1.00 ms',
         boot_duration_ms: 1,
         boot_duration_str: '1.00 ms',
+        code_duration_ms: 1,
+        code_duration_str: '1.00 ms',
         duplicate_query_count: 0,
         http_duration_ms: 0,
         http_duration_str: '0 μs',
         http_request_count: 0,
         items: [],
-        php_duration_ms: 1,
-        php_duration_str: '1.00 ms',
         peak_memory_str: '1.00 MB',
         query_count: 0,
         query_duration_ms: 0,
@@ -416,6 +427,56 @@ it('shows the run summary of the finished run', async () => {
     expect((await screen.findByTestId('run-summary')).textContent).toBe(
         '12.30 ms',
     );
+});
+
+it('shows the timeline of the finished run in place of the feed once the Timeline tab is picked', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({
+        output: '',
+        debug: payload({ run_duration_str: '12.30 ms' }),
+    });
+    await fireEvent.click(await screen.findByRole('tab', { name: 'Timeline' }));
+
+    expect(screen.getByTestId('run-timeline').textContent).toBe('12.30 ms');
+    expect(screen.queryByTestId('feed')).toBeNull();
+});
+
+it('lists the Timeline tab right after All', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '', debug: payload() });
+    await screen.findByRole('tablist', { name: 'Output views' });
+
+    expect(screen.getAllByRole('tab')[1].textContent?.trim()).toBe('Timeline');
+});
+
+it('tells the timeline which timed watchers were off for the run', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Watchers' }));
+    await fireEvent.click(screen.getByRole('checkbox', { name: 'Queries' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '', debug: payload() });
+    await fireEvent.click(await screen.findByRole('tab', { name: 'Timeline' }));
+
+    expect(
+        screen.getByTestId('run-timeline').getAttribute('data-unmeasured'),
+    ).toBe('query');
+});
+
+it('tells the timeline nothing was measured for a non-Laravel target', async () => {
+    render(OpenSnippet, { props: { ...props, laravelVersion: 'unknown' } });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '', debug: payload() });
+    await fireEvent.click(await screen.findByRole('tab', { name: 'Timeline' }));
+
+    expect(
+        screen.getByTestId('run-timeline').getAttribute('data-unmeasured'),
+    ).toBe('query,http_client');
 });
 
 it('confirms a finished run that produced nothing with a no-output note', async () => {
@@ -717,6 +778,58 @@ it('offers the query sort control only while the queries facet is active', async
 
     await fireEvent.click(screen.getByRole('tab', { name: 'All 1' }));
     expect(screen.queryByRole('button', { name: 'Slowest' })).toBeNull();
+});
+
+function queryItem(sql: string, duplicate: boolean): FeedItem {
+    return {
+        connection: 'sqlite',
+        duplicate,
+        duration_ms: 2,
+        duration_str: '2.00 ms',
+        kind: 'query',
+        line: null,
+        slow: false,
+        sql,
+    };
+}
+
+it('sums up the queries and their duplicates above the queries facet', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({
+        output: '',
+        debug: payload({
+            duplicate_query_count: 1,
+            items: [queryItem('select 1', false), queryItem('select 1', true)],
+            query_count: 2,
+            query_duration_str: '4.00 ms',
+        }),
+    });
+    await fireEvent.click(
+        await screen.findByRole('tab', { name: 'Queries 2' }),
+    );
+
+    screen.getByText('2 queries, 1 duplicate · 4.00 ms');
+});
+
+it('leaves the duplicates out of the query summary when there are none', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({
+        output: '',
+        debug: payload({
+            items: [queryItem('select 1', false)],
+            query_count: 1,
+            query_duration_str: '2.00 ms',
+        }),
+    });
+    await fireEvent.click(
+        await screen.findByRole('tab', { name: 'Queries 1' }),
+    );
+
+    screen.getByText('1 query · 2.00 ms');
 });
 
 it('tells the feed to sort queries by duration when slowest is picked', async () => {

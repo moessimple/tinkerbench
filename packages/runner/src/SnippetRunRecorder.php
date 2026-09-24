@@ -98,23 +98,26 @@ class SnippetRunRecorder
     }
 
     /**
-     * The snippet duration is split into query, http, and php time so the numbers add up: each
-     * part is rounded to hundredths first and php is the remainder of the rounded values, so
-     * duration = query + http + php holds exactly for the displayed figures. Php time is
-     * everything in the PHP process outside the database driver and HTTP calls, including class
-     * loading. Query time is the plain sum of the query items, which keeps it checkable against
-     * the cards. Http time is the time at least one request was in flight: parallel requests
-     * (Http::pool(), async) overlap, and summing them would count the same wall time twice. For
-     * sequential requests it equals the sum of the cards.
+     * The run splits into boot and application time, the way debugbar's timeline does: boot runs
+     * from the run start to the snippet start, application from there to the end of the snippet.
+     * Both are rounded to hundredths first and run is their sum, so run = boot + application holds
+     * exactly for the displayed figures.
      *
-     * Boot time runs from the run start to the snippet start; run = boot + duration holds the same
-     * way, from the rounded values. The snippet duration itself is not part of the snapshot,
-     * since the four parts already show it.
+     * Query and http time happen inside the application time. Code time is the rest of it, the
+     * time spent in the snippet's own PHP, rounded the same way so application = query + http +
+     * code holds exactly. A switched-off watcher's time lands in code time, so the UI has to say
+     * so. Code time goes negative when a query runs inside a faked http callback, since that time
+     * then counts as both. Query time is the plain sum of the query items, which keeps it
+     * checkable against the cards. Http time is the time at least one request was in flight:
+     * parallel requests (Http::pool(), async) overlap, and summing them would count the same wall
+     * time twice. For sequential requests it equals the sum of the cards.
      *
      * @return array{
      *     items: list<array<string, mixed>>,
      *     boot_duration_str: string,
      *     boot_duration_ms: float,
+     *     application_duration_str: string,
+     *     application_duration_ms: float,
      *     run_duration_str: string,
      *     run_duration_ms: float,
      *     peak_memory_str: string,
@@ -125,8 +128,8 @@ class SnippetRunRecorder
      *     http_request_count: int,
      *     http_duration_str: string,
      *     http_duration_ms: float,
-     *     php_duration_str: string,
-     *     php_duration_ms: float,
+     *     code_duration_str: string,
+     *     code_duration_ms: float,
      * }
      */
     public function snapshot(): array
@@ -134,12 +137,12 @@ class SnippetRunRecorder
         $queries = array_values(array_filter($this->items, static fn (FeedItem $item): bool => $item instanceof QueryFeedItem));
         $httpCalls = array_values(array_filter($this->items, static fn (FeedItem $item): bool => $item instanceof HttpClientFeedItem));
 
-        $durationMs = round($this->elapsedMilliseconds(), 2);
+        $applicationDurationMs = round($this->elapsedMilliseconds(), 2);
         $bootDurationMs = round($this->bootMilliseconds(), 2);
-        $runDurationMs = round($bootDurationMs + $durationMs, 2);
+        $runDurationMs = round($bootDurationMs + $applicationDurationMs, 2);
         $queryDurationMs = round(array_sum(array_map(static fn (QueryFeedItem $query): float => $query->durationMs, $queries)), 2);
         $httpDurationMs = round($this->inFlightMilliseconds($httpCalls), 2);
-        $phpDurationMs = round($durationMs - $queryDurationMs - $httpDurationMs, 2);
+        $codeDurationMs = round($applicationDurationMs - $queryDurationMs - $httpDurationMs, 2);
 
         return [
             'items' => array_map(
@@ -148,6 +151,8 @@ class SnippetRunRecorder
             ),
             'boot_duration_str' => Duration::format($bootDurationMs),
             'boot_duration_ms' => $bootDurationMs,
+            'application_duration_str' => Duration::format($applicationDurationMs),
+            'application_duration_ms' => $applicationDurationMs,
             'run_duration_str' => Duration::format($runDurationMs),
             'run_duration_ms' => $runDurationMs,
             'peak_memory_str' => ByteSize::format(memory_get_peak_usage(true)),
@@ -158,8 +163,8 @@ class SnippetRunRecorder
             'http_request_count' => count($httpCalls),
             'http_duration_str' => Duration::format($httpDurationMs),
             'http_duration_ms' => $httpDurationMs,
-            'php_duration_str' => Duration::format($phpDurationMs),
-            'php_duration_ms' => $phpDurationMs,
+            'code_duration_str' => Duration::format($codeDurationMs),
+            'code_duration_ms' => $codeDurationMs,
         ];
     }
 

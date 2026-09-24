@@ -9,8 +9,10 @@ import WatcherToggleMenu from '@/components/feed/WatcherToggleMenu.vue';
 import MonacoEditor from '@/components/MonacoEditor.vue';
 import OutputFeed from '@/components/OutputFeed.vue';
 import RunSummary from '@/components/RunSummary.vue';
+import RunTimeline from '@/components/RunTimeline.vue';
 import { useTheme } from '@/composables/useTheme';
 import { useWatcherToggles, WATCHERS } from '@/composables/useWatcherToggles';
+import type { TimedKind } from '@/composables/useWatcherToggles';
 import { xsrfHeader } from '@/lib/csrf';
 import { buildFeed } from '@/lib/feed';
 import type { FeedEntry, FeedFilter, FeedSort } from '@/lib/feed';
@@ -48,7 +50,7 @@ const errorMessage = ref('');
 // clears the previous output before the next response arrives. Reset only by clearOutput().
 const hasRun = ref(false);
 const isMaximized = ref(false);
-const activeFilter = ref<FeedFilter>('all');
+const activeTab = ref<FeedFilter | 'timeline'>('all');
 const querySort = ref<FeedSort>('recent');
 const editorRef = useTemplateRef<{ revealLine: (line: number) => void }>(
     'editor',
@@ -71,6 +73,18 @@ const enabledWatchers = computed(() =>
         (watcher) => watcher.id,
     ),
 );
+
+// Fixed when a run starts, since the toggles can change before the next run. A non-Laravel target
+// registers no watchers, so nothing is measured there either.
+const unmeasuredKinds = ref<TimedKind[]>([]);
+
+function kindsWithoutWatcher(): TimedKind[] {
+    const kinds: TimedKind[] = ['query', 'http_client'];
+
+    return isLaravelTarget.value
+        ? kinds.filter((kind) => !enabledWatchers.value.includes(kind))
+        : kinds;
+}
 
 // The basic pipeline never emits query/log/N+1 items, so a non-Laravel target's feed offers no
 // tabs for them. A facet tab with no items for the current run is hidden too, whether that's
@@ -125,6 +139,18 @@ function filterCount(filter: FeedFilter): number {
     return filter === 'all'
         ? feedEntries.value.length
         : kindCounts.value[filter];
+}
+
+function querySummary(debug: SnippetDebugPayload): string {
+    const counts = [
+        `${debug.query_count} ${debug.query_count === 1 ? 'query' : 'queries'}`,
+    ];
+
+    if (debug.duplicate_query_count > 0) {
+        counts.push(`${debug.duplicate_query_count} duplicate`);
+    }
+
+    return `${counts.join(', ')} · ${debug.query_duration_str}`;
 }
 
 // A finished run whose feed is empty: distinct from the pre-run state (debug is still null there),
@@ -263,8 +289,9 @@ function run(): void {
     rawOutput.value = '';
     debug.value = null;
     hasRun.value = true;
-    activeFilter.value = 'all';
+    activeTab.value = 'all';
     http.enabled_watchers = enabledWatchers.value;
+    unmeasuredKinds.value = kindsWithoutWatcher();
 
     http.post(RunSnippetController.url(props.currentProject), {
         onSuccess: (data) => {
@@ -285,7 +312,7 @@ function clearOutput(): void {
     debug.value = null;
     errorMessage.value = '';
     hasRun.value = false;
-    activeFilter.value = 'all';
+    activeTab.value = 'all';
     querySort.value = 'recent';
 }
 
@@ -548,40 +575,59 @@ function toggleMaximize(): void {
                     <div
                         v-if="debug"
                         role="tablist"
-                        aria-label="Filter output by kind"
+                        aria-label="Output views"
                         class="flex shrink-0 gap-0.5 overflow-x-auto border-b border-line px-3 py-1 text-xs"
                     >
-                        <button
+                        <template
                             v-for="filter in feedFilters"
                             :key="filter.value"
-                            type="button"
-                            role="tab"
-                            :aria-selected="activeFilter === filter.value"
-                            class="flex shrink-0 items-baseline gap-1 rounded px-2 py-1 tracking-wide whitespace-nowrap uppercase"
-                            :class="
-                                activeFilter === filter.value
-                                    ? 'bg-accent/10 text-accent'
-                                    : 'text-muted hover:bg-line/40 hover:text-fg'
-                            "
-                            @click="activeFilter = filter.value"
                         >
-                            {{ filter.label }}
-                            <span
-                                class="tabular-nums"
+                            <button
+                                type="button"
+                                role="tab"
+                                :aria-selected="activeTab === filter.value"
+                                class="flex shrink-0 items-baseline gap-1 rounded px-2 py-1 tracking-wide whitespace-nowrap uppercase"
                                 :class="
-                                    activeFilter === filter.value
-                                        ? 'text-accent/70'
-                                        : 'text-muted/70'
+                                    activeTab === filter.value
+                                        ? 'bg-accent/10 text-accent'
+                                        : 'text-muted hover:bg-line/40 hover:text-fg'
                                 "
+                                @click="activeTab = filter.value"
                             >
-                                {{ filterCount(filter.value) }}
-                            </span>
-                        </button>
+                                {{ filter.label }}
+                                <span
+                                    class="tabular-nums"
+                                    :class="
+                                        activeTab === filter.value
+                                            ? 'text-accent/70'
+                                            : 'text-muted/70'
+                                    "
+                                >
+                                    {{ filterCount(filter.value) }}
+                                </span>
+                            </button>
+                            <button
+                                v-if="filter.value === 'all'"
+                                type="button"
+                                role="tab"
+                                :aria-selected="activeTab === 'timeline'"
+                                class="shrink-0 rounded px-2 py-1 tracking-wide whitespace-nowrap uppercase"
+                                :class="
+                                    activeTab === 'timeline'
+                                        ? 'bg-accent/10 text-accent'
+                                        : 'text-muted hover:bg-line/40 hover:text-fg'
+                                "
+                                @click="activeTab = 'timeline'"
+                            >
+                                Timeline
+                            </button>
+                        </template>
                     </div>
                     <div
-                        v-if="debug && activeFilter === 'query'"
-                        class="flex shrink-0 items-center justify-end gap-3 border-b border-line px-4 py-1 text-xs text-muted"
+                        v-if="debug && activeTab === 'query'"
+                        class="flex shrink-0 items-center justify-between gap-3 border-b border-line px-4 py-1 text-xs text-muted"
                     >
+                        <span>{{ querySummary(debug) }}</span>
                         <div class="flex items-center gap-1">
                             <span class="tracking-wide uppercase">Sort</span>
                             <button
@@ -620,22 +666,23 @@ function toggleMaximize(): void {
                             </span>
                         </p>
                         <p
-                            v-else-if="
-                                ranWithoutOutput && activeFilter === 'all'
-                            "
+                            v-else-if="ranWithoutOutput && activeTab === 'all'"
                             class="px-4 py-8 text-center text-xs text-muted"
                         >
                             No output. Return a value or call dump() to see it
                             here.
                         </p>
                         <OutputFeed
-                            v-else
+                            v-else-if="activeTab !== 'timeline'"
                             :items="feedEntries"
-                            :filter="activeFilter"
-                            :sort="
-                                activeFilter === 'query' ? querySort : 'recent'
-                            "
+                            :filter="activeTab"
+                            :sort="activeTab === 'query' ? querySort : 'recent'"
                             @navigate="revealEditorLine"
+                        />
+                        <RunTimeline
+                            v-else-if="debug"
+                            :debug="debug"
+                            :unmeasured="unmeasuredKinds"
                         />
                     </div>
                 </div>
