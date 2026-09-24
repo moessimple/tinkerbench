@@ -202,9 +202,7 @@ it('hides the optional watchers menu for a non-Laravel target', () => {
     const unknownProps = { ...props, laravelVersion: 'unknown' };
     render(OpenSnippet, { props: unknownProps });
 
-    expect(
-        screen.queryByRole('button', { name: 'Optional watchers' }),
-    ).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Watchers' })).toBeNull();
 });
 
 it('never offers query, log, or n+1 filters for a non-Laravel target, even with matching items', async () => {
@@ -554,24 +552,28 @@ it('counts a result entry under All but gives it no facet tab of its own', async
     expect(screen.queryByRole('tab', { name: /result/i })).toBeNull();
 });
 
-it('sends no enabled watchers by default', async () => {
+it('sends every default-on watcher by default', async () => {
     render(OpenSnippet, { props });
 
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
 
-    expect(httpState.enabled_watchers).toEqual([]);
+    expect(httpState.enabled_watchers).toEqual([
+        'dump',
+        'query',
+        'log',
+        'n_plus_one',
+        'http_client',
+    ]);
 });
 
 it('sends the view watcher once it is toggled on', async () => {
     render(OpenSnippet, { props });
 
-    await fireEvent.click(
-        screen.getByRole('button', { name: 'Optional watchers' }),
-    );
+    await fireEvent.click(screen.getByRole('button', { name: 'Watchers' }));
     await fireEvent.click(screen.getByRole('checkbox', { name: 'Views' }));
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
 
-    expect(httpState.enabled_watchers).toEqual(['view']);
+    expect(httpState.enabled_watchers).toContain('view');
 });
 
 it('shows a Views facet tab only when the run produced a view item', async () => {

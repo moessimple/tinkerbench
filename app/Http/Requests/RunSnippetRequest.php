@@ -15,7 +15,7 @@ class RunSnippetRequest extends FormRequest
         return [
             'code' => ['required', Rule::string()->max(100_000)],
             'enabled_watchers' => ['sometimes', 'array'],
-            'enabled_watchers.*' => [Rule::in(['view'])],
+            'enabled_watchers.*' => [Rule::in(['dump', 'query', 'log', 'n_plus_one', 'http_client', 'view'])],
         ];
     }
 

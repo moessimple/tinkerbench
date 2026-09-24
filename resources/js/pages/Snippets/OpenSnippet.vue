@@ -10,10 +10,7 @@ import MonacoEditor from '@/components/MonacoEditor.vue';
 import OutputFeed from '@/components/OutputFeed.vue';
 import RunSummary from '@/components/RunSummary.vue';
 import { useTheme } from '@/composables/useTheme';
-import {
-    OPTIONAL_WATCHERS,
-    useWatcherToggles,
-} from '@/composables/useWatcherToggles';
+import { useWatcherToggles, WATCHERS } from '@/composables/useWatcherToggles';
 import { xsrfHeader } from '@/lib/csrf';
 import { buildFeed } from '@/lib/feed';
 import type { FeedEntry, FeedFilter, FeedSort } from '@/lib/feed';
@@ -62,14 +59,15 @@ const { isEnabled: isWatcherEnabled, toggle: toggleWatcher } =
     useWatcherToggles(props.currentProject);
 
 const watcherToggleItems = computed(() =>
-    OPTIONAL_WATCHERS.map((watcher) => ({
-        ...watcher,
-        enabled: isWatcherEnabled(watcher.id),
+    WATCHERS.map(({ id, label }) => ({
+        id,
+        label,
+        enabled: isWatcherEnabled(id),
     })),
 );
 
 const enabledWatchers = computed(() =>
-    OPTIONAL_WATCHERS.filter((watcher) => isWatcherEnabled(watcher.id)).map(
+    WATCHERS.filter((watcher) => isWatcherEnabled(watcher.id)).map(
         (watcher) => watcher.id,
     ),
 );

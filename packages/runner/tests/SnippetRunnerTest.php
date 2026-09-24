@@ -10,6 +10,9 @@ use Tinkerbench\Runner\SnippetRunner;
 use Tinkerbench\Runner\SnippetRunRecorder;
 use Tinkerbench\Runner\SourceLocator;
 
+/** The watchers the UI enables by default, so helper runs see what a default run sees. */
+const DEFAULT_WATCHERS = ['dump', 'query', 'log', 'n_plus_one', 'http_client'];
+
 /**
  * @return array{items: list<mixed>, duration_str: string, peak_memory_str: string}
  */
@@ -85,7 +88,7 @@ function fixtureTargetPath(string $name): string
  * @param  list<string>  $enabledWatchers
  * @return array{output: string, exitCode: int, debug: array<string, mixed>|null}
  */
-function runSnippetSubprocessAgainst(string $targetPath, string $code, array $enabledWatchers = []): array
+function runSnippetSubprocessAgainst(string $targetPath, string $code, array $enabledWatchers = DEFAULT_WATCHERS): array
 {
     $snippetPath = tempnam(sys_get_temp_dir(), 'snippet').'.php';
     $debugPath = tempnam(sys_get_temp_dir(), 'debug');
@@ -615,7 +618,7 @@ it('emits no view item against a Laravel 12 fixture when no watcher is enabled v
     unlink($path);
 
     return 'done';
-    PHP);
+    PHP, []);
 
     expect($result['exitCode'])->toBe(0)
         ->and(array_column($result['debug']['items'], 'kind'))->not->toContain('view');
@@ -644,10 +647,10 @@ it('detects an N+1 lazy load against a Laravel 12 fixture', function (): void {
 // exit because run() has already persisted inline.
 
 /**
- * @param  list<string>  $enabledOptionalWatchers
+ * @param  list<string>  $enabledWatchers
  * @return array<string, mixed>
  */
-function runInProcess(string $code, array $enabledOptionalWatchers = []): array
+function runInProcess(string $code, array $enabledWatchers = DEFAULT_WATCHERS): array
 {
     $snippetPath = tempnam(sys_get_temp_dir(), 'snippet').'.php';
     $debugPath = tempnam(sys_get_temp_dir(), 'debug');
@@ -656,7 +659,7 @@ function runInProcess(string $code, array $enabledOptionalWatchers = []): array
     $runStartedAt = hrtime(true);
     require fixtureTargetPath('laravel-12').'/vendor/autoload.php';
 
-    (new SnippetRunner())->run(fixtureTargetPath('laravel-12'), $snippetPath, $debugPath, $runStartedAt, $enabledOptionalWatchers);
+    (new SnippetRunner())->run(fixtureTargetPath('laravel-12'), $snippetPath, $debugPath, $runStartedAt, $enabledWatchers);
 
     $snapshot = json_decode((string) file_get_contents($debugPath), true);
 
@@ -732,6 +735,16 @@ it('emits no view item when the view watcher is not enabled', function (): void 
     $snapshot = runInProcess(viewRenderingSnippet());
 
     expect(array_column($snapshot['items'], 'kind'))->not->toContain('view');
+})->expectOutputString('');
+
+it('registers only the enabled watchers', function (): void {
+    $snapshot = runInProcess(laravel12Preamble()."\n".<<<'PHP'
+    Log::info('hello');
+
+    Widget::query()->first();
+    PHP, ['log']);
+
+    expect(array_column($snapshot['items'], 'kind'))->toBe(['log']);
 })->expectOutputString('');
 
 it('records a thrown exception from an in-process run without re-throwing', function (): void {

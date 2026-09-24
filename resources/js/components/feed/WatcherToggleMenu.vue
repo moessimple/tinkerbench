@@ -39,8 +39,8 @@ onBeforeUnmount(() => {
     <div ref="root" class="relative">
         <button
             type="button"
-            title="Optional watchers"
-            aria-label="Optional watchers"
+            title="Watchers"
+            aria-label="Watchers"
             :aria-expanded="isOpen"
             class="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted hover:bg-line/40 hover:text-fg"
             @click="isOpen = !isOpen"
@@ -66,7 +66,7 @@ onBeforeUnmount(() => {
         <div
             v-if="isOpen"
             role="menu"
-            aria-label="Optional watchers"
+            aria-label="Watchers"
             class="absolute right-0 z-10 mt-1 w-40 rounded-md border border-line bg-surface p-1 text-xs shadow-lg"
         >
             <label

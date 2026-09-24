@@ -28,25 +28,27 @@ class SnippetRunner
      *
      * @param  int  $runStartedAt  hrtime(true) before the target's autoloader was loaded, so the
      *                             boot time covers it.
-     * @param  list<string>  $enabledOptionalWatchers  Ids of the "default off" watchers to register for this
-     *                                                 run, in addition to the always-on ones (see watchers.md).
+     * @param  list<string>  $enabledWatchers  Ids (FeedItemKind values) of the watchers to register for
+     *                                         this run. Which are on by default is the UI's call.
      */
-    public function run(string $projectPath, string $snippetPath, string $debugPath, int $runStartedAt, array $enabledOptionalWatchers = []): void
+    public function run(string $projectPath, string $snippetPath, string $debugPath, int $runStartedAt, array $enabledWatchers = []): void
     {
         $app = $this->bootTargetApplication($projectPath);
 
         $source = new SourceLocator($snippetPath);
         $valueRenderer = new ValueRenderer();
 
+        $watchers = [
+            FeedItemKind::Dump->value => new DumpWatcher($valueRenderer),
+            FeedItemKind::Query->value => new QueryWatcher(),
+            FeedItemKind::Log->value => new LogWatcher($valueRenderer),
+            FeedItemKind::NPlusOne->value => new LazyLoadWatcher(),
+            FeedItemKind::HttpClient->value => new HttpClientWatcher(),
+            FeedItemKind::View->value => new ViewWatcher($valueRenderer),
+        ];
+
         $recorder = new SnippetRunRecorder(
-            $app instanceof Application ? [
-                new DumpWatcher($valueRenderer),
-                new QueryWatcher(),
-                new LogWatcher($valueRenderer),
-                new LazyLoadWatcher(),
-                new HttpClientWatcher(),
-                ...in_array('view', $enabledOptionalWatchers, true) ? [new ViewWatcher($valueRenderer)] : [],
-            ] : [],
+            $app instanceof Application ? array_values(array_intersect_key($watchers, array_flip($enabledWatchers))) : [],
             new ExceptionMapper($projectPath, $source->path()),
             $source,
             $runStartedAt,

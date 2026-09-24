@@ -132,7 +132,7 @@ it('echoes the snippet back verbatim when it has no opening tag', function (): v
 });
 
 it('captures dump() as an HTML dump item in the debug data', function (): void {
-    $result = new SnippetRunner()->run("<?php\n\ndump('hello');", PHP_BINARY, base_path());
+    $result = new SnippetRunner()->run("<?php\n\ndump('hello');", PHP_BINARY, base_path(), ['dump']);
 
     expect($result->output)->toBe('')
         ->and(data_get($result->debug, 'items.0.kind'))->toBe('dump')

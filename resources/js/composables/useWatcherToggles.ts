@@ -1,8 +1,20 @@
 import { reactive, watch } from 'vue';
 
-/** Ids of the "default off" watchers a project can opt into per run. */
-export const OPTIONAL_WATCHERS: { id: string; label: string }[] = [
-    { id: 'view', label: 'Views' },
+/**
+ * Every watcher a run can register, each with its own default, like debugbar's `collectors` map.
+ * Views are off by default: nested component renders would add noise to every run.
+ */
+export const WATCHERS: {
+    id: string;
+    label: string;
+    enabledByDefault: boolean;
+}[] = [
+    { id: 'dump', label: 'Dumps', enabledByDefault: true },
+    { id: 'query', label: 'Queries', enabledByDefault: true },
+    { id: 'log', label: 'Logs', enabledByDefault: true },
+    { id: 'n_plus_one', label: 'N+1', enabledByDefault: true },
+    { id: 'view', label: 'Views', enabledByDefault: false },
+    { id: 'http_client', label: 'HTTP', enabledByDefault: true },
 ];
 
 function storageKey(project: string): string {
@@ -27,7 +39,7 @@ function readInitialToggles(project: string): Record<string, boolean> {
     }
 }
 
-/** Per-project, localStorage-backed watcher toggle state. Default: every watcher off. */
+/** Per-project, localStorage-backed watcher toggle state. Unset watchers use their default. */
 export function useWatcherToggles(project: string) {
     const toggles = reactive<Record<string, boolean>>(
         readInitialToggles(project),
@@ -42,7 +54,12 @@ export function useWatcherToggles(project: string) {
     );
 
     function isEnabled(id: string): boolean {
-        return toggles[id] ?? false;
+        return (
+            toggles[id] ??
+            WATCHERS.some(
+                (watcher) => watcher.id === id && watcher.enabledByDefault,
+            )
+        );
     }
 
     function toggle(id: string): void {

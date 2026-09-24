@@ -20,9 +20,7 @@ it('shows every watcher with its current enabled state once opened', async () =>
         },
     });
 
-    await fireEvent.click(
-        screen.getByRole('button', { name: 'Optional watchers' }),
-    );
+    await fireEvent.click(screen.getByRole('button', { name: 'Watchers' }));
 
     const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[];
     expect(screen.getByText('Views')).toBeTruthy();
@@ -36,9 +34,7 @@ it('emits toggle with the watcher id when its checkbox is clicked', async () => 
         props: { watchers: [{ id: 'view', label: 'Views', enabled: false }] },
     });
 
-    await fireEvent.click(
-        screen.getByRole('button', { name: 'Optional watchers' }),
-    );
+    await fireEvent.click(screen.getByRole('button', { name: 'Watchers' }));
     await fireEvent.click(screen.getByRole('checkbox'));
 
     expect(emitted().toggle).toEqual([['view']]);
@@ -49,9 +45,7 @@ it('closes the menu when Escape is pressed', async () => {
         props: { watchers: [{ id: 'view', label: 'Views', enabled: false }] },
     });
 
-    await fireEvent.click(
-        screen.getByRole('button', { name: 'Optional watchers' }),
-    );
+    await fireEvent.click(screen.getByRole('button', { name: 'Watchers' }));
     expect(screen.getByRole('menu')).toBeTruthy();
 
     await fireEvent.keyDown(document, { key: 'Escape' });
@@ -64,9 +58,7 @@ it('closes the menu when clicking outside it', async () => {
         props: { watchers: [{ id: 'view', label: 'Views', enabled: false }] },
     });
 
-    await fireEvent.click(
-        screen.getByRole('button', { name: 'Optional watchers' }),
-    );
+    await fireEvent.click(screen.getByRole('button', { name: 'Watchers' }));
     expect(screen.getByRole('menu')).toBeTruthy();
 
     await fireEvent.click(document.body);

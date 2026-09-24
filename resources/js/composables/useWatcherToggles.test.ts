@@ -5,10 +5,22 @@ beforeEach(() => {
     localStorage.clear();
 });
 
-it('defaults every watcher to off when nothing is stored', () => {
+it('uses the watcher defaults when nothing is stored', () => {
     const { isEnabled } = useWatcherToggles('my-project');
 
+    expect(isEnabled('query')).toBe(true);
     expect(isEnabled('view')).toBe(false);
+});
+
+it('turns a default-on watcher off and persists it', () => {
+    const { isEnabled, toggle } = useWatcherToggles('my-project');
+
+    toggle('query');
+
+    expect(isEnabled('query')).toBe(false);
+    expect(localStorage.getItem('watcher-toggles:my-project')).toBe(
+        '{"query":false}',
+    );
 });
 
 it('flips a watcher on and persists it to localStorage', () => {

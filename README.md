@@ -54,7 +54,7 @@ Open [`https://tinkerbench.test`](https://tinkerbench.test). It opens the `scrat
 
 * Write PHP in the editor and run it with the play button or `⌘Enter`.
 * In the command palette (`⌘P`): `/` switches project, `#` searches snippets, and a name that doesn't exist yet creates a snippet.
-* For Laravel projects, use the Optional watchers menu above the output feed to enable view-rendering traces. The setting is remembered per project.
+* For Laravel projects, use the Watchers menu above the output feed to switch individual watchers on or off. View-rendering traces are off by default. The settings are remembered per project.
 * Clear the output or maximize the editor from the sidebar icons.
 
 ## Staying Up to Date
