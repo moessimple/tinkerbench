@@ -74,6 +74,7 @@
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
+            "composer build --working-dir=packages/runner",
             "@php artisan dev"
         ],
         "lint": [
@@ -99,6 +100,7 @@
             "npm run test:lint"
         ],
         "test:unit": [
+            "composer build --working-dir=packages/runner",
             "XDEBUG_MODE=coverage pest --parallel --coverage --exactly=100.0",
             "composer test:unit --working-dir=packages/runner",
             "npm run test:unit"
@@ -124,6 +126,8 @@
         "update:dependencies": [
             "@composer update --bump-after-update",
             "@composer update --bump-after-update --working-dir=packages/runner",
+            "@composer update --working-dir=packages/runner/tests/fixtures/laravel-12",
+            "composer build --working-dir=packages/runner",
             "npm update --save"
         ],
         "post-autoload-dump": [
@@ -156,7 +160,12 @@
             "php-http/discovery": true,
             "laravel/vet": true
         },
-        "autoloader-suffix": "TinkerbenchInternal"
+        "autoloader-suffix": "TinkerbenchInternal",
+        "audit": {
+            "ignore-abandoned": [
+                "symplify/rule-doc-generator-contracts"
+            ]
+        }
     },
     "minimum-stability": "stable"
 }

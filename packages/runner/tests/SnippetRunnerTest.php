@@ -96,7 +96,7 @@ function runSnippetSubprocessAgainst(string $targetPath, string $code, array $en
 
     $result = Process::env(['VAR_DUMPER_FORMAT' => 'html'])->run([
         PHP_BINARY,
-        dirname(__DIR__).'/bin/run-snippet.php',
+        __DIR__.'/../bin/run-snippet.php',
         $targetPath,
         $snippetPath,
         $debugPath,
@@ -568,7 +568,7 @@ it("loads none of the runner's dev packages into the target", function (): void 
 
     $runnerDevFiles = array_filter(
         json_decode($result['output'], true),
-        static fn (string $file): bool => str_starts_with($file, dirname(__DIR__).'/vendor/'),
+        static fn (string $file): bool => str_starts_with($file, realpath(__DIR__.'/../vendor').'/'),
     );
 
     expect($result['exitCode'])->toBe(0)
@@ -686,7 +686,7 @@ it('locks every package of the in-process target at the version this package loc
     $fixtureVersions = lockedVersions(fixtureTargetPath('laravel-12').'/composer.lock');
 
     expect($fixtureVersions)->not->toBeEmpty()
-        ->and(array_diff_assoc($fixtureVersions, lockedVersions(dirname(__DIR__).'/composer.lock')))->toBe([]);
+        ->and(array_diff_assoc($fixtureVersions, lockedVersions(__DIR__.'/../composer.lock')))->toBe([]);
 });
 
 /**
