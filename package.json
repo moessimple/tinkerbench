@@ -7,7 +7,7 @@
         "build:ssr": "vp build && vp build --ssr",
         "dev": "vp dev",
         "lint": "vp fmt resources/ && vp lint --fix",
-        "test:audit": "npm audit",
+        "test:audit": "npm audit --json | node -e 'const ignored = [\"GHSA-vfj7-8cjw-p6xm\"]; const report = JSON.parse(require(\"fs\").readFileSync(0, \"utf8\")); if (report.error) { console.error(report.error.summary); process.exit(1); } const advisories = Object.values(report.vulnerabilities).flatMap((vulnerability) => vulnerability.via).filter((via) => typeof via === \"object\"); const isIgnored = (advisory) => ignored.some((id) => advisory.url.endsWith(id)); const open = advisories.filter((advisory) => !isIgnored(advisory)); const stale = ignored.filter((id) => !advisories.some((advisory) => advisory.url.endsWith(id))); advisories.filter(isIgnored).forEach((advisory) => console.warn(`ignored, no patched version: ${advisory.name} ${advisory.url}`)); open.forEach((advisory) => console.error(`${advisory.severity}: ${advisory.name}: ${advisory.title} ${advisory.url}`)); stale.forEach((id) => console.error(`${id} is no longer reported, remove it from the ignore list in test:audit`)); process.exit(open.length + stale.length > 0 ? 1 : 0);'",
         "test:lint": "vp fmt --check resources/ && vp lint",
         "test:unit": "vitest run --coverage",
         "test:types": "vue-tsc --noEmit"
@@ -49,6 +49,8 @@
     "overrides": {
         "protobufjs": "^8.6.6",
         "@opentelemetry/core": "^2.10.0",
-        "dompurify": "^3.4.13"
+        "dompurify": "^3.4.16",
+        "basic-ftp": "^6.2.2",
+        "tinypool": "^2.1.2"
     }
 }

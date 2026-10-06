@@ -86,7 +86,7 @@
         "test:audit": [
             "@composer audit --locked",
             "@composer audit --locked --working-dir=packages/runner",
-            "npm audit"
+            "npm run test:audit"
         ],
         "test:type-coverage": [
             "pest --type-coverage --min=100",
