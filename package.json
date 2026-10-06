@@ -32,7 +32,7 @@
         "concurrently": "^10.0.5",
         "intelephense": "^1.18.5",
         "laravel-vite-plugin": "^3.2.0",
-        "monaco-editor": "^0.56.0",
+        "monaco-editor": "^0.57.0",
         "sql-formatter": "^15.9.0",
         "tailwindcss": "^4.1.1",
         "typescript": "^5.9.3",
@@ -42,7 +42,7 @@
         "ws": "^8.22.0"
     },
     "optionalDependencies": {
-        "@rollup/rollup-linux-x64-gnu": "4.63.1",
+        "@rollup/rollup-linux-x64-gnu": "4.63.6",
         "@tailwindcss/oxide-linux-x64-gnu": "^4.0.1",
         "lightningcss-linux-x64-gnu": "^1.29.1"
     },
