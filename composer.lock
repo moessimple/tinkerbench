@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2f8e67d2534f7d597736aadd4641ea9f",
+    "content-hash": "e9a139df6786b4237f70b6d32f16367b",
     "packages": [
         {
             "name": "brick/math",
@@ -1363,16 +1363,16 @@
         },
         {
             "name": "laravel/lsp",
-            "version": "v0.0.31",
+            "version": "v0.0.32",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/lsp.git",
-                "reference": "6739481f9c16aa628582c69014c083b9abf3987f"
+                "reference": "557d8c9596162e28f80df7debf3ad9f45f5255cc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/lsp/zipball/6739481f9c16aa628582c69014c083b9abf3987f",
-                "reference": "6739481f9c16aa628582c69014c083b9abf3987f",
+                "url": "https://api.github.com/repos/laravel/lsp/zipball/557d8c9596162e28f80df7debf3ad9f45f5255cc",
+                "reference": "557d8c9596162e28f80df7debf3ad9f45f5255cc",
                 "shasum": ""
             },
             "require": {
@@ -1421,7 +1421,7 @@
                 "issues": "https://github.com/laravel/lsp/issues",
                 "source": "https://github.com/laravel/lsp"
             },
-            "time": "2026-08-14T09:30:34+00:00"
+            "time": "2026-09-15T12:51:19+00:00"
         },
         {
             "name": "laravel/prompts",
@@ -9034,16 +9034,16 @@
         },
         {
             "name": "laravel/vet",
-            "version": "v0.1.4",
+            "version": "v0.2.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/vet.git",
-                "reference": "4729a57f42e68dfb36aaa6e9ecb096f28be09ce7"
+                "reference": "7b10fd2beecf9f386c92731729c9f33a152b213b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/vet/zipball/4729a57f42e68dfb36aaa6e9ecb096f28be09ce7",
-                "reference": "4729a57f42e68dfb36aaa6e9ecb096f28be09ce7",
+                "url": "https://api.github.com/repos/laravel/vet/zipball/7b10fd2beecf9f386c92731729c9f33a152b213b",
+                "reference": "7b10fd2beecf9f386c92731729c9f33a152b213b",
                 "shasum": ""
             },
             "require": {
@@ -9065,7 +9065,7 @@
                 "pestphp/pest": "^5.2.1",
                 "pestphp/pest-plugin-phpstan": "^5.2.1",
                 "pestphp/pest-plugin-rector": "^5.0.4",
-                "phpstan/phpstan": "^2.2.14",
+                "phpstan/phpstan": "^2.2.16",
                 "rector/rector": "^2.6.7"
             },
             "bin": [
@@ -9104,9 +9104,9 @@
             ],
             "support": {
                 "issues": "https://github.com/laravel/vet/issues",
-                "source": "https://github.com/laravel/vet/tree/v0.1.4"
+                "source": "https://github.com/laravel/vet/tree/v0.2.1"
             },
-            "time": "2026-09-23T12:06:06+00:00"
+            "time": "2026-09-27T14:39:48+00:00"
         },
         {
             "name": "league/uri-components",
