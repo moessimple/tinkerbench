@@ -29,7 +29,7 @@
         "laravel/pao": "^1.1.5",
         "laravel/pint": "^1.32.1",
         "laravel/sail": "^1.68",
-        "laravel/vet": "^0.1.4",
+        "laravel/vet": "^0.2.1",
         "mockery/mockery": "^1.6.15",
         "nunomaduro/collision": "^8.9.3",
         "pestphp/pest": "^5.3.0",
@@ -106,6 +106,7 @@
             "npm run test:unit"
         ],
         "test:browser": [
+            "npx playwright install chromium",
             "pest --testsuite=Browser --group=browser"
         ],
         "test:types": [

@@ -34,20 +34,6 @@ jobs:
         with:
           coverage: xdebug
 
-      - name: Cache packages/runner Composer dependencies
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: packages/runner/vendor
-          key: ${{ runner.os }}-composer-runner-8.5-${{ hashFiles('packages/runner/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-runner-8.5-
-
-      - name: Cache Laravel 12 fixture Composer dependencies
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: packages/runner/tests/fixtures/laravel-12/vendor
-          key: ${{ runner.os }}-composer-fixture-laravel12-8.5-${{ hashFiles('packages/runner/tests/fixtures/laravel-12/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-fixture-laravel12-8.5-
-
       - name: Install packages/runner Composer dependencies
         # `composer test:unit` descends into packages/runner, which runs its own Pest suite.
         run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress --working-dir=packages/runner
@@ -111,19 +97,18 @@ jobs:
           tools: composer:v2
           coverage: none
 
-      - name: Cache packages/runner Composer dependencies
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: packages/runner/vendor
-          key: ${{ runner.os }}-composer-runner-8.2-${{ hashFiles('packages/runner/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-runner-8.2-
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
 
-      - name: Cache Laravel 12 fixture Composer dependencies
+      - name: Cache Composer dependencies
+        # The download cache, not vendor/ (see .github/actions/setup-app). Its own key prefix,
+        # because this job only downloads the runner's packages, never the app's.
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: packages/runner/tests/fixtures/laravel-12/vendor
-          key: ${{ runner.os }}-composer-fixture-laravel12-8.2-${{ hashFiles('packages/runner/tests/fixtures/laravel-12/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-fixture-laravel12-8.2-
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-runner-${{ hashFiles('packages/runner/composer.lock', 'packages/runner/tests/fixtures/*/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-runner-
 
       - name: Install packages/runner Composer dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress --working-dir=packages/runner

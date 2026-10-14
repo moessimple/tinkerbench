@@ -1,5 +1,4 @@
 {
-    "schema": 4,
     "require": {
         "brick/math": {
             "version": "1.0.0",
@@ -480,8 +479,8 @@
             "hash": "tree-v2:d107302d7fc1135388d95677dbe7cc895ed7d205b6771520bf3ee5db38879906"
         },
         "laravel/vet": {
-            "version": "v0.1.4",
-            "hash": "tree-v2:441211c9769524ca9cd41c65fb222f70240c2309579518ecc818f43e0b5bbf35"
+            "version": "v0.2.1",
+            "hash": "tree-v2:7c555b9f7eb265649d89769aa9b07bafc809d9e52d15ecdc3a84ee1c59fa767e"
         },
         "league/uri-components": {
             "version": "7.8.1",
@@ -687,5 +686,10 @@
             "version": "2.5.0",
             "hash": "tree-v2:6a5e17ae786f8be693f150a8b7483a3a7ee71b88716a90fe2d5ac9fbd4876588"
         }
-    }
+    },
+    "minimum-release-age": 1,
+    "minimum-release-age-exclude": [
+        "laravel/vet",
+        "roave/security-advisories"
+    ]
 }
