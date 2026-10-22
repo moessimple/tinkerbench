@@ -6,6 +6,7 @@ namespace App\Support\SnippetRun;
 
 use Dotenv\Dotenv;
 use Illuminate\Process\Exceptions\ProcessTimedOutException;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
 
@@ -57,11 +58,11 @@ class SnippetRunner
             return new SnippetRunResult($processTimedOutException->result->output().$processTimedOutException->result->errorOutput()."\nSnippet timed out after {$timeoutSeconds} seconds.", null);
         } finally {
             if (file_exists($snippetPath)) {
-                unlink($snippetPath);
+                File::delete($snippetPath);
             }
 
             if (file_exists($debugPath)) {
-                unlink($debugPath);
+                File::delete($debugPath);
             }
         }
 
