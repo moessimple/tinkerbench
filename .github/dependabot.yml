@@ -47,3 +47,7 @@ updates:
     allow:
       - dependency-type: "direct"
     versioning-strategy: "increase-if-necessary"
+    ignore:
+      # laravel-vite-plugin 3.x only accepts fontaine ^0.8 as a peer.
+      - dependency-name: "fontaine"
+        update-types: ["version-update:semver-major"]
