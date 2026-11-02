@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  dependencies:
+  security:
     # composer test:vet: fails if any dependency in composer.lock isn't recorded as
     # trusted in vet.json (laravel/vet supply-chain audit). composer test:audit: fails
     # on known CVEs in the root and packages/runner composer.lock (checked explicitly,
