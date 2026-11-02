@@ -84,6 +84,10 @@
             "npm run lint"
         ],
         "test:vet": "vet -n",
+        "test:composer": [
+            "@composer validate --strict",
+            "composer test:composer --working-dir=packages/runner"
+        ],
         "test:audit": [
             "@composer audit --locked",
             "@composer audit --locked --working-dir=packages/runner",
@@ -116,6 +120,7 @@
         ],
         "test": [
             "@php artisan config:clear --ansi",
+            "@test:composer",
             "@test:vet",
             "@test:audit",
             "@test:type-coverage",

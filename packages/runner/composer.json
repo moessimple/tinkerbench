@@ -41,6 +41,7 @@
             "rector",
             "pint --parallel"
         ],
+        "test:composer": "@composer validate --strict",
         "test:type-coverage": [
             "php -d memory_limit=512M vendor/bin/pest --type-coverage --min=100"
         ],
@@ -58,6 +59,7 @@
             "phpstan analyse --memory-limit=512M"
         ],
         "test": [
+            "@test:composer",
             "@test:type-coverage",
             "@test:unit",
             "@test:lint",
