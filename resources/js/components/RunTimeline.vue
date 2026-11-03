@@ -122,7 +122,7 @@ const parts = computed<Part[]>(() => {
         -->
         <div
             aria-hidden="true"
-            class="grid grid-cols-[3rem_5.5rem_3rem_1fr] gap-x-3 pl-4 font-mono text-[11px] text-muted"
+            class="grid grid-cols-[3rem_6.5rem_3rem_1fr] gap-x-3 pl-4 font-mono text-[11px] text-muted"
         >
             <span
                 class="col-start-4 flex h-5 items-end justify-between border-b border-muted/60 bg-[repeating-linear-gradient(to_right,var(--muted)_0_1px,transparent_1px_10%)] bg-[length:100%_6px] bg-bottom bg-no-repeat"
@@ -140,12 +140,13 @@ const parts = computed<Part[]>(() => {
                 :title="part.hint"
             >
                 <div
-                    class="grid grid-cols-[3rem_5.5rem_3rem_1fr] items-center gap-x-3"
+                    class="grid grid-cols-[3rem_6.5rem_3rem_1fr] items-center gap-x-3"
                 >
                     <span class="font-medium text-fg">{{ part.label }}</span>
-                    <span class="text-right font-mono text-fg tabular-nums">{{
-                        part.durationStr
-                    }}</span>
+                    <span
+                        class="text-right font-mono whitespace-nowrap text-fg tabular-nums"
+                        >{{ part.durationStr }}</span
+                    >
                     <span class="text-right font-mono text-muted tabular-nums"
                         >{{ part.percentage }}%</span
                     >

@@ -23,7 +23,7 @@ const copyText = computed(
         :copy="copyText"
         @navigate="$emit('navigate', $event)"
     >
-        <p>
+        <p class="wrap-anywhere">
             <strong class="text-warn">{{ entry.model }}</strong
             >::{{ entry.relation }} lazy-loaded {{ entry.count }}×
         </p>

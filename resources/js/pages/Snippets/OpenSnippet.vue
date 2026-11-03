@@ -354,9 +354,9 @@ function toggleMaximize(): void {
             v-if="!isMaximized"
             class="mx-auto hidden w-full max-w-358 shrink-0 items-center justify-between gap-4 px-4 pt-4 pb-3 min-[900px]:flex"
         >
-            <div class="flex items-center gap-2">
+            <div class="flex min-w-0 items-center gap-2">
                 <span
-                    class="flex items-center gap-2 text-[15px] font-semibold text-fg"
+                    class="flex shrink-0 items-center gap-2 text-[15px] font-semibold text-fg"
                 >
                     <svg
                         viewBox="0 0 16 16"
@@ -364,12 +364,7 @@ function toggleMaximize(): void {
                         height="16"
                         aria-hidden="true"
                     >
-                        <rect
-                            width="16"
-                            height="16"
-                            rx="2"
-                            class="fill-measure"
-                        />
+                        <rect width="16" height="16" rx="2" fill="#f0c030" />
                         <path
                             d="M3.5 0v8M6.5 0v4M9.5 0v6M12.5 0v4"
                             stroke="#1a2228"
@@ -379,14 +374,17 @@ function toggleMaximize(): void {
                     tinkerbench
                 </span>
                 <span class="text-muted/60" aria-hidden="true">/</span>
-                <h1 class="font-mono text-sm font-medium text-fg">
+                <h1
+                    class="min-w-0 truncate font-mono text-sm font-medium text-fg"
+                    :title="pageTitle"
+                >
                     {{ currentProject }}
                     <span class="text-muted">/</span>
                     {{ snippetName }}
                 </h1>
             </div>
             <p
-                class="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-xs text-muted"
+                class="flex shrink-0 flex-wrap items-center justify-end gap-x-4 gap-y-1 text-xs text-muted"
             >
                 <span
                     v-for="shortcut in shortcuts"
@@ -571,15 +569,17 @@ function toggleMaximize(): void {
                         class="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-b border-line px-4 py-2 text-xs text-muted"
                     >
                         <span
-                            class="flex items-center gap-x-2"
+                            class="flex min-w-0 items-center gap-x-2 max-[899px]:basis-full"
                             :class="{ 'min-[900px]:hidden': !isMaximized }"
                         >
-                            <span class="text-fg">
+                            <span class="min-w-0 wrap-anywhere text-fg">
                                 {{ currentProject
                                 }}<span class="text-muted"> / </span
                                 >{{ snippetName }}
                             </span>
-                            <span aria-hidden="true">·</span>
+                            <span aria-hidden="true" class="max-[899px]:hidden"
+                                >·</span
+                            >
                         </span>
                         <span>
                             {{ versionLabel }}
@@ -596,7 +596,7 @@ function toggleMaximize(): void {
                         v-if="debug"
                         role="tablist"
                         aria-label="Output views"
-                        class="flex shrink-0 gap-1 overflow-x-auto border-b border-line px-2"
+                        class="flex shrink-0 flex-wrap gap-x-1 border-b border-line px-2"
                     >
                         <template
                             v-for="filter in feedFilters"

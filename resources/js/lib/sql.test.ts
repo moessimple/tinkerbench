@@ -32,7 +32,7 @@ it('highlights a quoted string literal as a whole', () => {
     const highlighted = highlightSql("where email = 'john@example.com'");
 
     expect(highlighted).toContain(
-        `<span class="text-warn">'john@example.com'</span>`,
+        `<span class="text-kind-log">'john@example.com'</span>`,
     );
 });
 
@@ -40,7 +40,7 @@ it('does not highlight keywords that appear inside a string literal', () => {
     const highlighted = highlightSql("where note = 'select from where'");
 
     expect(highlighted).toContain(
-        `<span class="text-warn">'select from where'</span>`,
+        `<span class="text-kind-log">'select from where'</span>`,
     );
     expect(highlighted).not.toContain(
         '<span class="text-accent">select</span>',

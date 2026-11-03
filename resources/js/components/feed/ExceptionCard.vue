@@ -47,7 +47,7 @@ function frameCountLabel(frames: ExceptionFrame[]): string {
         :copy="copyText"
         @navigate="$emit('navigate', $event)"
     >
-        <p>
+        <p class="wrap-anywhere">
             <strong class="text-danger">{{ entry.type }}</strong
             >: {{ entry.message }}
         </p>
@@ -57,7 +57,7 @@ function frameCountLabel(frames: ExceptionFrame[]): string {
             >
                 {{ frameCountLabel(entry.frames) }}
             </summary>
-            <ul class="mt-1.5 flex flex-col gap-0.5">
+            <ul class="mt-1.5 flex flex-col gap-0.5 wrap-anywhere">
                 <li
                     v-for="(frame, frameIndex) in entry.frames"
                     :key="frameIndex"

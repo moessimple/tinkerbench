@@ -88,7 +88,7 @@ it('shows a danger variant for a 5xx response', () => {
     ).toBe('danger');
 });
 
-it('reports success as true below 400 and false at or above it', () => {
+it('reports success as yes below 400 and no at or above it', () => {
     const { container: ok } = render(HttpClientCard, {
         props: { entry: httpClientEntry({ status: 200 }) },
     });
@@ -96,11 +96,11 @@ it('reports success as true below 400 and false at or above it', () => {
         props: { entry: httpClientEntry({ status: 404 }) },
     });
 
-    expect(rowValue(ok, 'Success')).toBe('true');
-    expect(rowValue(notOk, 'Success')).toBe('false');
+    expect(rowValue(ok, 'Success')).toBe('Yes');
+    expect(rowValue(notOk, 'Success')).toBe('No');
 });
 
-it('reports Real Request as true for a genuine call and false for a faked one', () => {
+it('reports a real request as yes for a genuine call and no for a faked one', () => {
     const { container: real } = render(HttpClientCard, {
         props: { entry: httpClientEntry({ faked: false }) },
     });
@@ -108,8 +108,8 @@ it('reports Real Request as true for a genuine call and false for a faked one', 
         props: { entry: httpClientEntry({ faked: true }) },
     });
 
-    expect(rowValue(real, 'Real Request')).toBe('true');
-    expect(rowValue(faked, 'Real Request')).toBe('false');
+    expect(rowValue(real, 'Real request')).toBe('Yes');
+    expect(rowValue(faked, 'Real request')).toBe('No');
 });
 
 it('shows the request type', () => {
@@ -186,6 +186,21 @@ it('falls back to a generic label when the response content type itself is missi
     });
 
     expect(container.textContent).toContain('unknown content type');
+});
+
+it('leaves out the size of a non-textual response body when it is unknown', () => {
+    const { container } = render(HttpClientCard, {
+        props: {
+            entry: httpClientEntry({
+                response_body_preview: null,
+                response_content_type: 'application/octet-stream',
+                response_size: null,
+            }),
+        },
+    });
+
+    expect(container.textContent).toContain('application/octet-stream');
+    expect(container.textContent).not.toContain('bytes');
 });
 
 it('shows the request body preview and a truncated hint when present', () => {
