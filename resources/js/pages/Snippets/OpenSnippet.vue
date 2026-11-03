@@ -708,14 +708,14 @@ function toggleMaximize(): void {
         <p
             v-if="errorMessage"
             role="alert"
-            class="fixed right-4 bottom-4 rounded-md border border-danger/40 bg-surface px-4 py-3 font-mono text-sm text-danger shadow-2xl"
+            class="fixed right-4 bottom-4 rounded-md border border-danger/40 bg-surface px-4 py-3 text-sm text-danger shadow-2xl"
         >
             {{ errorMessage }}
         </p>
         <p
             v-if="saveError"
             role="alert"
-            class="fixed top-4 right-4 rounded-md border border-danger/40 bg-surface px-4 py-3 font-mono text-sm text-danger shadow-2xl"
+            class="fixed top-4 right-4 rounded-md border border-danger/40 bg-surface px-4 py-3 text-sm text-danger shadow-2xl"
         >
             {{ saveError }}
         </p>

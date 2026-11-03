@@ -632,7 +632,7 @@ async function confirmDelete(name: string): Promise<void> {
                             :aria-label="inputLabel"
                             :placeholder="placeholder"
                             :disabled="createForm.processing"
-                            class="w-full rounded border border-line bg-transparent py-1.5 pr-2.5 pl-8 font-mono text-sm text-fg placeholder:text-muted focus:outline-none"
+                            class="w-full rounded border border-line bg-transparent py-1.5 pr-2.5 pl-8 font-mono text-sm text-fg placeholder:font-sans placeholder:text-muted focus:border-accent focus:outline-none"
                             @change="createForm.validate('name')"
                             @keydown.down.prevent="moveHighlight(1)"
                             @keydown.up.prevent="moveHighlight(-1)"
@@ -645,14 +645,11 @@ async function confirmDelete(name: string): Promise<void> {
                             visibleSnippetNames.length === 0 &&
                             createForm.invalid('name')
                         "
-                        class="mt-1 font-mono text-xs text-danger"
+                        class="mt-1 text-xs text-danger"
                     >
                         {{ createForm.errors.name }}
                     </p>
-                    <p
-                        v-if="createError"
-                        class="mt-1 font-mono text-xs text-danger"
-                    >
+                    <p v-if="createError" class="mt-1 text-xs text-danger">
                         {{ createError }}
                     </p>
                 </form>
@@ -660,13 +657,13 @@ async function confirmDelete(name: string): Promise<void> {
                 <template v-if="errorMessage || projectsErrorMessage">
                     <p
                         v-if="errorMessage"
-                        class="px-3 py-2 font-mono text-xs text-danger"
+                        class="px-3 py-2 text-xs text-danger"
                     >
                         {{ errorMessage }}
                     </p>
                     <p
                         v-if="projectsErrorMessage"
-                        class="px-3 py-2 font-mono text-xs text-danger"
+                        class="px-3 py-2 text-xs text-danger"
                     >
                         {{ projectsErrorMessage }}
                     </p>
@@ -674,17 +671,17 @@ async function confirmDelete(name: string): Promise<void> {
                 <template v-else-if="activeEntries.length === 0">
                     <p
                         v-if="scope === 'projects'"
-                        class="px-3 py-2 font-mono text-xs text-muted"
+                        class="px-3 py-2 text-xs text-muted"
                     >
                         No projects found.
                     </p>
                     <p
                         v-else-if="filterText === '' && names.length === 0"
-                        class="px-3 py-2 font-mono text-xs text-muted"
+                        class="px-3 py-2 text-xs text-muted"
                     >
                         No snippets found.
                     </p>
-                    <p v-else class="px-3 py-2 font-mono text-xs text-muted">
+                    <p v-else class="px-3 py-2 text-xs text-muted">
                         No snippet named "{{
                             snippetNameFromInput(createForm.name).trim()
                         }}" yet. Press Enter to create it.
@@ -725,7 +722,7 @@ async function confirmDelete(name: string): Promise<void> {
                                 type="text"
                                 :aria-label="`Rename ${name}`"
                                 :disabled="renameSubmitting"
-                                class="w-full rounded border border-line bg-transparent px-2 py-0.5 font-mono text-sm text-fg focus:outline-none"
+                                class="w-full rounded border border-line bg-transparent px-2 py-0.5 font-mono text-sm text-fg focus:border-accent focus:outline-none"
                                 @keydown.enter.prevent="confirmRename(name)"
                                 @keydown.escape="cancelRename"
                                 @blur="cancelRename"
@@ -734,7 +731,7 @@ async function confirmDelete(name: string): Promise<void> {
                                 v-else-if="deleting === name"
                                 class="flex items-center justify-between gap-2"
                             >
-                                <span class="text-muted"
+                                <span class="font-sans text-muted"
                                     >Delete '{{ name }}'?</span
                                 >
                                 <span class="flex shrink-0 items-center gap-2">
@@ -830,13 +827,13 @@ async function confirmDelete(name: string): Promise<void> {
                             </div>
                             <p
                                 v-if="renaming === name && renameError"
-                                class="font-mono text-xs text-danger"
+                                class="font-sans text-xs text-danger"
                             >
                                 {{ renameError }}
                             </p>
                             <p
                                 v-if="deleting === name && deleteError"
-                                class="font-mono text-xs text-danger"
+                                class="font-sans text-xs text-danger"
                             >
                                 {{ deleteError }}
                             </p>
@@ -898,11 +895,9 @@ async function confirmDelete(name: string): Promise<void> {
                     </template>
                 </ul>
 
-                <p
-                    class="border-t border-line px-3 py-1.5 font-mono text-xs text-muted"
-                >
-                    Type <kbd class="text-fg">#</kbd> for snippets,
-                    <kbd class="text-fg">/</kbd> for projects.
+                <p class="border-t border-line px-3 py-1.5 text-xs text-muted">
+                    Type <kbd class="font-mono text-fg">#</kbd> for snippets,
+                    <kbd class="font-mono text-fg">/</kbd> for projects.
                 </p>
             </div>
         </div>

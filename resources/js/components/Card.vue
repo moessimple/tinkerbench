@@ -113,7 +113,7 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
                 <button
                     v-if="line !== null"
                     type="button"
-                    class="-mx-1.5 -my-0.5 rounded px-1.5 py-1 font-mono text-xs text-muted hover:bg-line/50 hover:text-fg"
+                    class="-mx-1.5 -my-0.5 rounded px-1.5 py-1 text-xs text-muted tabular-nums hover:bg-line/50 hover:text-fg"
                     @click="emit('navigate', line)"
                 >
                     line {{ line }}

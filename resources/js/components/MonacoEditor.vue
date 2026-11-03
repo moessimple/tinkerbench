@@ -71,7 +71,7 @@ onMounted(() => {
             { token: 'string', foreground: '86D094' },
             { token: 'number', foreground: 'B49AE0' },
             { token: 'variable', foreground: 'D99AC0' },
-            { token: 'metatag', foreground: 'F0C030' },
+            { token: 'metatag', foreground: '8D99A3' },
         ],
         colors: {
             'editor.background': '#262B30',
@@ -100,7 +100,7 @@ onMounted(() => {
             { token: 'string', foreground: '2F7D3A' },
             { token: 'number', foreground: '6D4FA0' },
             { token: 'variable', foreground: '8A3B6A' },
-            { token: 'metatag', foreground: 'A0520A' },
+            { token: 'metatag', foreground: '55626C' },
         ],
         colors: {
             'editor.background': '#F7F8F8',
