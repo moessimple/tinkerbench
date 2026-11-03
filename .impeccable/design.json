@@ -1,0 +1,623 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-03T14:23:22+00:00",
+  "title": "Design System: tinkerbench",
+  "extensions": {
+    "colorMeta": {
+      "graphite-ink": {
+        "role": "neutral",
+        "displayName": "Graphite Ink",
+        "canonical": "oklch(24.7% 0.016 240.7)",
+        "tonalRamp": [
+          "#060c10",
+          "#1e262c",
+          "#3c4348",
+          "#5c6266",
+          "#7f8386",
+          "#a3a5a7",
+          "#c8c9ca",
+          "#edeff0"
+        ]
+      },
+      "aluminium-canvas": {
+        "role": "neutral",
+        "displayName": "Aluminium Canvas",
+        "canonical": "oklch(93.2% 0.004 236.5)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#606162",
+          "#818283",
+          "#a3a5a6",
+          "#c7c9cb",
+          "#eceff1"
+        ]
+      },
+      "bench-surface": {
+        "role": "neutral",
+        "displayName": "Bench Surface",
+        "canonical": "oklch(97.8% 0.001 197.1)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a4a5a5",
+          "#c8c9c9",
+          "#eeefef"
+        ]
+      },
+      "scribe-line": {
+        "role": "neutral",
+        "displayName": "Scribe Line",
+        "canonical": "oklch(83.5% 0.011 243.7)",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#242526",
+          "#414243",
+          "#5f6264",
+          "#7f8386",
+          "#a0a6ab",
+          "#c3cad0",
+          "#e9eff4"
+        ]
+      },
+      "steel-muted": {
+        "role": "neutral",
+        "displayName": "Steel Muted",
+        "canonical": "oklch(48.9% 0.023 241.1)",
+        "tonalRamp": [
+          "#070c0f",
+          "#1f262c",
+          "#39434b",
+          "#56636d",
+          "#79848d",
+          "#9da6ad",
+          "#c4cacf",
+          "#ebeff2"
+        ]
+      },
+      "coolant-blue": {
+        "role": "primary",
+        "displayName": "Coolant Blue",
+        "canonical": "oklch(51.1% 0.114 243.3)",
+        "tonalRamp": [
+          "#000c1d",
+          "#002743",
+          "#04466d",
+          "#16679b",
+          "#4b89b8",
+          "#7babd1",
+          "#abceeb",
+          "#dcf2ff"
+        ]
+      },
+      "marking-yellow": {
+        "role": "secondary",
+        "displayName": "Marking Yellow",
+        "canonical": "oklch(82.8% 0.157 88.7)",
+        "tonalRamp": [
+          "#0f0b02",
+          "#2a2518",
+          "#4c4126",
+          "#725f2d",
+          "#9b7f31",
+          "#c6a032",
+          "#f2c338",
+          "#ffea86"
+        ]
+      },
+      "measure-ochre": {
+        "role": "secondary",
+        "displayName": "Measure Ochre",
+        "canonical": "oklch(64.6% 0.132 84.7)",
+        "tonalRamp": [
+          "#100a01",
+          "#312302",
+          "#543e03",
+          "#7b5c03",
+          "#a47b01",
+          "#c79f46",
+          "#e5c582",
+          "#ffecbb"
+        ]
+      },
+      "fault-red": {
+        "role": "tertiary",
+        "displayName": "Fault Red",
+        "canonical": "oklch(50.0% 0.182 29.5)",
+        "tonalRamp": [
+          "#240000",
+          "#4f0000",
+          "#7e0c06",
+          "#b12217",
+          "#cd594a",
+          "#e58779",
+          "#fbb5a9",
+          "#ffe3db"
+        ]
+      },
+      "heat-amber": {
+        "role": "tertiary",
+        "displayName": "Heat Amber",
+        "canonical": "oklch(50.6% 0.126 54.6)",
+        "tonalRamp": [
+          "#1b0400",
+          "#401700",
+          "#693000",
+          "#954a00",
+          "#b37041",
+          "#ce9773",
+          "#e9c0a5",
+          "#ffe9d8"
+        ]
+      },
+      "log-green": {
+        "role": "tertiary",
+        "displayName": "Log Green",
+        "canonical": "oklch(50.2% 0.126 146.1)",
+        "tonalRamp": [
+          "#001100",
+          "#022e0a",
+          "#134f1d",
+          "#267332",
+          "#56935c",
+          "#84b387",
+          "#b1d4b3",
+          "#e0f5e1"
+        ]
+      },
+      "http-violet": {
+        "role": "tertiary",
+        "displayName": "HTTP Violet",
+        "canonical": "oklch(49.7% 0.127 298.8)",
+        "tonalRamp": [
+          "#0f041f",
+          "#2b1a46",
+          "#4a3370",
+          "#6c4e9e",
+          "#8b74b8",
+          "#ac9ad2",
+          "#cec1eb",
+          "#f1eaff"
+        ]
+      },
+      "view-steel": {
+        "role": "tertiary",
+        "displayName": "View Steel",
+        "canonical": "oklch(61.9% 0.022 238.9)",
+        "tonalRamp": [
+          "#090c0d",
+          "#212629",
+          "#3c4349",
+          "#58636a",
+          "#77848e",
+          "#9ba7b0",
+          "#c1cbd2",
+          "#e8f0f5"
+        ]
+      },
+      "editor-rose": {
+        "role": "tertiary",
+        "displayName": "Editor Rose",
+        "canonical": "oklch(47.3% 0.122 346.0)",
+        "tonalRamp": [
+          "#1b0110",
+          "#3f112d",
+          "#67274d",
+          "#8f426f",
+          "#ac6a8e",
+          "#c893af",
+          "#e3bcd0",
+          "#fee7f3"
+        ]
+      },
+      "gutter-steel": {
+        "role": "neutral",
+        "displayName": "Gutter Steel",
+        "canonical": "oklch(54.7% 0.017 244.9)",
+        "tonalRamp": [
+          "#090b0e",
+          "#212629",
+          "#3d4348",
+          "#5a6269",
+          "#7b838b",
+          "#9fa6ac",
+          "#c4cacf",
+          "#ebeff2"
+        ]
+      },
+      "graphite-ink-dark": {
+        "role": "neutral",
+        "displayName": "Graphite Ink (dark)",
+        "canonical": "oklch(90.9% 0.008 236.6)",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#242526",
+          "#414242",
+          "#606163",
+          "#808385",
+          "#a2a6a8",
+          "#c5cacd",
+          "#eaeff3"
+        ]
+      },
+      "aluminium-canvas-dark": {
+        "role": "neutral",
+        "displayName": "Aluminium Canvas (dark)",
+        "canonical": "oklch(24.5% 0.010 248.2)",
+        "tonalRamp": [
+          "#090b0e",
+          "#222629",
+          "#3f4246",
+          "#5f6264",
+          "#808285",
+          "#a4a5a6",
+          "#c8c9ca",
+          "#eeeeef"
+        ]
+      },
+      "bench-surface-dark": {
+        "role": "neutral",
+        "displayName": "Bench Surface (dark)",
+        "canonical": "oklch(28.6% 0.012 248.2)",
+        "tonalRamp": [
+          "#080c0f",
+          "#21262a",
+          "#3e4347",
+          "#5e6265",
+          "#808386",
+          "#a3a5a7",
+          "#c8c9ca",
+          "#edeeef"
+        ]
+      },
+      "scribe-line-dark": {
+        "role": "neutral",
+        "displayName": "Scribe Line (dark)",
+        "canonical": "oklch(37.4% 0.016 244.6)",
+        "tonalRamp": [
+          "#080c0f",
+          "#20262b",
+          "#3b434a",
+          "#5b6268",
+          "#7d8388",
+          "#a1a6a9",
+          "#c7c9cc",
+          "#edeff0"
+        ]
+      },
+      "steel-muted-dark": {
+        "role": "neutral",
+        "displayName": "Steel Muted (dark)",
+        "canonical": "oklch(67.7% 0.020 243.1)",
+        "tonalRamp": [
+          "#0a0b0c",
+          "#222528",
+          "#3d4347",
+          "#5b6269",
+          "#79848c",
+          "#9ba7b0",
+          "#c1cbd2",
+          "#e8f0f6"
+        ]
+      },
+      "coolant-blue-dark": {
+        "role": "primary",
+        "displayName": "Coolant Blue (dark)",
+        "canonical": "oklch(73.0% 0.112 241.7)",
+        "tonalRamp": [
+          "#050c12",
+          "#182732",
+          "#29455a",
+          "#3b6686",
+          "#4d89b4",
+          "#61ade4",
+          "#92d1ff",
+          "#c4f6ff"
+        ]
+      },
+      "measure-yellow-dark": {
+        "role": "secondary",
+        "displayName": "Measure Yellow (dark)",
+        "canonical": "oklch(82.8% 0.157 88.7)",
+        "tonalRamp": [
+          "#0f0b02",
+          "#2a2518",
+          "#4c4126",
+          "#725f2d",
+          "#9b7f31",
+          "#c6a032",
+          "#f2c338",
+          "#ffea86"
+        ]
+      },
+      "fault-red-dark": {
+        "role": "tertiary",
+        "displayName": "Fault Red (dark)",
+        "canonical": "oklch(70.2% 0.156 28.2)",
+        "tonalRamp": [
+          "#140706",
+          "#391c18",
+          "#64312b",
+          "#93483f",
+          "#c55f54",
+          "#f57c6e",
+          "#ffaa9c",
+          "#ffd7cb"
+        ]
+      },
+      "heat-amber-dark": {
+        "role": "tertiary",
+        "displayName": "Heat Amber (dark)",
+        "canonical": "oklch(77.0% 0.138 64.7)",
+        "tonalRamp": [
+          "#110903",
+          "#2e2217",
+          "#553c24",
+          "#7f582f",
+          "#ac753b",
+          "#db9346",
+          "#ffb86f",
+          "#ffe1a9"
+        ]
+      },
+      "log-green-dark": {
+        "role": "tertiary",
+        "displayName": "Log Green (dark)",
+        "canonical": "oklch(79.3% 0.113 149.3)",
+        "tonalRamp": [
+          "#060d07",
+          "#1f2721",
+          "#344837",
+          "#496b4f",
+          "#609068",
+          "#77b783",
+          "#98dda4",
+          "#c7ffd0"
+        ]
+      },
+      "http-violet-dark": {
+        "role": "tertiary",
+        "displayName": "HTTP Violet (dark)",
+        "canonical": "oklch(73.5% 0.103 301.0)",
+        "tonalRamp": [
+          "#0c0a11",
+          "#272230",
+          "#463d56",
+          "#675980",
+          "#8a77ac",
+          "#b096da",
+          "#d2bdf9",
+          "#f6e5ff"
+        ]
+      },
+      "view-steel-dark": {
+        "role": "tertiary",
+        "displayName": "View Steel (dark)",
+        "canonical": "oklch(67.7% 0.020 243.1)",
+        "tonalRamp": [
+          "#0a0b0c",
+          "#222528",
+          "#3d4347",
+          "#5b6269",
+          "#79848c",
+          "#9ba7b0",
+          "#c1cbd2",
+          "#e8f0f6"
+        ]
+      },
+      "editor-rose-dark": {
+        "role": "tertiary",
+        "displayName": "Editor Rose (dark)",
+        "canonical": "oklch(75.8% 0.090 342.6)",
+        "tonalRamp": [
+          "#0f090d",
+          "#2c2227",
+          "#503b47",
+          "#765669",
+          "#9f728d",
+          "#cb90b3",
+          "#eeb5d7",
+          "#ffdffa"
+        ]
+      },
+      "gutter-steel-dark": {
+        "role": "neutral",
+        "displayName": "Gutter Steel (dark)",
+        "canonical": "oklch(66.0% 0.019 240.1)",
+        "tonalRamp": [
+          "#0a0b0c",
+          "#222628",
+          "#3d4347",
+          "#5a6269",
+          "#79848c",
+          "#9ca7af",
+          "#c1cbd1",
+          "#e9f0f5"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "title": {
+        "displayName": "Title",
+        "purpose": "The tinkerbench wordmark only."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Tabs, card content, timeline rows, empty states."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Card labels, log levels, tags, palette headings. Sentence case."
+      },
+      "code": {
+        "displayName": "Code",
+        "purpose": "Editor, feed output, breadcrumb, palette."
+      },
+      "code-small": {
+        "displayName": "Code Small",
+        "purpose": "Counts, durations, line buttons, keys. Tabular figures."
+      }
+    },
+    "shadows": [
+      {
+        "name": "overlay",
+        "value": "0 25px 50px -12px rgb(0 0 0 / 0.25)",
+        "purpose": "Command palette and error toasts only."
+      },
+      {
+        "name": "scrim",
+        "value": "rgb(0 0 0 / 0.5)",
+        "purpose": "Background behind the command palette."
+      },
+      {
+        "name": "tab-underline",
+        "value": "inset 0 -2px 0 var(--measure)",
+        "purpose": "Active tab marking."
+      }
+    ],
+    "motion": [
+      {
+        "name": "measure-in",
+        "value": "scaleX(0) to scaleX(1), 450ms cubic-bezier(0.2, 0.7, 0.2, 1)",
+        "purpose": "Timeline bars drawing in; off under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "workbench",
+        "value": "900px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Feed Card (Query)",
+      "kind": "card",
+      "refersTo": "feed-card",
+      "description": "One run entry; the 3px left edge names its kind.",
+      "html": "<article class=\"ds-card ds-card-query\"><header class=\"ds-card-head\"><span>Query</span><button class=\"ds-card-line\" type=\"button\">line 4</button></header><pre class=\"ds-card-body\">select * from \"users\" where \"id\" = 1</pre><footer class=\"ds-card-foot\"><span class=\"ds-tag-warning\">slow</span><span>142.3 ms</span><span>·</span><span>sqlite</span></footer></article>",
+      "css": ".ds-card{background:var(--surface,#f7f8f8);color:var(--fg,#1a2228);border-bottom:1px solid var(--line,#c3cad0);border-left:3px solid var(--line,#c3cad0);padding:12px 16px;font-family:'IBM Plex Sans',system-ui,sans-serif}.ds-card-query{border-left-color:var(--accent,#196ca2)}.ds-card-head{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;font-weight:500;color:var(--muted,#55626c)}.ds-card-line{font:12px 'IBM Plex Mono',Menlo,monospace;font-variant-numeric:tabular-nums;color:var(--muted,#55626c);background:none;border:0;border-radius:4px;padding:4px 6px;cursor:pointer}.ds-card-line:hover{background:color-mix(in srgb,var(--line,#c3cad0) 50%,transparent);color:var(--fg,#1a2228)}.ds-card-line:focus-visible{outline:2px solid var(--accent,#196ca2);outline-offset:2px}.ds-card-body{margin:8px 0 0;font:14px/1.43 'IBM Plex Mono',Menlo,monospace;overflow-x:auto}.ds-card-foot{margin-top:8px;display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted,#55626c)}.ds-tag-warning{color:var(--warn,#9a4d00);background:color-mix(in srgb,var(--warn,#9a4d00) 15%,transparent);border-radius:4px;padding:2px 6px;font-weight:500}"
+    },
+    {
+      "name": "Feed Card (Exception)",
+      "kind": "card",
+      "refersTo": "feed-card",
+      "description": "Danger overrides the kind edge.",
+      "html": "<article class=\"ds-card-x\"><header class=\"ds-card-x-head\">Exception</header><pre class=\"ds-card-x-body\">RuntimeException: Connection refused</pre></article>",
+      "css": ".ds-card-x{background:var(--surface,#f7f8f8);border-bottom:1px solid var(--line,#c3cad0);border-left:3px solid var(--danger,#b42318);padding:12px 16px;font-family:'IBM Plex Sans',system-ui,sans-serif}.ds-card-x-head{font-size:14px;font-weight:500;color:var(--muted,#55626c)}.ds-card-x-body{margin:8px 0 0;font:14px/1.43 'IBM Plex Mono',Menlo,monospace;color:var(--danger,#b42318)}"
+    },
+    {
+      "name": "Rail Icon Button",
+      "kind": "button",
+      "refersTo": "icon-button",
+      "description": "32px tool-rail button; quiet until hovered.",
+      "html": "<button class=\"ds-icon-btn\" type=\"button\" aria-label=\"Run snippet\"><svg viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M3 2.5a.5.5 0 0 1 .77-.42l9 5.5a.5.5 0 0 1 0 .84l-9 5.5A.5.5 0 0 1 3 13.5v-11Z\"/></svg></button>",
+      "css": ".ds-icon-btn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border:0;border-radius:6px;background:transparent;color:var(--fg,#1a2228);cursor:pointer}.ds-icon-btn:hover{background:color-mix(in srgb,var(--line,#c3cad0) 50%,transparent)}.ds-icon-btn:focus-visible{outline:2px solid var(--accent,#196ca2);outline-offset:2px}.ds-icon-btn:disabled{opacity:.5}"
+    },
+    {
+      "name": "Output Tabs",
+      "kind": "nav",
+      "refersTo": "tab",
+      "description": "Feed filters with live counts; active tab gets the marking underline.",
+      "html": "<div class=\"ds-tabs\" role=\"tablist\"><button class=\"ds-tab\" role=\"tab\" aria-selected=\"true\">All <span class=\"ds-tab-count\">12</span></button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Timeline</button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Queries <span class=\"ds-tab-count\">7</span></button></div>",
+      "css": ".ds-tabs{display:flex;gap:4px;padding:0 8px;border-bottom:1px solid var(--line,#c3cad0);font-family:'IBM Plex Sans',system-ui,sans-serif}.ds-tab{display:flex;align-items:baseline;gap:4px;padding:6px;border:0;background:none;font-size:14px;color:var(--muted,#55626c);cursor:pointer}.ds-tab:hover{color:var(--fg,#1a2228)}.ds-tab[aria-selected=true]{color:var(--fg,#1a2228);font-weight:500;box-shadow:inset 0 -2px 0 var(--measure,#b38600)}.ds-tab:focus-visible{outline:2px solid var(--accent,#196ca2);outline-offset:2px}.ds-tab-count{font:12px 'IBM Plex Mono',Menlo,monospace;font-variant-numeric:tabular-nums;color:var(--muted,#55626c)}"
+    },
+    {
+      "name": "Palette Input",
+      "kind": "input",
+      "refersTo": "input-palette",
+      "description": "Command palette search; focus swaps the ring for a blue border.",
+      "html": "<input class=\"ds-input\" placeholder=\"Search snippets\" />",
+      "css": ".ds-input{width:100%;border:1px solid var(--line,#c3cad0);border-radius:4px;background:transparent;padding:6px 10px;font:14px 'IBM Plex Mono',Menlo,monospace;color:var(--fg,#1a2228)}.ds-input::placeholder{font-family:'IBM Plex Sans',system-ui,sans-serif;color:var(--muted,#55626c)}.ds-input:focus{outline:none;border-color:var(--accent,#196ca2)}"
+    },
+    {
+      "name": "Keyboard Key",
+      "kind": "chip",
+      "refersTo": "kbd",
+      "description": "Shortcut key with a 2px bottom edge, the one tactile detail.",
+      "html": "<kbd class=\"ds-kbd\">⌘ Enter</kbd>",
+      "css": ".ds-kbd{display:inline-block;border:1px solid var(--line,#c3cad0);border-bottom-width:2px;border-radius:4px;background:var(--surface,#f7f8f8);padding:2px 6px;font:12px 'IBM Plex Mono',Menlo,monospace;color:var(--fg,#1a2228)}"
+    },
+    {
+      "name": "Warning Tag",
+      "kind": "chip",
+      "refersTo": "tag-warning",
+      "description": "Slow or duplicate query marker.",
+      "html": "<span class=\"ds-tag\">duplicate</span>",
+      "css": ".ds-tag{display:inline-block;color:var(--warn,#9a4d00);background:color-mix(in srgb,var(--warn,#9a4d00) 15%,transparent);border-radius:4px;padding:2px 6px;font:500 12px 'IBM Plex Sans',system-ui,sans-serif}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Machinist's Bench",
+    "overview": "**Creative North Star: \"The Machinist's Bench\"**\n\ntinkerbench is a workbench, not a dashboard. Surfaces are aluminium and graphite, cool and matte, with nothing on them that is not a tool or a reading. Coolant blue carries code keywords and focus. Marking yellow is the scribe's paint: it appears only as small marks (the logo, the active tab, the dark-theme editor cursor). Every feed card carries a colored left edge like a coded tool handle, so its kind reads before its label does.\n\nThe system is precise and restrained. It is flat, ruled by thin lines, and dense enough to hold a full run's worth of queries, logs, and dumps beside an editor for hours. Hover is a faint tint, never a lift. The one moving moment is the timeline bars drawing out along their scale, like a reading being taken.\n\nIt rejects the stock GitHub look it replaced: no Primer palette, no GitHub editor themes, no tiny all-caps labels.",
+    "keyCharacteristics": [
+      "Two themes, light (aluminium) and dark (graphite), driven by the same CSS custom properties.",
+      "Flat, line-ruled layout; depth only for overlays.",
+      "IBM Plex Sans for prose and controls, IBM Plex Mono for code, keys, and numbers.",
+      "Kind colors on card edges; danger and warning override kind.",
+      "Yellow is a mark, never a fill."
+    ],
+    "rules": [
+      {
+        "name": "The Marking Paint Rule",
+        "body": "Yellow is only ever a small mark: the logo, the active tab, the cursor. It is never a fill, a button, or a background.",
+        "section": "colors"
+      },
+      {
+        "name": "The Coded Handle Rule",
+        "body": "A feed card's left edge (3px) names its kind: Query blue, Log green, HTTP violet, View steel. Danger and warning replace the kind color, because a broken or slow entry matters more than what kind it is. Kinds without a color keep a Scribe Line edge.",
+        "section": "colors"
+      },
+      {
+        "name": "The Full-Strength Text Rule",
+        "body": "Text never uses an opacity-reduced token (`text-muted/70`) and code never sits on Aluminium Canvas in a color that only passes on Bench Surface. Every text pair holds 4.5:1 in both themes; check the light theme first, it is the tighter one.",
+        "section": "colors"
+      },
+      {
+        "name": "The Quiet Brackets Rule",
+        "body": "Bracket pairs in the editor stay ink-colored. Colored nesting levels would compete with the kind colors.",
+        "section": "colors"
+      },
+      {
+        "name": "The Machine Voice Rule",
+        "body": "Monospace is for code, keys, and numbers. UI prose, labels, and error messages are always sans.",
+        "section": "typography"
+      },
+      {
+        "name": "The Sentence Case Rule",
+        "body": "No all-caps labels and nothing below 12px. Acronyms keep their case (\"N+1\", \"HTTP\", \"SQL\").",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "Every number that can change between runs (counts, durations, percentages, line numbers) uses tabular figures so columns don't jitter.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Bench Rule",
+        "body": "Nothing on the bench casts a shadow. A shadow means \"this is floating above your work and will go away.\"",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** add every new color as a CSS custom property with a light and a dark value, and check both themes.",
+      "**Do** give a new feed kind its own edge color only if it is signal; otherwise leave it on Scribe Line.",
+      "**Do** use the global Coolant Blue focus ring; replace it only with an equally visible Coolant Blue border.",
+      "**Do** keep the Monaco theme hexes in step with the CSS tokens; Monaco cannot read custom properties.",
+      "**Do** keep numbers tabular and in Plex Mono.",
+      "**Do** collapse long content behind an explicit Show all / Show less control instead of clipping it with CSS."
+    ],
+    "donts": [
+      "**Don't** use the stock GitHub/Primer palette or GitHub editor themes.",
+      "**Don't** use yellow for anything but small marks (logo, active tab, cursor).",
+      "**Don't** use all-caps micro labels or any text below 12px.",
+      "**Don't** color bracket pairs or add syntax colors that compete with the kind colors.",
+      "**Don't** add shadows to anything that sits on the bench; shadows are for overlays only.",
+      "**Don't** add motion beyond state feedback; the timeline draw-in is the one moving moment."
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "border-accent-on-rounded",
+        "value": "*",
+        "files": [
+          "resources/js/pages/Snippets/OpenSnippet.vue"
+        ],
+        "createdAt": "2026-11-03T14:23:38.156Z",
+        "reason": "Agent: kbd keys use a neutral 2px bottom edge as a physical key face, not an accent border; documented in DESIGN.md Shapes"
+      }
+    ]
+  }
+}
