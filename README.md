@@ -46,11 +46,11 @@ cd tinkerbench
 composer setup
 ```
 
-`composer setup` installs the dependencies, creates `.env`, migrates the database, downloads a headless Chromium for the browser tests, builds the frontend, and links the site to Herd at [`https://tinkerbench.test`](https://tinkerbench.test) on PHP 8.5.
+`composer setup` installs the dependencies, creates `.env`, migrates the database, downloads a headless Chromium for the browser tests, builds the frontend, and links the site to Herd at [`http://tinkerbench.test`](http://tinkerbench.test) on PHP 8.5.
 
 ## Usage
 
-Open [`https://tinkerbench.test`](https://tinkerbench.test). It opens the `scratch` snippet in the `tinkerbench` project. Press `⌘P` and type `/` to run against one of your own Herd projects instead.
+Open [`http://tinkerbench.test`](http://tinkerbench.test). It opens the `scratch` snippet in the `tinkerbench` project. Press `⌘P` and type `/` to run against one of your own Herd projects instead.
 
 * Write PHP in the editor and run it with the play button or `⌘Enter`.
 * In the command palette (`⌘P`): `/` switches project, `#` searches snippets, and a name that doesn't exist yet creates a snippet.

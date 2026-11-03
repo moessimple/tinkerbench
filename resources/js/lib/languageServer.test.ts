@@ -188,7 +188,7 @@ it('requests a port for the project and opens a WebSocket to it', async () => {
         '/api/projects/customer-portal/language-server',
         expect.objectContaining({ method: 'POST' }),
     );
-    expect(socket.url).toBe('wss://tinkerbench.test:54213');
+    expect(socket.url).toBe('ws://tinkerbench.test:54213');
 });
 
 it('sends the initial document content once the connection is ready', async () => {

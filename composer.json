@@ -69,7 +69,7 @@
             "npm ci",
             "npx playwright install chromium",
             "npm run build",
-            "herd link tinkerbench --secure",
+            "herd link tinkerbench",
             "herd isolate 8.5"
         ],
         "dev": [

@@ -59,17 +59,6 @@ jobs:
       - name: Resolve tinkerbench.test to localhost
         run: echo "127.0.0.1 tinkerbench.test" | sudo tee -a /etc/hosts
 
-      - name: Generate a self-signed certificate for tinkerbench.test
-        # tests/Unit/Support/LanguageServer/* boot the real language-server-bridge.mjs, which
-        # reads tinkerbench.test's certificate; TINKERBENCH_HERD_CERTIFICATES_DIR points it here.
-        run: |
-          mkdir -p /tmp/tinkerbench-certs
-          openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
-            -subj "/CN=tinkerbench.test" \
-            -keyout /tmp/tinkerbench-certs/tinkerbench.test.key \
-            -out /tmp/tinkerbench-certs/tinkerbench.test.crt
-          echo "TINKERBENCH_HERD_CERTIFICATES_DIR=/tmp/tinkerbench-certs" >> "$GITHUB_ENV"
-
       - name: App tests
         run: composer test:unit
 
@@ -127,7 +116,7 @@ jobs:
   browser:
     # Real-browser tests via pest-plugin-browser + headless Chromium. The suite fakes every
     # external process (Herd, the LSP bridges) in tests/Browser/Pest.php, so this job needs
-    # no Herd binary, no tinkerbench.test host entry and no certificate, just built assets
+    # no Herd binary and no tinkerbench.test host entry, just built assets
     # and a browser.
     runs-on: ubuntu-latest
     timeout-minutes: 10

@@ -189,12 +189,9 @@ export async function attachLanguageServer(
     model: Monaco.editor.ITextModel,
 ): Promise<LanguageServerHandle> {
     const port = await requestPort(config.requestPortUrl);
-    // Safari (macOS 15+) blocks a plain ws:// connection from an https:// page as mixed content, even to
-    // 127.0.0.1, unlike Chrome/Firefox. wss:// against tinkerbench.test itself (not window.location.hostname,
-    // browser tests may serve the page from a plain http://127.0.0.1 test server) matches the certificate the
-    // bridge presents (Herd's already-trusted tinkerbench.test certificate), so it works everywhere: an
-    // insecure page opening a secure WebSocket to a different host is not a mixed-content downgrade.
-    const socket = new WebSocket(`wss://tinkerbench.test:${port}`);
+    // tinkerbench.test itself, not window.location.hostname: the bridge only accepts handshakes from
+    // tinkerbench.test's own origin, and browser tests may serve the page from a plain http://127.0.0.1 server.
+    const socket = new WebSocket(`ws://tinkerbench.test:${port}`);
 
     // LSP CompletionItemKind numbers (per the LSP spec) mapped to Monaco's own enum values, the completion
     // kinds intelephense actually returns in practice.

@@ -7,8 +7,8 @@ paths:
 
 ## How to regenerate images/app.png and images/social-preview.png
 
-Both PNGs are screenshots of the running Herd app (https://tinkerbench.test) on the
-`demo` project's `scratch` snippet (https://tinkerbench.test/demo/scratch).
+Both PNGs are screenshots of the running Herd app (http://tinkerbench.test) on the
+`demo` project's `scratch` snippet (http://tinkerbench.test/demo/scratch).
 
 Drive the browser with whatever browser-automation tooling you have (an agent-browser
 skill, the chrome-devtools MCP if it is running, Playwright directly, etc.). The steps
@@ -32,7 +32,7 @@ Laravel only: operate on the Collection you already have (`->sum()`, `->flatMap`
 
 ### Steps
 
-1. Open https://tinkerbench.test/demo/scratch.
+1. Open http://tinkerbench.test/demo/scratch.
 2. Theme: match the committed PNGs = **light**. Toggle with the left-rail
    "Switch to light/dark theme" button; switch back to dark when done.
 3. Set the snippet. `storage/app/snippets/**` is deny-listed for Edit/Write/Bash and

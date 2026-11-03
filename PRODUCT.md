@@ -25,7 +25,7 @@ tinkerbench is a browser-based REPL for any project linked in Herd. Write a snip
 
 ## Operating Context
 
-- Runs at `https://tinkerbench.test` via Herd, on the developer's own machine.
+- Runs at `http://tinkerbench.test` via Herd, on the developer's own machine.
 - Core loop: pick project (`⌘P`, `/`), pick or create snippet (`⌘P`, `#`), edit in Monaco with autosave, run (`⌘Enter`), read the feed, click a card to jump to the line that produced it.
 - Per-project settings persist: watcher toggles, open output tab.
 

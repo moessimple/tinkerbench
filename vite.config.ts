@@ -103,6 +103,10 @@ export default defineConfig({
             formVariants: true,
         }),
     ]),
+    // ES workers so monacoEditorWorker.ts can load the built worker with a module import, same as in dev.
+    worker: {
+        format: 'es',
+    },
     server: {
         watch: {
             ignored: [
