@@ -690,9 +690,5 @@
             "version": "2.5.0",
             "hash": "tree-v2:6a5e17ae786f8be693f150a8b7483a3a7ee71b88716a90fe2d5ac9fbd4876588"
         }
-    },
-    "minimum-release-age": 1,
-    "minimum-release-age-exclude": [
-        "laravel/vet"
-    ]
+    }
 }

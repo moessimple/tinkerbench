@@ -5,12 +5,20 @@
     "require": {
         "php": "^8.2"
     },
+    "require-dev": {
+        "composer-plugin-api": ">=2.11.0"
+    },
     "autoload": {
         "psr-4": {
             "PlainComposerPhp\\": "src/"
         }
     },
     "config": {
-        "optimize-autoloader": true
+        "optimize-autoloader": true,
+        "policy": {
+            "cooldown": {
+                "period": "3 days"
+            }
+        }
     }
 }

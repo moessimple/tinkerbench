@@ -32,7 +32,7 @@ A take on Laravel's [`tinker`](https://github.com/laravel/tinker), inspired by [
 
 ## Requirements
 
-* [Laravel Herd](https://herd.laravel.com) with PHP 8.5 and Composer 2.9 or newer available. Herd bundles PHP, Composer, and Node, so there is nothing else to install.
+* [Laravel Herd](https://herd.laravel.com) with PHP 8.5 and Composer 2.11 or newer and npm 11.17 or newer available. Herd bundles PHP, Composer, and Node.
 * Target projects need PHP 8.2 or newer. Pin a project's PHP version with `herd isolate` if needed.
 * The database query, log entry, N+1 warning, HTTP request, and view-rendering cards need a Laravel 12 or newer target. Every other PHP project still produces dumps, return values, exceptions, and standard output.
 
@@ -65,6 +65,23 @@ Pull the latest changes and rerun the setup script to bring dependencies and mig
 git pull
 composer setup
 ```
+
+## Dependency updates
+
+Composer and npm wait three days before accepting new releases. Dependabot applies
+the same cooldown to regular version updates. Its security updates bypass that
+wait, but Composer and npm still enforce their own cooldowns.
+Existing lockfiles remain installable. For a critical security fix, review the
+maintainer advisory and bypass the cooldown only for that update:
+
+```bash
+composer update --no-cooldown vendor/package
+npm update package-name --min-release-age-exclude=package-name
+```
+
+Review the complete dependency diff: Composer bypasses the cooldown for the whole
+command, including newly resolved dependencies. Advisory and malware blocking and
+Vet trust checks remain active.
 
 ## Testing
 
