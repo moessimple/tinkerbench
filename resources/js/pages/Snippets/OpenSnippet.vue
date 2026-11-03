@@ -674,10 +674,9 @@ function toggleMaximize(): void {
                     >
                         <p
                             v-if="!hasRun"
-                            class="mx-auto max-w-xs px-4 py-10 text-center text-xs text-muted"
+                            class="px-4 py-6 text-[13px] text-muted"
                         >
-                            Run the snippet to see queries, dumps, logs and
-                            timing here.
+                            Run the snippet to see its output here.
                             <span class="mt-2 block">
                                 <kbd
                                     class="rounded-sm border border-b-2 border-line bg-canvas px-1.5 py-0.5 font-mono text-fg"
@@ -687,7 +686,7 @@ function toggleMaximize(): void {
                         </p>
                         <p
                             v-else-if="ranWithoutOutput && activeTab === 'all'"
-                            class="px-4 py-8 text-center text-xs text-muted"
+                            class="px-4 py-6 text-[13px] text-muted"
                         >
                             No output. Return a value or call dump() to see it
                             here.

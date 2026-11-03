@@ -81,7 +81,7 @@ export default defineConfig({
             input: ['resources/css/app.css', 'resources/js/app.ts'],
             refresh: true,
             fonts: [
-                bunny('IBM Plex Sans Condensed', {
+                bunny('IBM Plex Sans', {
                     weights: [400, 500, 600],
                 }),
                 bunny('IBM Plex Mono', {

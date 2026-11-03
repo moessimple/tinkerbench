@@ -5,7 +5,7 @@
 
 @theme inline {
     --font-sans:
-        'IBM Plex Sans Condensed', ui-sans-serif, system-ui, sans-serif,
+        'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
     --font-mono: 'IBM Plex Mono', Menlo, monospace;
@@ -24,7 +24,7 @@
     --color-kind-view: var(--kind-view);
 }
 
-/* The bench: aluminium and graphite surfaces, coolant blue for links and SQL, and marking yellow
+/* The bench: aluminium and graphite surfaces, coolant blue for code keywords, and marking yellow
    kept for small marks only (the logo, the active tab, the editor cursor). Kind colors mark each
    feed card's edge like coded tool handles, so a card's kind reads before its label does. */
 :root {
@@ -33,11 +33,11 @@
     --line: #c3cad0;
     --fg: #1a2228;
     --muted: #55626c;
-    --accent: #2f6e8f;
+    --accent: #1d6fa5;
     --danger: #b42318;
     --warn: #a0520a;
-    --measure: #d9a400;
-    --kind-log: #3f7d4e;
+    --measure: #b38600;
+    --kind-log: #2f7d3a;
     --kind-http: #6d4fa0;
     --kind-view: #7a8892;
 }
@@ -48,11 +48,11 @@
     --line: #3a4249;
     --fg: #dce2e6;
     --muted: #8d99a3;
-    --accent: #6fb1d2;
+    --accent: #62b0e8;
     --danger: #f07466;
     --warn: #f0a04b;
     --measure: #f0c030;
-    --kind-log: #7cc28a;
+    --kind-log: #86d094;
     --kind-http: #b49ae0;
     --kind-view: #8d99a3;
 }
@@ -91,6 +91,54 @@
     .measure-in {
         animation: none;
     }
+}
+
+/* Symfony VarDumper injects its own near-black theme as an inline <style> after this sheet, so
+   these rules need the extra `html` to outrank its `pre.sf-dump` selectors. */
+html pre.sf-dump {
+    background-color: var(--canvas);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 0.5rem 0.75rem;
+    border-radius: 2px;
+}
+
+html pre.sf-dump .sf-dump-default {
+    background-color: transparent;
+    color: var(--muted);
+}
+
+html pre.sf-dump .sf-dump-str,
+html pre.sf-dump .sf-dump-key {
+    color: var(--kind-log);
+    font-weight: 400;
+}
+
+html pre.sf-dump .sf-dump-num,
+html pre.sf-dump .sf-dump-index {
+    color: var(--kind-http);
+    font-weight: 400;
+}
+
+html pre.sf-dump .sf-dump-const,
+html pre.sf-dump .sf-dump-public,
+html pre.sf-dump .sf-dump-protected,
+html pre.sf-dump .sf-dump-private {
+    color: var(--fg);
+    font-weight: 400;
+}
+
+html pre.sf-dump .sf-dump-note,
+html pre.sf-dump .sf-dump-ellipsis-note {
+    color: var(--accent);
+}
+
+html pre.sf-dump .sf-dump-meta,
+html pre.sf-dump .sf-dump-ref,
+html pre.sf-dump .sf-dump-ellipsis {
+    color: var(--muted);
 }
 
 /* Inertia's <x-inertia::app /> renders a bare <div id="app"> with no way to attach a Tailwind

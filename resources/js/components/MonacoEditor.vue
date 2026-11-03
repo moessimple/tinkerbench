@@ -67,10 +67,10 @@ onMounted(() => {
         inherit: true,
         rules: [
             { token: 'comment', foreground: '8D99A3', fontStyle: 'italic' },
-            { token: 'keyword', foreground: '6FB1D2' },
-            { token: 'string', foreground: '7CC28A' },
+            { token: 'keyword', foreground: '62B0E8' },
+            { token: 'string', foreground: '86D094' },
             { token: 'number', foreground: 'B49AE0' },
-            { token: 'variable', foreground: 'DCE2E6' },
+            { token: 'variable', foreground: 'D99AC0' },
             { token: 'metatag', foreground: 'F0C030' },
         ],
         colors: {
@@ -81,7 +81,7 @@ onMounted(() => {
             'editorLineNumber.activeForeground': '#DCE2E6',
             'editor.lineHighlightBackground': '#2E343A',
             'editorCursor.foreground': '#F0C030',
-            'editor.selectionBackground': '#6FB1D233',
+            'editor.selectionBackground': '#62B0E833',
             // Brackets stay ink-colored: colored nesting levels would compete with the kind colors.
             'editorBracketHighlight.foreground1': '#DCE2E6',
             'editorBracketHighlight.foreground2': '#DCE2E6',
@@ -96,10 +96,10 @@ onMounted(() => {
         inherit: true,
         rules: [
             { token: 'comment', foreground: '55626C', fontStyle: 'italic' },
-            { token: 'keyword', foreground: '2F6E8F' },
-            { token: 'string', foreground: '3F7D4E' },
+            { token: 'keyword', foreground: '1D6FA5' },
+            { token: 'string', foreground: '2F7D3A' },
             { token: 'number', foreground: '6D4FA0' },
-            { token: 'variable', foreground: '1A2228' },
+            { token: 'variable', foreground: '8A3B6A' },
             { token: 'metatag', foreground: 'A0520A' },
         ],
         colors: {
@@ -110,7 +110,7 @@ onMounted(() => {
             'editorLineNumber.activeForeground': '#1A2228',
             'editor.lineHighlightBackground': '#EEF0F1',
             'editorCursor.foreground': '#1A2228',
-            'editor.selectionBackground': '#2F6E8F26',
+            'editor.selectionBackground': '#1D6FA526',
             // Brackets stay ink-colored: colored nesting levels would compete with the kind colors.
             'editorBracketHighlight.foreground1': '#1A2228',
             'editorBracketHighlight.foreground2': '#1A2228',
