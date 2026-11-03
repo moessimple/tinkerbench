@@ -143,7 +143,7 @@ it('shows "none" for an empty header set', () => {
     expect(container.textContent).toContain('none');
 });
 
-it('shows the response body preview and a truncated hint when it was cut', () => {
+it('says that only part of the response body was captured when the runner cut it', () => {
     const { container } = render(HttpClientCard, {
         props: {
             entry: httpClientEntry({
@@ -155,7 +155,7 @@ it('shows the response body preview and a truncated hint when it was cut', () =>
 
     const text = container.textContent ?? '';
     expect(text).toContain('partial body...');
-    expect(text.toLowerCase()).toContain('truncated');
+    expect(text).toContain('Only part of this body was captured');
 });
 
 it('shows content type and size instead of a preview for a non-textual response body', () => {
@@ -203,7 +203,7 @@ it('leaves out the size of a non-textual response body when it is unknown', () =
     expect(container.textContent).not.toContain('bytes');
 });
 
-it('shows the request body preview and a truncated hint when present', () => {
+it('says that only part of the request body was captured when the runner cut it', () => {
     const { container } = render(HttpClientCard, {
         props: {
             entry: httpClientEntry({
@@ -218,7 +218,7 @@ it('shows the request body preview and a truncated hint when present', () => {
 
     const text = container.textContent ?? '';
     expect(text).toContain('{"name":"Ada"}');
-    expect(text.toLowerCase()).toContain('truncated');
+    expect(text).toContain('Only part of this body was captured');
 });
 
 it('shows request content type and size instead of a preview for a non-textual request body', () => {
@@ -281,6 +281,16 @@ it('shows only the first 600 characters of a long single-line header', () => {
 
     expect(container.textContent).not.toContain('a'.repeat(600));
     expect(screen.getByRole('button', { name: 'Show all' })).toBeTruthy();
+});
+
+it('ends a collapsed section with an ellipsis', () => {
+    const { container } = render(HttpClientCard, {
+        props: {
+            entry: httpClientEntry({ response_body_preview: twelveLineBody }),
+        },
+    });
+
+    expect(container.textContent).toContain('line 10…');
 });
 
 it('shows the whole section after Show all is clicked', async () => {

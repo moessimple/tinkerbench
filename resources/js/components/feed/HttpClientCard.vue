@@ -117,7 +117,8 @@ function shownText(section: Section): string {
         .split('\n')
         .slice(0, PREVIEW_LINES)
         .join('\n')
-        .slice(0, PREVIEW_CHARACTERS);
+        .slice(0, PREVIEW_CHARACTERS)
+        .concat('…');
 }
 
 function toggleSection(key: SectionKey): void {
@@ -192,6 +193,13 @@ function toggleSection(key: SectionKey): void {
                     {{ section.label }}
                 </dt>
                 <dd>
+                    <p
+                        v-if="section.truncated"
+                        class="mb-1 font-sans text-xs text-warn"
+                    >
+                        Only part of this body was captured. The rest is not
+                        available.
+                    </p>
                     <pre class="break-all whitespace-pre-wrap text-fg">{{
                         shownText(section)
                     }}</pre>
@@ -208,9 +216,6 @@ function toggleSection(key: SectionKey): void {
                                 : 'Show all'
                         }}
                     </button>
-                    <p v-if="section.truncated" class="mt-1 text-xs text-warn">
-                        truncated
-                    </p>
                 </dd>
             </div>
         </dl>
