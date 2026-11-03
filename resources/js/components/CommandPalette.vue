@@ -230,6 +230,8 @@ watch(highlightedIndex, () => {
 // either icon can never reach the button underneath, only the backdrop (which closes
 // it). Toggle-closed is therefore the only reachable behavior for a second click,
 // same as before there were two icons.
+let focusBeforeOpen: HTMLElement | null = null;
+
 async function open(prefix: '' | '#' | '/'): Promise<void> {
     if (isOpen.value) {
         close();
@@ -237,6 +239,10 @@ async function open(prefix: '' | '#' | '/'): Promise<void> {
         return;
     }
 
+    focusBeforeOpen =
+        document.activeElement instanceof HTMLElement
+            ? document.activeElement
+            : null;
     isOpen.value = true;
     createForm.reset();
     createForm.name = prefix;
@@ -258,6 +264,8 @@ function close(): void {
     isOpen.value = false;
     cancelRename();
     cancelDelete();
+    focusBeforeOpen?.focus();
+    focusBeforeOpen = null;
 }
 
 // A keyboard move scrolls the list, which slides a different row under a
@@ -782,7 +790,7 @@ async function confirmDelete(name: string): Promise<void> {
                                     <span class="truncate">{{ name }}</span>
                                 </button>
                                 <span
-                                    class="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100"
+                                    class="flex shrink-0 items-center gap-1 opacity-0 group-focus-within:opacity-100 group-hover:opacity-100"
                                 >
                                     <button
                                         type="button"
