@@ -123,10 +123,10 @@
             "@test:composer",
             "@test:vet",
             "@test:audit",
-            "@test:type-coverage",
-            "@test:unit",
             "@test:lint",
+            "@test:type-coverage",
             "@test:types",
+            "@test:unit",
             "@test:browser"
         ],
         "update:dependencies": [

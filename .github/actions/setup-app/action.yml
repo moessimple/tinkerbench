@@ -52,9 +52,11 @@ runs:
         php artisan key:generate
 
     - name: Cache npm dependencies
+      # Caches npm's download cache, not node_modules/: npm ci removes an existing node_modules/
+      # before it installs, so a restored one is thrown away unused.
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
-        path: node_modules
+        path: ~/.npm
         key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
         restore-keys: ${{ runner.os }}-npm-
 

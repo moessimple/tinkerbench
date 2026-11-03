@@ -22,6 +22,10 @@ arch()->preset()->php();
 arch()->preset()->security();
 arch()->preset()->laravel();
 
+arch('strict types everywhere')
+    ->expect('App')
+    ->toUseStrictTypes();
+
 arch('no class is final')
     ->expect('App')
     ->classes()

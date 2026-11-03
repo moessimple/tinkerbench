@@ -18,7 +18,7 @@ jobs:
     # `composer test:composer`: composer validate --strict over app/ and packages/runner, including
     # that each composer.lock matches its composer.json.
     # `composer test:lint`: Pint + Rector (dry run) over app/ and packages/runner, plus
-    # prettier/eslint over the frontend.
+    # the vite-plus formatter and linter over the frontend.
     # `composer test:type-coverage`: Pest's 100% type-coverage gate over app/ and packages/runner.
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -49,17 +49,29 @@ jobs:
         # its own Pint, Rector and Pest binaries from this vendor dir.
         run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress --working-dir=packages/runner
 
-      - name: Cache Rector
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      # As in https://getrector.com/documentation/cache-in-ci: cache entries cannot be updated, so
+      # each run saves under its own key, also after a failing lint, and restore-keys loads the
+      # most recent one.
+      - name: Restore Rector cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             /tmp/rector
             /tmp/rector-runner
-          key: ${{ runner.os }}-rector-${{ hashFiles('composer.lock', 'packages/runner/composer.lock') }}
+          key: ${{ runner.os }}-rector-${{ github.run_id }}
           restore-keys: ${{ runner.os }}-rector-
 
       - name: Lint
         run: composer test:lint
+
+      - name: Save Rector cache
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: ${{ !cancelled() }}
+        with:
+          path: |
+            /tmp/rector
+            /tmp/rector-runner
+          key: ${{ runner.os }}-rector-${{ github.run_id }}
 
       - name: Type coverage
         run: composer test:type-coverage

@@ -43,14 +43,27 @@ jobs:
         # binary and larastan extension from this vendor dir.
         run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress --working-dir=packages/runner
 
-      - name: Cache PHPStan
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      # As in https://phpstan.org/user-guide/result-cache: cache entries cannot be updated, so
+      # each run saves under its own key, also after a failing analysis, and restore-keys loads
+      # the most recent one. PHPStan discards it when composer.lock, its config or its version
+      # changes.
+      - name: Restore PHPStan result cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             /tmp/phpstan
             /tmp/phpstan-runner
-          key: ${{ runner.os }}-phpstan-${{ hashFiles('composer.lock', 'packages/runner/composer.lock') }}
+          key: ${{ runner.os }}-phpstan-${{ github.run_id }}
           restore-keys: ${{ runner.os }}-phpstan-
 
       - name: Static analysis
         run: composer test:types
+
+      - name: Save PHPStan result cache
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: ${{ !cancelled() }}
+        with:
+          path: |
+            /tmp/phpstan
+            /tmp/phpstan-runner
+          key: ${{ runner.os }}-phpstan-${{ github.run_id }}
