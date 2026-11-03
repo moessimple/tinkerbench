@@ -32,7 +32,7 @@ A take on Laravel's [`tinker`](https://github.com/laravel/tinker), inspired by [
 
 ## Requirements
 
-* [Laravel Herd](https://herd.laravel.com) with PHP 8.5 available. Herd bundles PHP, Composer, and Node, so there is nothing else to install.
+* [Laravel Herd](https://herd.laravel.com) with PHP 8.5 and Composer 2.9 or newer available. Herd bundles PHP, Composer, and Node, so there is nothing else to install.
 * Target projects need PHP 8.2 or newer. Pin a project's PHP version with `herd isolate` if needed.
 * The database query, log entry, N+1 warning, HTTP request, and view-rendering cards need a Laravel 12 or newer target. Every other PHP project still produces dumps, return values, exceptions, and standard output.
 
