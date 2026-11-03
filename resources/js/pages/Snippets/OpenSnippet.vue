@@ -2,6 +2,7 @@
 import { Head, useHttp } from '@inertiajs/vue3';
 import {
     computed,
+    nextTick,
     onBeforeUnmount,
     onMounted,
     ref,
@@ -123,6 +124,41 @@ const feedFilters = computed<{ label: string; value: FeedFilter }[]>(() => [
         value: kind.kind as FeedFilter,
     })),
 ]);
+
+const tabOrder = computed<(FeedFilter | 'timeline')[]>(() => {
+    const [all, ...kinds] = feedFilters.value.map((filter) => filter.value);
+
+    return [all, 'timeline', ...kinds];
+});
+
+const TAB_KEY_STEPS: Record<string, (index: number, last: number) => number> = {
+    ArrowRight: (index, last) => (index === last ? 0 : index + 1),
+    ArrowLeft: (index, last) => (index === 0 ? last : index - 1),
+    Home: () => 0,
+    End: (_index, last) => last,
+};
+
+function outputTabId(tab: FeedFilter | 'timeline'): string {
+    return `output-tab-${tab}`;
+}
+
+async function onTabKeydown(event: KeyboardEvent): Promise<void> {
+    const step = TAB_KEY_STEPS[event.key];
+    const hasModifier =
+        event.metaKey || event.ctrlKey || event.altKey || event.shiftKey;
+
+    // A modified arrow belongs to the browser or macOS (window tiling, history, text selection).
+    if (!step || hasModifier) {
+        return;
+    }
+
+    event.preventDefault();
+    const order = tabOrder.value;
+    activeTab.value =
+        order[step(order.indexOf(activeTab.value), order.length - 1)];
+    await nextTick();
+    document.getElementById(outputTabId(activeTab.value))?.focus();
+}
 
 const querySorts: { label: string; value: FeedSort }[] = [
     { label: 'Recent', value: 'recent' },
@@ -400,7 +436,7 @@ function toggleMaximize(): void {
             </p>
         </div>
 
-        <div
+        <main
             class="flex min-h-0 w-full flex-1"
             :class="
                 isMaximized
@@ -603,9 +639,12 @@ function toggleMaximize(): void {
                             :key="filter.value"
                         >
                             <button
+                                :id="outputTabId(filter.value)"
                                 type="button"
                                 role="tab"
+                                aria-controls="snippet-output"
                                 :aria-selected="activeTab === filter.value"
+                                :tabindex="activeTab === filter.value ? 0 : -1"
                                 class="flex shrink-0 items-baseline gap-1 px-1.5 py-1.5 text-sm whitespace-nowrap"
                                 :class="
                                     activeTab === filter.value
@@ -613,24 +652,23 @@ function toggleMaximize(): void {
                                         : 'text-muted hover:text-fg'
                                 "
                                 @click="activeTab = filter.value"
+                                @keydown="onTabKeydown"
                             >
                                 {{ filter.label }}
                                 <span
-                                    class="font-mono text-xs font-normal tabular-nums"
-                                    :class="
-                                        activeTab === filter.value
-                                            ? 'text-muted'
-                                            : 'text-muted/70'
-                                    "
+                                    class="font-mono text-xs font-normal text-muted tabular-nums"
                                 >
                                     {{ filterCount(filter.value) }}
                                 </span>
                             </button>
                             <button
                                 v-if="filter.value === 'all'"
+                                :id="outputTabId('timeline')"
                                 type="button"
                                 role="tab"
+                                aria-controls="snippet-output"
                                 :aria-selected="activeTab === 'timeline'"
+                                :tabindex="activeTab === 'timeline' ? 0 : -1"
                                 class="shrink-0 px-1.5 py-1.5 text-sm whitespace-nowrap"
                                 :class="
                                     activeTab === 'timeline'
@@ -638,6 +676,7 @@ function toggleMaximize(): void {
                                         : 'text-muted hover:text-fg'
                                 "
                                 @click="activeTab = 'timeline'"
+                                @keydown="onTabKeydown"
                             >
                                 Timeline
                             </button>
@@ -668,8 +707,12 @@ function toggleMaximize(): void {
                         </div>
                     </div>
                     <div
-                        role="region"
-                        aria-label="Snippet output"
+                        id="snippet-output"
+                        :role="debug ? 'tabpanel' : 'region'"
+                        :aria-label="debug ? undefined : 'Snippet output'"
+                        :aria-labelledby="
+                            debug ? outputTabId(activeTab) : undefined
+                        "
                         class="min-h-0 flex-1 overflow-auto"
                     >
                         <p v-if="!hasRun" class="px-4 py-6 text-sm text-muted">
@@ -703,7 +746,7 @@ function toggleMaximize(): void {
                     </div>
                 </div>
             </div>
-        </div>
+        </main>
 
         <p
             v-if="errorMessage"

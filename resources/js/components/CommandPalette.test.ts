@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/vue';
-import { beforeEach, expect, it, vi } from 'vitest';
+import { beforeEach, expect, it, onTestFinished, vi } from 'vitest';
 import { reactive } from 'vue';
 
 const routerGet = vi.fn();
@@ -321,6 +321,24 @@ it('closes the panel when Escape is pressed on the name field', async () => {
     await fireEvent.keyDown(input, { key: 'Escape' });
 
     expect(screen.queryByRole('dialog', { name: 'Snippets' })).toBeNull();
+});
+
+it('returns focus to the element that had it when the panel is closed', async () => {
+    vi.stubGlobal('fetch', fetchRoutedTo(['scratch'], []));
+    const editor = document.createElement('textarea');
+    document.body.append(editor);
+    onTestFinished(() => editor.remove());
+    render(CommandPalette, {
+        props: { currentProject: 'my-project', currentSnippet: 'scratch' },
+    });
+    editor.focus();
+
+    await fireEvent.keyDown(document, { key: 'p', metaKey: true });
+    const input = await screen.findByLabelText('Search or jump to');
+    await vi.waitFor(() => expect(document.activeElement).toBe(input));
+    await fireEvent.keyDown(input, { key: 'Escape' });
+
+    expect(document.activeElement).toBe(editor);
 });
 
 it('filters the list as the name field is typed into', async () => {

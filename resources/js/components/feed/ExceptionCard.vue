@@ -62,7 +62,7 @@ function frameCountLabel(frames: ExceptionFrame[]): string {
                     v-for="(frame, frameIndex) in entry.frames"
                     :key="frameIndex"
                     :data-vendor="frame.vendor"
-                    :class="frame.vendor ? 'text-muted opacity-60' : 'text-fg'"
+                    :class="frame.vendor ? 'text-muted' : 'text-fg'"
                 >
                     {{ frameLocation(frame) }}
                     <span
