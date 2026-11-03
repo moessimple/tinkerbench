@@ -790,7 +790,7 @@ async function confirmDelete(name: string): Promise<void> {
                                     <span class="truncate">{{ name }}</span>
                                 </button>
                                 <span
-                                    class="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100"
+                                    class="flex shrink-0 items-center gap-1 opacity-0 group-focus-within:opacity-100 group-hover:opacity-100"
                                 >
                                     <button
                                         type="button"

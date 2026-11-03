@@ -532,23 +532,42 @@ it('keeps the selected output tab on keys other than the arrows, Home, and End',
     ).toBe('true');
 });
 
-it('leaves arrow keys with a modifier to the browser and the system', async () => {
+it.each(['metaKey', 'ctrlKey', 'altKey', 'shiftKey'])(
+    'leaves an arrow key pressed with %s to the browser and the system',
+    async (modifier) => {
+        render(OpenSnippet, { props });
+
+        await fireEvent.click(
+            screen.getByRole('button', { name: 'Run snippet' }),
+        );
+        capturedPost?.onSuccess({ output: '', debug: payload() });
+        const all = await screen.findByRole('tab', { name: /^All/ });
+        const event = new KeyboardEvent('keydown', {
+            key: 'ArrowRight',
+            [modifier]: true,
+            bubbles: true,
+            cancelable: true,
+        });
+        await fireEvent(all, event);
+
+        expect(event.defaultPrevented).toBe(false);
+        expect(all.getAttribute('aria-selected')).toBe('true');
+    },
+);
+
+it('wraps to the first output tab with the right arrow key on the last one', async () => {
     render(OpenSnippet, { props });
 
     await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
     capturedPost?.onSuccess({ output: '', debug: payload() });
-    const all = await screen.findByRole('tab', { name: /^All/ });
-    const event = new KeyboardEvent('keydown', {
+    await fireEvent.click(await screen.findByRole('tab', { name: 'Timeline' }));
+    await fireEvent.keyDown(screen.getByRole('tab', { name: 'Timeline' }), {
         key: 'ArrowRight',
-        ctrlKey: true,
-        metaKey: true,
-        bubbles: true,
-        cancelable: true,
     });
-    await fireEvent(all, event);
 
-    expect(event.defaultPrevented).toBe(false);
-    expect(all.getAttribute('aria-selected')).toBe('true');
+    expect(
+        screen.getByRole('tab', { name: /^All/ }).getAttribute('aria-selected'),
+    ).toBe('true');
 });
 
 it('keeps only the selected output tab in the tab order', async () => {
