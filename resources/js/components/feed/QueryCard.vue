@@ -23,13 +23,13 @@ const highlighted = computed(() => highlightSql(formatted.value));
         <template #footer>
             <span
                 v-if="entry.slow"
-                class="rounded bg-warn/10 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-warn uppercase"
+                class="rounded-sm bg-warn/15 px-1.5 py-0.5 font-medium text-warn"
             >
                 slow
             </span>
             <span
                 v-if="entry.duplicate"
-                class="rounded bg-warn/10 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-warn uppercase"
+                class="rounded-sm bg-warn/15 px-1.5 py-0.5 font-medium text-warn"
             >
                 duplicate
             </span>

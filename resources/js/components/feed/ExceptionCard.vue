@@ -53,7 +53,7 @@ function frameCountLabel(frames: ExceptionFrame[]): string {
         </p>
         <details v-if="hasTrace(entry.frames)" class="mt-2 text-xs">
             <summary
-                class="cursor-pointer tracking-wide text-muted uppercase select-none hover:text-fg"
+                class="cursor-pointer text-muted select-none hover:text-fg"
             >
                 {{ frameCountLabel(entry.frames) }}
             </summary>

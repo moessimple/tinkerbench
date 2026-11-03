@@ -356,31 +356,30 @@ function toggleMaximize(): void {
         >
             <div class="flex items-center gap-2">
                 <span
-                    class="flex items-center gap-1.5 font-mono text-xs font-semibold tracking-widest text-muted uppercase"
+                    class="flex items-center gap-2 text-[15px] font-semibold text-fg"
                 >
                     <svg
                         viewBox="0 0 16 16"
-                        width="11"
-                        height="11"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.4"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        class="text-accent"
+                        width="16"
+                        height="16"
                         aria-hidden="true"
                     >
-                        <path
-                            d="M5.5 5.2c0-1.8 1.1-3.2 2.5-3.2s2.5 1.4 2.5 3.2"
+                        <rect
+                            width="16"
+                            height="16"
+                            rx="2"
+                            class="fill-measure"
                         />
                         <path
-                            d="M3.8 5.2h8.4l-1.3 7.4a1 1 0 0 1-1 .8H6.1a1 1 0 0 1-1-.8L3.8 5.2Z"
+                            d="M3.5 0v8M6.5 0v4M9.5 0v6M12.5 0v4"
+                            stroke="#1a2228"
+                            stroke-width="1.5"
                         />
                     </svg>
                     tinkerbench
                 </span>
-                <span class="text-line" aria-hidden="true">/</span>
-                <h1 class="font-mono text-sm font-semibold text-fg">
+                <span class="text-muted/60" aria-hidden="true">/</span>
+                <h1 class="font-mono text-sm font-medium text-fg">
                     {{ currentProject }}
                     <span class="text-muted">/</span>
                     {{ snippetName }}
@@ -395,7 +394,7 @@ function toggleMaximize(): void {
                     class="flex items-center gap-1.5"
                 >
                     <kbd
-                        class="rounded border border-line px-1 py-0.5 font-mono text-fg"
+                        class="rounded-sm border border-b-2 border-line bg-surface px-1.5 py-0.5 font-mono text-fg"
                         >{{ shortcut.keys }}</kbd
                     >
                     {{ shortcut.description }}
@@ -433,7 +432,7 @@ function toggleMaximize(): void {
                                     http.processing ? 'Running…' : 'Run snippet'
                                 "
                                 :disabled="http.processing"
-                                class="flex h-8 w-8 items-center justify-center rounded text-muted hover:bg-line/30 hover:text-fg disabled:opacity-50"
+                                class="flex h-8 w-8 items-center justify-center rounded-md text-fg hover:bg-line/50 disabled:opacity-50"
                                 @click="run"
                             >
                                 <svg
@@ -597,7 +596,7 @@ function toggleMaximize(): void {
                         v-if="debug"
                         role="tablist"
                         aria-label="Output views"
-                        class="flex shrink-0 gap-0.5 overflow-x-auto border-b border-line px-3 py-1 text-xs"
+                        class="flex shrink-0 gap-1 overflow-x-auto border-b border-line px-2"
                     >
                         <template
                             v-for="filter in feedFilters"
@@ -607,20 +606,20 @@ function toggleMaximize(): void {
                                 type="button"
                                 role="tab"
                                 :aria-selected="activeTab === filter.value"
-                                class="flex shrink-0 items-baseline gap-1 rounded px-2 py-1 tracking-wide whitespace-nowrap uppercase"
+                                class="flex shrink-0 items-baseline gap-1 px-2 py-1.5 text-[13px] whitespace-nowrap"
                                 :class="
                                     activeTab === filter.value
-                                        ? 'bg-accent/10 text-accent'
-                                        : 'text-muted hover:bg-line/40 hover:text-fg'
+                                        ? 'font-medium text-fg shadow-[inset_0_-2px_0_var(--measure)]'
+                                        : 'text-muted hover:text-fg'
                                 "
                                 @click="activeTab = filter.value"
                             >
                                 {{ filter.label }}
                                 <span
-                                    class="tabular-nums"
+                                    class="font-mono text-xs font-normal tabular-nums"
                                     :class="
                                         activeTab === filter.value
-                                            ? 'text-accent/70'
+                                            ? 'text-muted'
                                             : 'text-muted/70'
                                     "
                                 >
@@ -632,11 +631,11 @@ function toggleMaximize(): void {
                                 type="button"
                                 role="tab"
                                 :aria-selected="activeTab === 'timeline'"
-                                class="shrink-0 rounded px-2 py-1 tracking-wide whitespace-nowrap uppercase"
+                                class="shrink-0 px-2 py-1.5 text-[13px] whitespace-nowrap"
                                 :class="
                                     activeTab === 'timeline'
-                                        ? 'bg-accent/10 text-accent'
-                                        : 'text-muted hover:bg-line/40 hover:text-fg'
+                                        ? 'font-medium text-fg shadow-[inset_0_-2px_0_var(--measure)]'
+                                        : 'text-muted hover:text-fg'
                                 "
                                 @click="activeTab = 'timeline'"
                             >
@@ -650,16 +649,16 @@ function toggleMaximize(): void {
                     >
                         <span>{{ querySummary(debug) }}</span>
                         <div class="flex items-center gap-1">
-                            <span class="tracking-wide uppercase">Sort</span>
+                            <span>Sort</span>
                             <button
                                 v-for="option in querySorts"
                                 :key="option.value"
                                 type="button"
                                 :aria-pressed="querySort === option.value"
-                                class="rounded px-2 py-1 tracking-wide uppercase"
+                                class="rounded-sm px-2 py-1"
                                 :class="
                                     querySort === option.value
-                                        ? 'bg-accent/10 text-accent'
+                                        ? 'bg-line/60 text-fg'
                                         : 'hover:bg-line/40 hover:text-fg'
                                 "
                                 @click="querySort = option.value"
@@ -681,7 +680,7 @@ function toggleMaximize(): void {
                             timing here.
                             <span class="mt-2 block">
                                 <kbd
-                                    class="rounded border border-line px-1 py-0.5 font-mono text-fg"
+                                    class="rounded-sm border border-b-2 border-line bg-canvas px-1.5 py-0.5 font-mono text-fg"
                                     >{{ runShortcut }}</kbd
                                 >
                             </span>

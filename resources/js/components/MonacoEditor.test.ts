@@ -85,13 +85,13 @@ beforeEach(() => {
         );
 });
 
-it('creates the editor with PHP syntax highlighting and the github-dark theme', () => {
+it('creates the editor with PHP syntax highlighting and the tinkerbench-dark theme', () => {
     render(MonacoEditor, {
         props: { initialValue: '<?php echo "initial";', project: 'my-project' },
     });
 
     expect(monaco.editor.defineTheme).toHaveBeenCalledWith(
-        'github-dark',
+        'tinkerbench-dark',
         expect.any(Object),
     );
     expect(monaco.editor.create).toHaveBeenCalledWith(
@@ -99,7 +99,7 @@ it('creates the editor with PHP syntax highlighting and the github-dark theme', 
         expect.objectContaining({
             value: '<?php echo "initial";',
             language: 'php',
-            theme: 'github-dark',
+            theme: 'tinkerbench-dark',
         }),
     );
 });
@@ -157,18 +157,18 @@ it('creates the editor with the rendering and interaction options mirrored from 
     );
 });
 
-it('defines a github-light theme alongside github-dark', () => {
+it('defines a tinkerbench-light theme alongside tinkerbench-dark', () => {
     render(MonacoEditor, {
         props: { initialValue: '<?php echo "initial";', project: 'my-project' },
     });
 
     expect(monaco.editor.defineTheme).toHaveBeenCalledWith(
-        'github-light',
+        'tinkerbench-light',
         expect.any(Object),
     );
 });
 
-it('creates the editor with the github-light theme when the light theme is active', () => {
+it('creates the editor with the tinkerbench-light theme when the light theme is active', () => {
     mockTheme.value = 'light';
 
     render(MonacoEditor, {
@@ -177,7 +177,7 @@ it('creates the editor with the github-light theme when the light theme is activ
 
     expect(monaco.editor.create).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ theme: 'github-light' }),
+        expect.objectContaining({ theme: 'tinkerbench-light' }),
     );
 });
 
@@ -188,7 +188,9 @@ it('switches the editor theme when the app theme changes', async () => {
 
     mockTheme.value = 'light';
     await vi.waitFor(() =>
-        expect(monaco.editor.setTheme).toHaveBeenCalledWith('github-light'),
+        expect(monaco.editor.setTheme).toHaveBeenCalledWith(
+            'tinkerbench-light',
+        ),
     );
 });
 

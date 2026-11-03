@@ -68,7 +68,7 @@ const parts = computed<Part[]>(() => {
             durationMs: props.debug.query_duration_ms,
             durationStr: props.debug.query_duration_str,
             percentage: percentages.value.query,
-            swatch: 'bg-accent',
+            swatch: 'bg-kind-query',
             note: '',
         });
     }
@@ -80,7 +80,7 @@ const parts = computed<Part[]>(() => {
             durationMs: props.debug.http_duration_ms,
             durationStr: props.debug.http_duration_str,
             percentage: percentages.value.http_client,
-            swatch: 'bg-warn',
+            swatch: 'bg-kind-http',
             note: '',
         });
     }
@@ -91,7 +91,7 @@ const parts = computed<Part[]>(() => {
         durationMs: props.debug.code_duration_ms,
         durationStr: props.debug.code_duration_str,
         percentage: percentages.value.code,
-        swatch: 'bg-fg/70',
+        swatch: 'bg-fg/60',
         note: codeNote(),
     });
 
@@ -100,18 +100,38 @@ const parts = computed<Part[]>(() => {
 </script>
 
 <template>
-    <div class="flex flex-col gap-3 px-4 py-3 text-xs">
+    <div class="flex flex-col gap-3 px-4 py-3 text-[13px]">
         <p
             class="flex items-baseline justify-between gap-x-3 text-fg"
             title="Console boot, not a web request. The same on every run, so it is not part of the shares below."
         >
             <span class="font-medium">Booting</span>
-            <span class="font-mono">{{ debug.boot_duration_str }}</span>
+            <span class="font-mono tabular-nums">{{
+                debug.boot_duration_str
+            }}</span>
         </p>
         <p class="flex items-baseline justify-between gap-x-3 text-fg">
             <span class="font-medium">Application</span>
-            <span class="font-mono">{{ debug.application_duration_str }}</span>
+            <span class="font-mono tabular-nums">{{
+                debug.application_duration_str
+            }}</span>
         </p>
+        <!--
+            The scale every bar below is read against, a tick per 10% of the application time, so a
+            share can be read off the bar without its number.
+        -->
+        <div
+            aria-hidden="true"
+            class="grid grid-cols-[3rem_5.5rem_3rem_1fr] gap-x-3 pl-4 font-mono text-[11px] text-muted"
+        >
+            <span
+                class="col-start-4 flex h-5 items-end justify-between border-b border-muted/60 bg-[repeating-linear-gradient(to_right,var(--muted)_0_1px,transparent_1px_10%)] bg-[length:100%_6px] bg-bottom bg-no-repeat"
+            >
+                <span class="-ml-px pb-1.5">0</span>
+                <span class="pb-1.5">50</span>
+                <span class="-mr-px pb-1.5">100%</span>
+            </span>
+        </div>
         <ul aria-label="Timeline" class="-mt-1 flex flex-col gap-2 pl-4">
             <li
                 v-for="part in parts"
@@ -123,16 +143,18 @@ const parts = computed<Part[]>(() => {
                     class="grid grid-cols-[3rem_5.5rem_3rem_1fr] items-center gap-x-3"
                 >
                     <span class="font-medium text-fg">{{ part.label }}</span>
-                    <span class="text-right font-mono text-fg">{{
+                    <span class="text-right font-mono text-fg tabular-nums">{{
                         part.durationStr
                     }}</span>
-                    <span class="text-right font-mono text-muted"
+                    <span class="text-right font-mono text-muted tabular-nums"
                         >{{ part.percentage }}%</span
                     >
-                    <span class="h-2 overflow-hidden rounded-full bg-line">
+                    <span
+                        class="h-3 bg-[repeating-linear-gradient(to_right,var(--line)_0_1px,transparent_1px_10%)]"
+                    >
                         <span
                             aria-hidden="true"
-                            class="block h-full rounded-full"
+                            class="measure-in block h-full"
                             :class="part.swatch"
                             :style="{
                                 width: `${Number(shareOfApplication(Math.max(part.durationMs, 0)).toFixed(4))}%`,
@@ -149,7 +171,9 @@ const parts = computed<Part[]>(() => {
             class="flex items-baseline justify-between gap-x-3 border-t border-line pt-2 font-medium text-fg"
         >
             <span>Duration</span>
-            <span class="font-mono">{{ debug.run_duration_str }}</span>
+            <span class="font-mono tabular-nums">{{
+                debug.run_duration_str
+            }}</span>
         </p>
     </div>
 </template>

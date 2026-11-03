@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref } from 'vue';
+import { computed, onBeforeUnmount, ref } from 'vue';
 
 const props = withDefaults(
     defineProps<{
@@ -11,6 +11,27 @@ const props = withDefaults(
     }>(),
     { variant: 'default' },
 );
+
+// The edge color names the kind, like a coded tool handle; danger and warning replace it because
+// a broken or slow entry matters more than what kind it is.
+const KIND_EDGES: Record<string, string> = {
+    Query: 'border-l-kind-query',
+    Log: 'border-l-kind-log',
+    HTTP: 'border-l-kind-http',
+    View: 'border-l-kind-view',
+};
+
+const edgeClass = computed(() => {
+    if (props.variant === 'danger') {
+        return 'border-l-danger';
+    }
+
+    if (props.variant === 'warning') {
+        return 'border-l-warn';
+    }
+
+    return KIND_EDGES[props.label] ?? 'border-l-line';
+});
 
 const emit = defineEmits<{ navigate: [line: number] }>();
 
@@ -44,24 +65,20 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
     <article
         :data-label="label"
         :data-variant="variant"
-        class="border-b border-l-2 border-line px-4 py-3"
-        :class="{
-            'border-l-danger': variant === 'danger',
-            'border-l-warn': variant === 'warning',
-            'border-l-transparent': variant === 'default',
-        }"
+        class="border-b border-l-3 border-line px-4 py-3"
+        :class="edgeClass"
     >
         <header
-            class="flex items-baseline justify-between gap-3 text-xs tracking-wider text-muted uppercase"
+            class="flex items-baseline justify-between gap-3 text-[13px] text-muted"
         >
-            <span>{{ label }}</span>
+            <span class="font-medium">{{ label }}</span>
 
             <div class="flex shrink-0 items-center gap-1">
                 <button
                     v-if="copy"
                     type="button"
                     :aria-label="copied ? 'Copied' : 'Copy'"
-                    class="-my-0.5 rounded px-1.5 py-1 text-muted normal-case hover:bg-line/50 hover:text-fg"
+                    class="-my-0.5 rounded px-1.5 py-1 text-muted hover:bg-line/50 hover:text-fg"
                     @click="copyToClipboard"
                 >
                     <svg
@@ -96,7 +113,7 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
                 <button
                     v-if="line !== null"
                     type="button"
-                    class="-mx-1.5 -my-0.5 rounded px-1.5 py-1 text-accent normal-case hover:bg-line/50 hover:underline"
+                    class="-mx-1.5 -my-0.5 rounded px-1.5 py-1 font-mono text-xs text-accent hover:bg-line/50 hover:underline"
                     @click="emit('navigate', line)"
                 >
                     line {{ line }}

@@ -21,7 +21,7 @@ let laravelLspServer: LanguageServerHandle | null = null;
 let unmounted = false;
 
 function monacoThemeName(): string {
-    return theme.value === 'dark' ? 'github-dark' : 'github-light';
+    return theme.value === 'dark' ? 'tinkerbench-dark' : 'tinkerbench-light';
 }
 
 function revealLine(lineNumber: number): void {
@@ -62,34 +62,62 @@ onMounted(() => {
         getWorker: createEditorWorker,
     };
 
-    monaco.editor.defineTheme('github-dark', {
+    monaco.editor.defineTheme('tinkerbench-dark', {
         base: 'vs-dark',
         inherit: true,
-        rules: [],
+        rules: [
+            { token: 'comment', foreground: '8D99A3', fontStyle: 'italic' },
+            { token: 'keyword', foreground: '6FB1D2' },
+            { token: 'string', foreground: '7CC28A' },
+            { token: 'number', foreground: 'B49AE0' },
+            { token: 'variable', foreground: 'DCE2E6' },
+            { token: 'metatag', foreground: 'F0C030' },
+        ],
         colors: {
-            'editor.background': '#161B22',
-            'editorGutter.background': '#161B22',
-            'editor.foreground': '#E6EDF3',
-            'editorLineNumber.foreground': '#7D8590',
-            'editorLineNumber.activeForeground': '#E6EDF3',
-            'editor.lineHighlightBackground': '#242E3A',
-            'editorCursor.foreground': '#4493F8',
-            'editor.selectionBackground': '#4493F826',
+            'editor.background': '#262B30',
+            'editorGutter.background': '#262B30',
+            'editor.foreground': '#DCE2E6',
+            'editorLineNumber.foreground': '#5C6770',
+            'editorLineNumber.activeForeground': '#DCE2E6',
+            'editor.lineHighlightBackground': '#2E343A',
+            'editorCursor.foreground': '#F0C030',
+            'editor.selectionBackground': '#6FB1D233',
+            // Brackets stay ink-colored: colored nesting levels would compete with the kind colors.
+            'editorBracketHighlight.foreground1': '#DCE2E6',
+            'editorBracketHighlight.foreground2': '#DCE2E6',
+            'editorBracketHighlight.foreground3': '#DCE2E6',
+            'editorBracketHighlight.foreground4': '#DCE2E6',
+            'editorBracketHighlight.foreground5': '#DCE2E6',
+            'editorBracketHighlight.foreground6': '#DCE2E6',
         },
     });
-    monaco.editor.defineTheme('github-light', {
+    monaco.editor.defineTheme('tinkerbench-light', {
         base: 'vs',
         inherit: true,
-        rules: [],
+        rules: [
+            { token: 'comment', foreground: '55626C', fontStyle: 'italic' },
+            { token: 'keyword', foreground: '2F6E8F' },
+            { token: 'string', foreground: '3F7D4E' },
+            { token: 'number', foreground: '6D4FA0' },
+            { token: 'variable', foreground: '1A2228' },
+            { token: 'metatag', foreground: 'A0520A' },
+        ],
         colors: {
-            'editor.background': '#F6F8FA',
-            'editorGutter.background': '#F6F8FA',
-            'editor.foreground': '#1F2328',
-            'editorLineNumber.foreground': '#59636E',
-            'editorLineNumber.activeForeground': '#1F2328',
-            'editor.lineHighlightBackground': '#EAEEF2',
-            'editorCursor.foreground': '#0969DA',
-            'editor.selectionBackground': '#0969DA26',
+            'editor.background': '#F7F8F8',
+            'editorGutter.background': '#F7F8F8',
+            'editor.foreground': '#1A2228',
+            'editorLineNumber.foreground': '#9AA4AC',
+            'editorLineNumber.activeForeground': '#1A2228',
+            'editor.lineHighlightBackground': '#EEF0F1',
+            'editorCursor.foreground': '#1A2228',
+            'editor.selectionBackground': '#2F6E8F26',
+            // Brackets stay ink-colored: colored nesting levels would compete with the kind colors.
+            'editorBracketHighlight.foreground1': '#1A2228',
+            'editorBracketHighlight.foreground2': '#1A2228',
+            'editorBracketHighlight.foreground3': '#1A2228',
+            'editorBracketHighlight.foreground4': '#1A2228',
+            'editorBracketHighlight.foreground5': '#1A2228',
+            'editorBracketHighlight.foreground6': '#1A2228',
         },
     });
 
@@ -105,8 +133,7 @@ onMounted(() => {
         language: 'php',
         theme: monacoThemeName(),
         automaticLayout: true,
-        fontFamily: "'Fira Code', Menlo, monospace",
-        fontLigatures: true,
+        fontFamily: "'IBM Plex Mono', Menlo, monospace",
         fontSize: 16,
         lineHeight: 28,
         minimap: { enabled: false },

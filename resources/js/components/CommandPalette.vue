@@ -645,13 +645,13 @@ async function confirmDelete(name: string): Promise<void> {
                             visibleSnippetNames.length === 0 &&
                             createForm.invalid('name')
                         "
-                        class="mt-1 font-mono text-xs text-red-400"
+                        class="mt-1 font-mono text-xs text-danger"
                     >
                         {{ createForm.errors.name }}
                     </p>
                     <p
                         v-if="createError"
-                        class="mt-1 font-mono text-xs text-red-400"
+                        class="mt-1 font-mono text-xs text-danger"
                     >
                         {{ createError }}
                     </p>
@@ -660,13 +660,13 @@ async function confirmDelete(name: string): Promise<void> {
                 <template v-if="errorMessage || projectsErrorMessage">
                     <p
                         v-if="errorMessage"
-                        class="px-3 py-2 font-mono text-xs text-red-400"
+                        class="px-3 py-2 font-mono text-xs text-danger"
                     >
                         {{ errorMessage }}
                     </p>
                     <p
                         v-if="projectsErrorMessage"
-                        class="px-3 py-2 font-mono text-xs text-red-400"
+                        class="px-3 py-2 font-mono text-xs text-danger"
                     >
                         {{ projectsErrorMessage }}
                     </p>
@@ -702,7 +702,7 @@ async function confirmDelete(name: string): Promise<void> {
                         <li
                             id="command-section-snippets"
                             role="presentation"
-                            class="px-3 pt-2 pb-1 font-mono text-[10px] font-semibold tracking-widest text-muted uppercase"
+                            class="px-3 pt-2 pb-1 text-xs font-medium text-muted"
                         >
                             Snippets
                         </li>
@@ -741,7 +741,7 @@ async function confirmDelete(name: string): Promise<void> {
                                     <button
                                         type="button"
                                         :disabled="deleteSubmitting"
-                                        class="rounded px-1.5 py-0.5 text-xs text-red-400 hover:bg-line/50"
+                                        class="rounded px-1.5 py-0.5 text-xs text-danger hover:bg-line/50"
                                         @click="confirmDelete(name)"
                                         @keydown.escape="cancelDelete"
                                     >
@@ -830,13 +830,13 @@ async function confirmDelete(name: string): Promise<void> {
                             </div>
                             <p
                                 v-if="renaming === name && renameError"
-                                class="font-mono text-xs text-red-400"
+                                class="font-mono text-xs text-danger"
                             >
                                 {{ renameError }}
                             </p>
                             <p
                                 v-if="deleting === name && deleteError"
-                                class="font-mono text-xs text-red-400"
+                                class="font-mono text-xs text-danger"
                             >
                                 {{ deleteError }}
                             </p>
@@ -852,7 +852,7 @@ async function confirmDelete(name: string): Promise<void> {
                         <li
                             id="command-section-projects"
                             role="presentation"
-                            class="px-3 pt-2 pb-1 font-mono text-[10px] font-semibold tracking-widest text-muted uppercase"
+                            class="px-3 pt-2 pb-1 text-xs font-medium text-muted"
                         >
                             Projects
                         </li>
