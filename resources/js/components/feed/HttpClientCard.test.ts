@@ -1,4 +1,4 @@
-import { render } from '@testing-library/vue';
+import { fireEvent, render, screen } from '@testing-library/vue';
 import { expect, it, vi } from 'vitest';
 import type { FeedItem } from '@/types';
 import HttpClientCard from './HttpClientCard.vue';
@@ -249,6 +249,70 @@ it('puts the response body preview on the clipboard copy button', () => {
             .querySelector('[data-label="HTTP"]')
             ?.getAttribute('data-copy'),
     ).toBe('{"id":1}');
+});
+
+const twelveLineBody = Array.from(
+    { length: 12 },
+    (_, index) => `line ${index + 1}`,
+).join('\n');
+
+it('shows only the first ten lines of a long response body', () => {
+    const { container } = render(HttpClientCard, {
+        props: {
+            entry: httpClientEntry({ response_body_preview: twelveLineBody }),
+        },
+    });
+
+    expect(container.textContent).toContain('line 10');
+    expect(container.textContent).not.toContain('line 11');
+    expect(screen.getByRole('button', { name: 'Show all' })).toBeTruthy();
+});
+
+it('shows only the first 600 characters of a long single-line header', () => {
+    const { container } = render(HttpClientCard, {
+        props: {
+            entry: httpClientEntry({
+                response_headers: {
+                    'Set-Cookie': [`session=${'a'.repeat(700)}`],
+                },
+            }),
+        },
+    });
+
+    expect(container.textContent).not.toContain('a'.repeat(600));
+    expect(screen.getByRole('button', { name: 'Show all' })).toBeTruthy();
+});
+
+it('shows the whole section after Show all is clicked', async () => {
+    const { container } = render(HttpClientCard, {
+        props: {
+            entry: httpClientEntry({ response_body_preview: twelveLineBody }),
+        },
+    });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Show all' }));
+
+    expect(container.textContent).toContain('line 12');
+    expect(screen.getByRole('button', { name: 'Show less' })).toBeTruthy();
+});
+
+it('collapses the section again after Show less is clicked', async () => {
+    const { container } = render(HttpClientCard, {
+        props: {
+            entry: httpClientEntry({ response_body_preview: twelveLineBody }),
+        },
+    });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Show all' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Show less' }));
+
+    expect(container.textContent).not.toContain('line 11');
+});
+
+it('offers no Show all button when every section is short', () => {
+    render(HttpClientCard, { props: { entry: httpClientEntry() } });
+
+    expect(screen.queryByRole('button', { name: 'Show all' })).toBeNull();
 });
 
 it('re-emits navigate with the entry line', async () => {
