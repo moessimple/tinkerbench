@@ -56,7 +56,7 @@ it('formats the sql across lines and highlights its keywords', () => {
         '<span class="text-accent">select</span>',
     );
     expect(code?.innerHTML).toContain(
-        `<span class="text-warn">'a@b.com'</span>`,
+        `<span class="text-kind-log">'a@b.com'</span>`,
     );
 });
 

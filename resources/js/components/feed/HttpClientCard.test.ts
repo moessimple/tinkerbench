@@ -1,4 +1,4 @@
-import { render } from '@testing-library/vue';
+import { fireEvent, render, screen } from '@testing-library/vue';
 import { expect, it, vi } from 'vitest';
 import type { FeedItem } from '@/types';
 import HttpClientCard from './HttpClientCard.vue';
@@ -88,7 +88,7 @@ it('shows a danger variant for a 5xx response', () => {
     ).toBe('danger');
 });
 
-it('reports success as true below 400 and false at or above it', () => {
+it('reports success as yes below 400 and no at or above it', () => {
     const { container: ok } = render(HttpClientCard, {
         props: { entry: httpClientEntry({ status: 200 }) },
     });
@@ -96,11 +96,11 @@ it('reports success as true below 400 and false at or above it', () => {
         props: { entry: httpClientEntry({ status: 404 }) },
     });
 
-    expect(rowValue(ok, 'Success')).toBe('true');
-    expect(rowValue(notOk, 'Success')).toBe('false');
+    expect(rowValue(ok, 'Success')).toBe('Yes');
+    expect(rowValue(notOk, 'Success')).toBe('No');
 });
 
-it('reports Real Request as true for a genuine call and false for a faked one', () => {
+it('reports a real request as yes for a genuine call and no for a faked one', () => {
     const { container: real } = render(HttpClientCard, {
         props: { entry: httpClientEntry({ faked: false }) },
     });
@@ -108,8 +108,8 @@ it('reports Real Request as true for a genuine call and false for a faked one', 
         props: { entry: httpClientEntry({ faked: true }) },
     });
 
-    expect(rowValue(real, 'Real Request')).toBe('true');
-    expect(rowValue(faked, 'Real Request')).toBe('false');
+    expect(rowValue(real, 'Real request')).toBe('Yes');
+    expect(rowValue(faked, 'Real request')).toBe('No');
 });
 
 it('shows the request type', () => {
@@ -143,7 +143,7 @@ it('shows "none" for an empty header set', () => {
     expect(container.textContent).toContain('none');
 });
 
-it('shows the response body preview and a truncated hint when it was cut', () => {
+it('says that only part of the response body was captured when the runner cut it', () => {
     const { container } = render(HttpClientCard, {
         props: {
             entry: httpClientEntry({
@@ -155,7 +155,7 @@ it('shows the response body preview and a truncated hint when it was cut', () =>
 
     const text = container.textContent ?? '';
     expect(text).toContain('partial body...');
-    expect(text.toLowerCase()).toContain('truncated');
+    expect(text).toContain('Only part of this body was captured');
 });
 
 it('shows content type and size instead of a preview for a non-textual response body', () => {
@@ -188,7 +188,22 @@ it('falls back to a generic label when the response content type itself is missi
     expect(container.textContent).toContain('unknown content type');
 });
 
-it('shows the request body preview and a truncated hint when present', () => {
+it('leaves out the size of a non-textual response body when it is unknown', () => {
+    const { container } = render(HttpClientCard, {
+        props: {
+            entry: httpClientEntry({
+                response_body_preview: null,
+                response_content_type: 'application/octet-stream',
+                response_size: null,
+            }),
+        },
+    });
+
+    expect(container.textContent).toContain('application/octet-stream');
+    expect(container.textContent).not.toContain('bytes');
+});
+
+it('says that only part of the request body was captured when the runner cut it', () => {
     const { container } = render(HttpClientCard, {
         props: {
             entry: httpClientEntry({
@@ -203,7 +218,7 @@ it('shows the request body preview and a truncated hint when present', () => {
 
     const text = container.textContent ?? '';
     expect(text).toContain('{"name":"Ada"}');
-    expect(text.toLowerCase()).toContain('truncated');
+    expect(text).toContain('Only part of this body was captured');
 });
 
 it('shows request content type and size instead of a preview for a non-textual request body', () => {
@@ -234,6 +249,80 @@ it('puts the response body preview on the clipboard copy button', () => {
             .querySelector('[data-label="HTTP"]')
             ?.getAttribute('data-copy'),
     ).toBe('{"id":1}');
+});
+
+const twelveLineBody = Array.from(
+    { length: 12 },
+    (_, index) => `line ${index + 1}`,
+).join('\n');
+
+it('shows only the first ten lines of a long response body', () => {
+    const { container } = render(HttpClientCard, {
+        props: {
+            entry: httpClientEntry({ response_body_preview: twelveLineBody }),
+        },
+    });
+
+    expect(container.textContent).toContain('line 10');
+    expect(container.textContent).not.toContain('line 11');
+    expect(screen.getByRole('button', { name: 'Show all' })).toBeTruthy();
+});
+
+it('shows only the first 600 characters of a long single-line header', () => {
+    const { container } = render(HttpClientCard, {
+        props: {
+            entry: httpClientEntry({
+                response_headers: {
+                    'Set-Cookie': [`session=${'a'.repeat(700)}`],
+                },
+            }),
+        },
+    });
+
+    expect(container.textContent).not.toContain('a'.repeat(600));
+    expect(screen.getByRole('button', { name: 'Show all' })).toBeTruthy();
+});
+
+it('ends a collapsed section with an ellipsis', () => {
+    const { container } = render(HttpClientCard, {
+        props: {
+            entry: httpClientEntry({ response_body_preview: twelveLineBody }),
+        },
+    });
+
+    expect(container.textContent).toContain('line 10…');
+});
+
+it('shows the whole section after Show all is clicked', async () => {
+    const { container } = render(HttpClientCard, {
+        props: {
+            entry: httpClientEntry({ response_body_preview: twelveLineBody }),
+        },
+    });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Show all' }));
+
+    expect(container.textContent).toContain('line 12');
+    expect(screen.getByRole('button', { name: 'Show less' })).toBeTruthy();
+});
+
+it('collapses the section again after Show less is clicked', async () => {
+    const { container } = render(HttpClientCard, {
+        props: {
+            entry: httpClientEntry({ response_body_preview: twelveLineBody }),
+        },
+    });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Show all' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Show less' }));
+
+    expect(container.textContent).not.toContain('line 11');
+});
+
+it('offers no Show all button when every section is short', () => {
+    render(HttpClientCard, { props: { entry: httpClientEntry() } });
+
+    expect(screen.queryByRole('button', { name: 'Show all' })).toBeNull();
 });
 
 it('re-emits navigate with the entry line', async () => {

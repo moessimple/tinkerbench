@@ -91,7 +91,7 @@ export function highlightSql(sql: string): string {
         /('(?:[^']|'')*')|(\b\d+(?:\.\d+)?\b)|([A-Za-z_][A-Za-z0-9_]*)/g,
         (match, string: string, number: string, word: string) => {
             if (string) {
-                return `<span class="text-warn">${match}</span>`;
+                return `<span class="text-kind-log">${match}</span>`;
             }
 
             if (number) {

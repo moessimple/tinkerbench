@@ -47,17 +47,17 @@ function frameCountLabel(frames: ExceptionFrame[]): string {
         :copy="copyText"
         @navigate="$emit('navigate', $event)"
     >
-        <p>
+        <p class="wrap-anywhere">
             <strong class="text-danger">{{ entry.type }}</strong
             >: {{ entry.message }}
         </p>
         <details v-if="hasTrace(entry.frames)" class="mt-2 text-xs">
             <summary
-                class="cursor-pointer tracking-wide text-muted uppercase select-none hover:text-fg"
+                class="cursor-pointer text-muted select-none hover:text-fg"
             >
                 {{ frameCountLabel(entry.frames) }}
             </summary>
-            <ul class="mt-1.5 flex flex-col gap-0.5">
+            <ul class="mt-1.5 flex flex-col gap-0.5 wrap-anywhere">
                 <li
                     v-for="(frame, frameIndex) in entry.frames"
                     :key="frameIndex"

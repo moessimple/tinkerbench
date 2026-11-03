@@ -31,5 +31,5 @@ it('shows the labelled duration and memory usage', () => {
     const text = summary.textContent?.replace(/\s+/g, ' ');
 
     expect(text).toContain('Duration 200.00 ms');
-    expect(text).toContain('Memory Usage 18.50 MB');
+    expect(text).toContain('Memory usage 18.50 MB');
 });

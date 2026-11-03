@@ -139,6 +139,12 @@ it('shows a facet-specific empty message when a filter matches nothing', () => {
     expect(container.textContent).toContain('No exceptions on this run');
 });
 
+it('keeps an acronym facet in its own case in the empty message', () => {
+    const { container } = renderFeed([dump(1)], { filter: 'n_plus_one' });
+
+    expect(container.textContent).toContain('No N+1 on this run');
+});
+
 it('shows no empty message on the all facet', () => {
     const { container } = renderFeed([], { filter: 'all' });
 

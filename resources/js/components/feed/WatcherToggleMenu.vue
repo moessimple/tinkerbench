@@ -56,10 +56,10 @@ onBeforeUnmount(() => {
                 stroke-linejoin="round"
                 aria-hidden="true"
             >
-                <circle cx="8" cy="8" r="2.25" />
-                <path
-                    d="M8 1.5v1.6M8 12.9v1.6M14.5 8h-1.6M3.1 8H1.5M12.5 3.5l-1.13 1.13M4.63 11.37 3.5 12.5M12.5 12.5l-1.13-1.13M4.63 4.63 3.5 3.5"
-                />
+                <path d="M2 4h12M2 8h12M2 12h12" />
+                <circle cx="5" cy="4" r="1.5" fill="currentColor" />
+                <circle cx="11" cy="8" r="1.5" fill="currentColor" />
+                <circle cx="7" cy="12" r="1.5" fill="currentColor" />
             </svg>
         </button>
 

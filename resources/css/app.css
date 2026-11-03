@@ -5,10 +5,10 @@
 
 @theme inline {
     --font-sans:
-        Instrument Sans, ui-sans-serif, system-ui, sans-serif,
+        'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
-    --font-mono: 'Fira Code', Menlo, monospace;
+    --font-mono: 'IBM Plex Mono', Menlo, monospace;
     --color-canvas: var(--canvas);
     --color-surface: var(--surface);
     --color-line: var(--line);
@@ -17,45 +17,131 @@
     --color-accent: var(--accent);
     --color-danger: var(--danger);
     --color-warn: var(--warn);
+    --color-measure: var(--measure);
+    --color-kind-query: var(--accent);
+    --color-kind-log: var(--kind-log);
+    --color-kind-http: var(--kind-http);
+    --color-kind-view: var(--kind-view);
 }
 
+/* The bench: aluminium and graphite surfaces, coolant blue for code keywords, and marking yellow
+   kept for small marks only (the logo, the active tab, the editor cursor). Kind colors mark each
+   feed card's edge like coded tool handles, so a card's kind reads before its label does. */
 :root {
-    --canvas: #ffffff;
-    --surface: #f6f8fa;
-    --line: #d0d7de;
-    --fg: #1f2328;
-    --muted: #59636e;
-    --accent: #0969da;
-    --danger: #cf222e;
-    --warn: #9a6700;
+    --canvas: #e6e9eb;
+    --surface: #f7f8f8;
+    --line: #c3cad0;
+    --fg: #1a2228;
+    --muted: #55626c;
+    --accent: #1d6fa5;
+    --danger: #b42318;
+    --warn: #a0520a;
+    --measure: #b38600;
+    --kind-log: #2f7d3a;
+    --kind-http: #6d4fa0;
+    --kind-view: #7a8892;
 }
 
 .dark {
-    --canvas: #0d1117;
-    --surface: #161b22;
-    --line: #30363d;
-    --fg: #e6edf3;
-    --muted: #7d8590;
-    --accent: #4493f8;
-    --danger: #f85149;
-    --warn: #d29922;
+    --canvas: #1d2125;
+    --surface: #262b30;
+    --line: #3a4249;
+    --fg: #dce2e6;
+    --muted: #8d99a3;
+    --accent: #62b0e8;
+    --danger: #f07466;
+    --warn: #f0a04b;
+    --measure: #f0c030;
+    --kind-log: #86d094;
+    --kind-http: #b49ae0;
+    --kind-view: #8d99a3;
 }
 
 /* Keyboard focus needs a consistent, high-contrast ring: the app styles hover on every control
    but defines no focus state, so keyboard users would otherwise fall back to the inconsistent
-   UA outline. Scoped to :focus-visible so pointer clicks stay ring-free. */
-:where(
-    a,
-    button,
-    input,
-    select,
-    textarea,
-    [role='tab'],
-    [tabindex]
-):focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
+   UA outline. Scoped to :focus-visible so pointer clicks stay ring-free. In the base layer so a
+   control with its own focus style (focus:outline-none plus a border) can replace the ring. */
+@layer base {
+    :where(
+        a,
+        button,
+        input,
+        select,
+        textarea,
+        [role='tab'],
+        [tabindex]
+    ):focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+        border-radius: 2px;
+    }
+}
+
+/* The one moving moment: timeline bars are drawn out along the scale, like a reading being taken.
+   Scaling instead of animating width keeps the bar's real width in place for the share it shows. */
+@keyframes measure-in {
+    from {
+        transform: scaleX(0);
+    }
+}
+
+.measure-in {
+    transform-origin: left;
+    animation: measure-in 450ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .measure-in {
+        animation: none;
+    }
+}
+
+/* Symfony VarDumper injects its own near-black theme as an inline <style> after this sheet, so
+   these rules need the extra `html` to outrank its `pre.sf-dump` selectors. */
+html pre.sf-dump {
+    background-color: var(--canvas);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 0.5rem 0.75rem;
     border-radius: 2px;
+}
+
+html pre.sf-dump .sf-dump-default {
+    background-color: transparent;
+    color: var(--muted);
+}
+
+html pre.sf-dump .sf-dump-str,
+html pre.sf-dump .sf-dump-key {
+    color: var(--kind-log);
+    font-weight: 400;
+}
+
+html pre.sf-dump .sf-dump-num,
+html pre.sf-dump .sf-dump-index {
+    color: var(--kind-http);
+    font-weight: 400;
+}
+
+html pre.sf-dump .sf-dump-const,
+html pre.sf-dump .sf-dump-public,
+html pre.sf-dump .sf-dump-protected,
+html pre.sf-dump .sf-dump-private {
+    color: var(--fg);
+    font-weight: 400;
+}
+
+html pre.sf-dump .sf-dump-note,
+html pre.sf-dump .sf-dump-ellipsis-note {
+    color: var(--accent);
+}
+
+html pre.sf-dump .sf-dump-meta,
+html pre.sf-dump .sf-dump-ref,
+html pre.sf-dump .sf-dump-ellipsis {
+    color: var(--muted);
 }
 
 /* Inertia's <x-inertia::app /> renders a bare <div id="app"> with no way to attach a Tailwind

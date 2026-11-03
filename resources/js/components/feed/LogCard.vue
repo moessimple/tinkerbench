@@ -27,7 +27,7 @@ const copyText = computed(() =>
     >
         <div class="flex flex-wrap items-baseline gap-x-2">
             <span
-                class="text-[10px] tracking-wide uppercase"
+                class="font-sans text-xs font-medium"
                 :class="isSevere ? 'text-danger' : 'text-muted'"
             >
                 {{ entry.label }}

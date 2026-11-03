@@ -34,7 +34,16 @@ const rows = computed(() => {
 const emptyLabel = computed(() => {
     const match = FACET_KINDS.find((kind) => kind.kind === props.filter);
 
-    return match ? `No ${match.facet.toLowerCase()} on this run` : '';
+    if (!match) {
+        return '';
+    }
+
+    // Acronym facets (N+1, HTTP) keep their case; lowercasing them would read as a typo.
+    const noun = /[a-z]/.test(match.facet)
+        ? match.facet.toLowerCase()
+        : match.facet;
+
+    return `No ${noun} on this run`;
 });
 
 watch(
@@ -54,7 +63,7 @@ watch(
     <div ref="feedElement" class="flex flex-col">
         <p
             v-if="rows.length === 0 && filter !== 'all'"
-            class="px-4 py-8 text-center font-mono text-xs text-muted"
+            class="px-4 py-8 text-center text-xs text-muted"
         >
             {{ emptyLabel }}
         </p>

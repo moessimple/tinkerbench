@@ -23,12 +23,13 @@ const copyText = computed(
         :copy="copyText"
         @navigate="$emit('navigate', $event)"
     >
-        <p>
+        <p class="wrap-anywhere">
             <strong class="text-warn">{{ entry.model }}</strong
             >::{{ entry.relation }} lazy-loaded {{ entry.count }}×
         </p>
-        <p class="mt-1.5 text-xs text-muted">
-            Eager-load with <code>-&gt;with('{{ entry.relation }}')</code>
+        <p class="mt-1.5 font-sans text-xs text-muted">
+            Eager-load with
+            <code class="font-mono">-&gt;with('{{ entry.relation }}')</code>
         </p>
     </Card>
 </template>
