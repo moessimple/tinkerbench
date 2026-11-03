@@ -195,6 +195,16 @@ it('shows the project and snippet name as the page heading', () => {
     screen.getByRole('heading', { name: 'my-project / scratch' });
 });
 
+it('marks the editor and output as the main content', () => {
+    render(OpenSnippet, { props });
+
+    const main = screen.getByRole('main');
+
+    expect(
+        main.contains(screen.getByRole('button', { name: 'Run snippet' })),
+    ).toBe(true);
+});
+
 it('shows the running PHP and Laravel version', () => {
     render(OpenSnippet, { props });
 
@@ -451,6 +461,116 @@ it('lists the Timeline tab right after All', async () => {
     await screen.findByRole('tablist', { name: 'Output views' });
 
     expect(screen.getAllByRole('tab')[1].textContent?.trim()).toBe('Timeline');
+});
+
+it('moves to the next output tab with the right arrow key', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '', debug: payload() });
+    await fireEvent.keyDown(await screen.findByRole('tab', { name: /^All/ }), {
+        key: 'ArrowRight',
+    });
+
+    const timeline = screen.getByRole('tab', { name: 'Timeline' });
+    expect(timeline.getAttribute('aria-selected')).toBe('true');
+    expect(document.activeElement).toBe(timeline);
+});
+
+it('wraps to the last output tab with the left arrow key on the first one', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '', debug: payload() });
+    await fireEvent.keyDown(await screen.findByRole('tab', { name: /^All/ }), {
+        key: 'ArrowLeft',
+    });
+
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs[tabs.length - 1].getAttribute('aria-selected')).toBe('true');
+});
+
+it('jumps to the last output tab with End', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '', debug: payload() });
+    await fireEvent.keyDown(await screen.findByRole('tab', { name: /^All/ }), {
+        key: 'End',
+    });
+
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs[tabs.length - 1].getAttribute('aria-selected')).toBe('true');
+});
+
+it('jumps to the first output tab with Home', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '', debug: payload() });
+    await fireEvent.click(await screen.findByRole('tab', { name: 'Timeline' }));
+    await fireEvent.keyDown(screen.getByRole('tab', { name: 'Timeline' }), {
+        key: 'Home',
+    });
+
+    expect(
+        screen.getByRole('tab', { name: /^All/ }).getAttribute('aria-selected'),
+    ).toBe('true');
+});
+
+it('keeps the selected output tab on keys other than the arrows, Home, and End', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '', debug: payload() });
+    await fireEvent.keyDown(await screen.findByRole('tab', { name: /^All/ }), {
+        key: 'a',
+    });
+
+    expect(
+        screen.getByRole('tab', { name: /^All/ }).getAttribute('aria-selected'),
+    ).toBe('true');
+});
+
+it('leaves arrow keys with a modifier to the browser and the system', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '', debug: payload() });
+    const all = await screen.findByRole('tab', { name: /^All/ });
+    const event = new KeyboardEvent('keydown', {
+        key: 'ArrowRight',
+        ctrlKey: true,
+        metaKey: true,
+        bubbles: true,
+        cancelable: true,
+    });
+    await fireEvent(all, event);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(all.getAttribute('aria-selected')).toBe('true');
+});
+
+it('keeps only the selected output tab in the tab order', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '', debug: payload() });
+    await screen.findByRole('tablist', { name: 'Output views' });
+
+    expect(
+        screen.getAllByRole('tab').map((tab) => tab.getAttribute('tabindex')),
+    ).toEqual(['0', '-1']);
+});
+
+it('labels the output panel with the selected tab', async () => {
+    render(OpenSnippet, { props });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Run snippet' }));
+    capturedPost?.onSuccess({ output: '', debug: payload() });
+    await fireEvent.click(await screen.findByRole('tab', { name: 'Timeline' }));
+
+    screen.getByRole('tabpanel', { name: 'Timeline' });
 });
 
 it('tells the timeline which timed watchers were off for the run', async () => {
