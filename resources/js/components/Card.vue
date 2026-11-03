@@ -69,7 +69,7 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
         :class="edgeClass"
     >
         <header
-            class="flex items-baseline justify-between gap-3 text-[13px] text-muted"
+            class="flex items-baseline justify-between gap-3 text-sm text-muted"
         >
             <span class="font-medium">{{ label }}</span>
 
@@ -121,7 +121,7 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
             </div>
         </header>
 
-        <div class="mt-2 min-w-0 overflow-x-auto font-mono text-[15px] text-fg">
+        <div class="mt-2 min-w-0 overflow-x-auto font-mono text-sm text-fg">
             <slot />
         </div>
 

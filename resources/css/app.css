@@ -99,7 +99,7 @@ html pre.sf-dump {
     background-color: var(--canvas);
     color: var(--muted);
     font-family: var(--font-mono);
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1.5;
     padding: 0.5rem 0.75rem;
     border-radius: 2px;

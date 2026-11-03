@@ -356,7 +356,7 @@ function toggleMaximize(): void {
         >
             <div class="flex min-w-0 items-center gap-2">
                 <span
-                    class="flex shrink-0 items-center gap-2 text-[15px] font-semibold text-fg"
+                    class="flex shrink-0 items-center gap-2 text-base font-semibold text-fg"
                 >
                     <svg
                         viewBox="0 0 16 16"
@@ -606,7 +606,7 @@ function toggleMaximize(): void {
                                 type="button"
                                 role="tab"
                                 :aria-selected="activeTab === filter.value"
-                                class="flex shrink-0 items-baseline gap-1 px-2 py-1.5 text-[13px] whitespace-nowrap"
+                                class="flex shrink-0 items-baseline gap-1 px-1.5 py-1.5 text-sm whitespace-nowrap"
                                 :class="
                                     activeTab === filter.value
                                         ? 'font-medium text-fg shadow-[inset_0_-2px_0_var(--measure)]'
@@ -631,7 +631,7 @@ function toggleMaximize(): void {
                                 type="button"
                                 role="tab"
                                 :aria-selected="activeTab === 'timeline'"
-                                class="shrink-0 px-2 py-1.5 text-[13px] whitespace-nowrap"
+                                class="shrink-0 px-1.5 py-1.5 text-sm whitespace-nowrap"
                                 :class="
                                     activeTab === 'timeline'
                                         ? 'font-medium text-fg shadow-[inset_0_-2px_0_var(--measure)]'
@@ -672,10 +672,7 @@ function toggleMaximize(): void {
                         aria-label="Snippet output"
                         class="min-h-0 flex-1 overflow-auto"
                     >
-                        <p
-                            v-if="!hasRun"
-                            class="px-4 py-6 text-[13px] text-muted"
-                        >
+                        <p v-if="!hasRun" class="px-4 py-6 text-sm text-muted">
                             Run the snippet to see its output here.
                             <span class="mt-2 block">
                                 <kbd
@@ -686,7 +683,7 @@ function toggleMaximize(): void {
                         </p>
                         <p
                             v-else-if="ranWithoutOutput && activeTab === 'all'"
-                            class="px-4 py-6 text-[13px] text-muted"
+                            class="px-4 py-6 text-sm text-muted"
                         >
                             No output. Return a value or call dump() to see it
                             here.

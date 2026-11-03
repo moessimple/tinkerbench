@@ -100,7 +100,7 @@ const parts = computed<Part[]>(() => {
 </script>
 
 <template>
-    <div class="flex flex-col gap-3 px-4 py-3 text-[13px]">
+    <div class="flex flex-col gap-3 px-4 py-3 text-sm">
         <p
             class="flex items-baseline justify-between gap-x-3 text-fg"
             title="Console boot, not a web request. The same on every run, so it is not part of the shares below."
@@ -122,7 +122,7 @@ const parts = computed<Part[]>(() => {
         -->
         <div
             aria-hidden="true"
-            class="grid grid-cols-[3rem_6.5rem_3rem_1fr] gap-x-3 pl-4 font-mono text-[11px] text-muted"
+            class="grid grid-cols-[3rem_7rem_3rem_1fr] gap-x-3 pl-4 font-mono text-xs text-muted"
         >
             <span
                 class="col-start-4 flex h-5 items-end justify-between border-b border-muted/60 bg-[repeating-linear-gradient(to_right,var(--muted)_0_1px,transparent_1px_10%)] bg-[length:100%_6px] bg-bottom bg-no-repeat"
@@ -140,7 +140,7 @@ const parts = computed<Part[]>(() => {
                 :title="part.hint"
             >
                 <div
-                    class="grid grid-cols-[3rem_6.5rem_3rem_1fr] items-center gap-x-3"
+                    class="grid grid-cols-[3rem_7rem_3rem_1fr] items-center gap-x-3"
                 >
                     <span class="font-medium text-fg">{{ part.label }}</span>
                     <span

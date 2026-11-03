@@ -55,45 +55,47 @@ function formatBody(
         :copy="entry.response_body_preview ?? ''"
         @navigate="$emit('navigate', $event)"
     >
-        <dl class="flex flex-col text-xs">
+        <dl class="flex flex-col text-sm">
             <div class="flex flex-col gap-1 border-b border-line/50 py-1.5">
-                <dt class="font-sans text-muted">URL</dt>
+                <dt class="font-sans text-xs text-muted">URL</dt>
                 <dd class="break-all text-fg">
                     {{ entry.method }} {{ entry.url }}
                 </dd>
             </div>
             <div
-                class="flex items-start justify-between gap-3 border-b border-line/50 py-1.5"
+                class="flex items-baseline justify-between gap-3 border-b border-line/50 py-1.5"
             >
-                <dt class="shrink-0 font-sans text-muted">Type</dt>
+                <dt class="shrink-0 font-sans text-xs text-muted">Type</dt>
                 <dd class="text-fg">{{ entry.request_type }}</dd>
             </div>
             <div
-                class="flex items-start justify-between gap-3 border-b border-line/50 py-1.5"
+                class="flex items-baseline justify-between gap-3 border-b border-line/50 py-1.5"
             >
-                <dt class="shrink-0 font-sans text-muted">Real request</dt>
+                <dt class="shrink-0 font-sans text-xs text-muted">
+                    Real request
+                </dt>
                 <dd class="text-fg">{{ entry.faked ? 'No' : 'Yes' }}</dd>
             </div>
             <div
-                class="flex items-start justify-between gap-3 border-b border-line/50 py-1.5"
+                class="flex items-baseline justify-between gap-3 border-b border-line/50 py-1.5"
             >
-                <dt class="shrink-0 font-sans text-muted">Success</dt>
+                <dt class="shrink-0 font-sans text-xs text-muted">Success</dt>
                 <dd class="text-fg">{{ entry.status < 400 ? 'Yes' : 'No' }}</dd>
             </div>
             <div
-                class="flex items-start justify-between gap-3 border-b border-line/50 py-1.5"
+                class="flex items-baseline justify-between gap-3 border-b border-line/50 py-1.5"
             >
-                <dt class="shrink-0 font-sans text-muted">Status</dt>
+                <dt class="shrink-0 font-sans text-xs text-muted">Status</dt>
                 <dd class="text-fg">{{ entry.status }}</dd>
             </div>
             <div
-                class="flex items-start justify-between gap-3 border-b border-line/50 py-1.5"
+                class="flex items-baseline justify-between gap-3 border-b border-line/50 py-1.5"
             >
-                <dt class="shrink-0 font-sans text-muted">Duration</dt>
+                <dt class="shrink-0 font-sans text-xs text-muted">Duration</dt>
                 <dd class="text-fg">{{ entry.duration_str }}</dd>
             </div>
             <div class="flex flex-col gap-1 border-b border-line/50 py-1.5">
-                <dt class="font-sans text-muted">Request headers</dt>
+                <dt class="font-sans text-xs text-muted">Request headers</dt>
                 <dd>
                     <pre class="break-all whitespace-pre-wrap text-fg">{{
                         formatHeaders(entry.request_headers)
@@ -101,7 +103,7 @@ function formatBody(
                 </dd>
             </div>
             <div class="flex flex-col gap-1 border-b border-line/50 py-1.5">
-                <dt class="font-sans text-muted">Request body</dt>
+                <dt class="font-sans text-xs text-muted">Request body</dt>
                 <dd>
                     <pre class="break-all whitespace-pre-wrap text-fg">{{
                         formatBody(
@@ -119,7 +121,7 @@ function formatBody(
                 </dd>
             </div>
             <div class="flex flex-col gap-1 border-b border-line/50 py-1.5">
-                <dt class="font-sans text-muted">Response headers</dt>
+                <dt class="font-sans text-xs text-muted">Response headers</dt>
                 <dd>
                     <pre class="break-all whitespace-pre-wrap text-fg">{{
                         formatHeaders(entry.response_headers)
@@ -127,7 +129,7 @@ function formatBody(
                 </dd>
             </div>
             <div class="flex flex-col gap-1 py-1.5">
-                <dt class="font-sans text-muted">Response body</dt>
+                <dt class="font-sans text-xs text-muted">Response body</dt>
                 <dd>
                     <pre class="break-all whitespace-pre-wrap text-fg">{{
                         formatBody(

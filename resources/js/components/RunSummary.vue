@@ -7,7 +7,7 @@ defineProps<{ debug: SnippetDebugPayload }>();
 <template>
     <section
         aria-label="Run time"
-        class="flex shrink-0 flex-wrap items-baseline justify-between gap-x-3 border-b border-line px-4 py-2 font-mono text-[13px] font-medium text-fg tabular-nums"
+        class="flex shrink-0 flex-wrap items-baseline justify-between gap-x-3 border-b border-line px-4 py-2 font-mono text-sm font-medium text-fg tabular-nums"
     >
         <span class="whitespace-nowrap"
             ><span class="font-sans font-normal text-muted">Duration</span>
