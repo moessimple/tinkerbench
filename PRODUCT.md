@@ -18,9 +18,9 @@ tinkerbench is a browser-based REPL for any project linked in Herd. Write a snip
 
 ## Positioning
 
-- Free, local, and in the browser: no license and no desktop app, it is just another Herd site.
+- Free, local, and in the browser: no paid license and no desktop app, it is just another Herd site.
 - Zero per-project setup: every Herd-linked project is a target automatically, switchable without leaving the page.
-- A run observability feed: dumps, return values, exceptions, output, and for Laravel 12+ targets queries, logs, N+1 warnings, outgoing HTTP, view traces, and a timeline, all in execution order.
+- A run observability feed: dumps, return values, exceptions, output, and for Laravel 12+ targets queries, logs, N+1 warnings, outgoing HTTP, and view traces, all in execution order, plus a timeline of where the run spent its time.
 - Editor-grade PHP support: completion, hover docs, and signature help resolved against the target project's own code (Intelephense).
 
 ## Operating Context

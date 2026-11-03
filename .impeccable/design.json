@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-03T14:23:22+00:00",
+  "generatedAt": "2026-11-03T14:33:12+00:00",
   "title": "Design System: tinkerbench",
   "extensions": {
     "colorMeta": {
@@ -109,9 +109,9 @@
           "#ffea86"
         ]
       },
-      "measure-ochre": {
+      "measure": {
         "role": "secondary",
-        "displayName": "Measure Ochre",
+        "displayName": "Measure",
         "canonical": "oklch(64.6% 0.132 84.7)",
         "tonalRamp": [
           "#100a01",
@@ -319,9 +319,9 @@
           "#c4f6ff"
         ]
       },
-      "measure-yellow-dark": {
+      "measure-dark": {
         "role": "secondary",
-        "displayName": "Measure Yellow (dark)",
+        "displayName": "Measure (dark)",
         "canonical": "oklch(82.8% 0.157 88.7)",
         "tonalRamp": [
           "#0f0b02",
@@ -449,17 +449,29 @@
         "displayName": "Body",
         "purpose": "Tabs, card content, timeline rows, empty states."
       },
+      "label-card": {
+        "displayName": "Card Label",
+        "purpose": "Kind label at the top of each feed card."
+      },
       "label": {
         "displayName": "Label",
-        "purpose": "Card labels, log levels, tags, palette headings. Sentence case."
+        "purpose": "Log levels, tags, palette headings. Sentence case."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Card footers, toolbar, shortcut legend, empty states."
       },
       "code": {
         "displayName": "Code",
-        "purpose": "Editor, feed output, breadcrumb, palette."
+        "purpose": "Feed output, breadcrumb, palette, run summary."
+      },
+      "editor": {
+        "displayName": "Editor",
+        "purpose": "Monaco editor only, 16px on a 28px line."
       },
       "code-small": {
         "displayName": "Code Small",
-        "purpose": "Counts, durations, line buttons, keys. Tabular figures."
+        "purpose": "Tab counts, line buttons, legend keys."
       }
     },
     "shadows": [
@@ -574,7 +586,7 @@
       },
       {
         "name": "The Full-Strength Text Rule",
-        "body": "Text never uses an opacity-reduced token (`text-muted/70`) and code never sits on Aluminium Canvas in a color that only passes on Bench Surface. Every text pair holds 4.5:1 in both themes; check the light theme first, it is the tighter one.",
+        "body": "Text never uses an opacity-reduced token (`text-muted/70`) and code never sits on Aluminium Canvas in a color that only passes on Bench Surface. Every text pair holds 4.5:1 in both themes; check the light theme first, it is the tighter one. Decorative marks hidden from assistive technology (the breadcrumb slash) and disabled controls are the only exceptions.",
         "section": "colors"
       },
       {
@@ -594,7 +606,7 @@
       },
       {
         "name": "The Tabular Rule",
-        "body": "Every number that can change between runs (counts, durations, percentages, line numbers) uses tabular figures so columns don't jitter.",
+        "body": "Numbers that sit in a column or update in place (tab counts, run summary, timeline, line buttons) use tabular figures so they don't jitter. Card footer durations are plain caption text today; give them tabular figures if they ever line up across cards.",
         "section": "typography"
       },
       {

@@ -9,7 +9,7 @@ colors:
   steel-muted: "#55626c"
   coolant-blue: "#196ca2"
   marking-yellow: "#f0c030"
-  measure-ochre: "#b38600"
+  measure: "#b38600"
   fault-red: "#b42318"
   heat-amber: "#9a4d00"
   log-green: "#287634"
@@ -23,7 +23,7 @@ colors:
   scribe-line-dark: "#3a4249"
   steel-muted-dark: "#8d99a3"
   coolant-blue-dark: "#62b0e8"
-  measure-yellow-dark: "#f0c030"
+  measure-dark: "#f0c030"
   fault-red-dark: "#f07466"
   heat-amber-dark: "#f0a04b"
   log-green-dark: "#86d094"
@@ -42,16 +42,31 @@ typography:
     fontSize: "0.875rem"
     fontWeight: 400
     lineHeight: 1.43
+  label-card:
+    fontFamily: "IBM Plex Sans, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "0.875rem"
+    fontWeight: 500
+    lineHeight: 1.43
   label:
     fontFamily: "IBM Plex Sans, ui-sans-serif, system-ui, sans-serif"
     fontSize: "0.75rem"
     fontWeight: 500
+    lineHeight: 1.33
+  caption:
+    fontFamily: "IBM Plex Sans, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "0.75rem"
+    fontWeight: 400
     lineHeight: 1.33
   code:
     fontFamily: "IBM Plex Mono, Menlo, monospace"
     fontSize: "0.875rem"
     fontWeight: 400
     lineHeight: 1.43
+  editor:
+    fontFamily: "IBM Plex Mono, Menlo, monospace"
+    fontSize: "1rem"
+    fontWeight: 400
+    lineHeight: "28px"
   code-small:
     fontFamily: "IBM Plex Mono, Menlo, monospace"
     fontSize: "0.75rem"
@@ -133,7 +148,8 @@ A cool, low-chroma metal palette with a small set of coded signal colors. Every 
 - **Coolant Blue**: focus rings, the palette input's focus border, code keywords in the editor, the Query kind edge and timeline bar, the "current" dot in the command palette, VarDumper notes. Brighter in dark mode to hold contrast.
 
 ### Secondary
-- **Marking Yellow / Measure Ochre**: the logo tile (always Marking Yellow), the active tab underline, and the dark-theme editor cursor. Light mode uses the deeper Measure Ochre for the tab underline so it reads on aluminium, and an ink cursor.
+- **Marking Yellow**: the logo tile (in both themes) and the dark-theme editor cursor. The light theme uses an ink cursor.
+- **Measure** (`--measure`): the active tab underline. Measure Ochre in the light theme so it reads on aluminium, Marking Yellow in the dark theme.
 
 ### Tertiary (kind and signal colors)
 - **Log Green**: Log card edge, editor strings, SQL strings, VarDumper strings and keys.
@@ -158,7 +174,7 @@ A cool, low-chroma metal palette with a small set of coded signal colors. Every 
 
 **The Coded Handle Rule.** A feed card's left edge (3px) names its kind: Query blue, Log green, HTTP violet, View steel. Danger and warning replace the kind color, because a broken or slow entry matters more than what kind it is. Kinds without a color keep a Scribe Line edge.
 
-**The Full-Strength Text Rule.** Text never uses an opacity-reduced token (`text-muted/70`) and code never sits on Aluminium Canvas in a color that only passes on Bench Surface. Every text pair holds 4.5:1 in both themes; check the light theme first, it is the tighter one.
+**The Full-Strength Text Rule.** Text never uses an opacity-reduced token (`text-muted/70`) and code never sits on Aluminium Canvas in a color that only passes on Bench Surface. Every text pair holds 4.5:1 in both themes; check the light theme first, it is the tighter one. Decorative marks hidden from assistive technology (the breadcrumb slash) and disabled controls are the only exceptions.
 
 **The Quiet Brackets Rule.** Bracket pairs in the editor stay ink-colored. Colored nesting levels would compete with the kind colors.
 
@@ -172,16 +188,19 @@ A cool, low-chroma metal palette with a small set of coded signal colors. Every 
 ### Hierarchy
 - **Title** (600, 16px, 1.5): the `tinkerbench` wordmark only. The app has no larger heading.
 - **Body** (400, 14px, 1.43): tab labels, card content, timeline rows, empty-state messages.
-- **Label** (500, 12px, 1.33): card labels, log levels, warning tags, palette group headings. Sentence case.
-- **Code** (400 to 500, 14px, 1.43): editor, feed output, the project/snippet breadcrumb, palette input and results.
-- **Code Small** (400, 12px, tabular numbers): counts on tabs, durations, `line N` buttons, keyboard keys.
+- **Card Label** (500, 14px, 1.43): the kind label at the top of each feed card. Sentence case.
+- **Label** (500, 12px, 1.33): log levels, warning tags, palette group headings. Sentence case.
+- **Caption** (400, 12px, 1.33): card footer metadata, the output toolbar, the shortcut legend, empty-feed messages.
+- **Code** (400 to 500, 14px, 1.43): feed output, the project/snippet breadcrumb, palette input and results, run summary values.
+- **Editor** (400, 16px, 28px line height): the Monaco editor only. Larger than feed code because it is where the user types for hours.
+- **Code Small** (400, 12px): counts on tabs, `line N` buttons, the keys in the shortcut legend. Counts and line numbers use tabular figures.
 
 ### Named Rules
 **The Machine Voice Rule.** Monospace is for code, keys, and numbers. UI prose, labels, and error messages are always sans.
 
 **The Sentence Case Rule.** No all-caps labels and nothing below 12px. Acronyms keep their case ("N+1", "HTTP", "SQL").
 
-**The Tabular Rule.** Every number that can change between runs (counts, durations, percentages, line numbers) uses tabular figures so columns don't jitter.
+**The Tabular Rule.** Numbers that sit in a column or update in place (tab counts, run summary, timeline, line buttons) use tabular figures so they don't jitter. Card footer durations are plain caption text today; give them tabular figures if they ever line up across cards.
 
 ## Layout
 
@@ -189,7 +208,7 @@ The page is one centered workbench (max 1432px wide, 16px side gutters, 24px bot
 
 Inside, a 48px tool rail (run, clear, command palette; fullscreen and theme pinned to the bottom) sits left of the editor. Editor and output split 3:2. Below 900px the header hides, the panes stack vertically, and the breadcrumb moves into the output toolbar. Fullscreen removes the header, frame, and margins and pins the workbench to the viewport.
 
-The output pane stacks thin bars, each ruled by a bottom border: the toolbar (version, watchers), the run summary (duration, memory), the tab strip, the optional query sort bar, then the scrolling feed. Bars use 8px vertical and 16px horizontal padding; cards use 12px by 16px. Spacing follows Tailwind's 4px step.
+The output pane stacks thin bars, each ruled by a bottom border: the toolbar (version, watchers), the run summary (duration, memory), the tab strip, the optional query sort bar, then the scrolling feed. The toolbar and run summary use 8px by 16px padding, the tab strip 8px horizontal with 6px tab padding, the query sort bar 4px by 16px; cards use 12px by 16px. Spacing follows Tailwind's 4px step.
 
 The timeline uses a fixed four-column grid (label, duration, percentage, bar) so values line up as a table, with a 10% tick scale above the bars.
 
@@ -220,14 +239,15 @@ Icon-first and quiet; text appears only where an icon would be ambiguous.
 
 ### Tabs
 - **Style:** Body type, Steel Muted, with a tabular count in Code Small beside the label.
-- **Active:** Graphite Ink, 500 weight, and a 2px inset Marking Yellow underline.
+- **Active:** Graphite Ink, 500 weight, and a 2px inset underline in Measure.
+- **Keyboard:** only the active tab is in the tab order; arrow keys, Home, and End move between tabs. Keys pressed with a modifier are left to the browser and the system.
 
 ### Feed Cards
 The signature component. Each run entry is one card in execution order.
 - **Shape:** no radius, 1px bottom rule, 3px left edge in the kind color (see The Coded Handle Rule).
-- **Header:** sans Label in Steel Muted on the left; copy button and `line N` jump button on the right.
+- **Header:** Card Label in Steel Muted on the left; copy button and `line N` jump button on the right.
 - **Body:** Code type in Graphite Ink, scrolls horizontally rather than wrapping SQL or dumps.
-- **Footer:** Code Small metadata separated by middle dots; warning tags (Heat Amber text on a 15% Heat Amber tint, 4px radius).
+- **Footer:** Caption metadata in Steel Muted, separated by middle dots; warning tags (Heat Amber text on a 15% Heat Amber tint, 4px radius).
 
 ### Inputs / Fields
 - **Style:** transparent background, 1px Scribe Line border, 4px radius, Code type; placeholder in sans Steel Muted.
@@ -235,10 +255,10 @@ The signature component. Each run entry is one card in execution order.
 - **Error:** Fault Red message in Label size below the field.
 
 ### Command Palette
-Max 448px wide, Bench Surface, 6px radius, Overlay shadow over a 50% black scrim, positioned 15% from the top. A search input with a leading icon, grouped mono results with a Coolant Blue dot marking the current item, row actions revealed on hover, and a footer legend for the `#` and `/` prefixes.
+Max 448px wide, Bench Surface, 6px radius, Overlay shadow over a 50% black scrim, positioned 15% from the top. A search input with a leading icon, grouped mono results with a Coolant Blue dot marking the current item, row actions revealed on hover or keyboard focus within the row, and a footer legend for the `#` and `/` prefixes.
 
 ### Keyboard Keys
-Bench Surface (Aluminium Canvas inside the feed), 1px Scribe Line border with a 2px bottom edge, 4px radius, Code Small in Graphite Ink.
+Bench Surface (Aluminium Canvas inside the feed), 1px Scribe Line border with a 2px bottom edge, 4px radius, Graphite Ink mono. Code Small in the shortcut legend; the key in the empty-feed hint inherits the surrounding 14px.
 
 ### Timeline
 Rows on a four-column grid under a Steel Muted 0/50/100% scale ticked every 10%. Bars fill in the kind color (Query blue for database, HTTP violet for HTTP, Graphite Ink at 60% for code) and scale in from the left over 450ms (`cubic-bezier(0.2, 0.7, 0.2, 1)`); the animation is off under `prefers-reduced-motion`.
