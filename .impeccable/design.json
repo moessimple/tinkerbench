@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-03T14:33:12+00:00",
+  "generatedAt": "2026-11-03T14:34:50+00:00",
   "title": "Design System: tinkerbench",
   "extensions": {
     "colorMeta": {
@@ -459,7 +459,7 @@
       },
       "caption": {
         "displayName": "Caption",
-        "purpose": "Card footers, toolbar, shortcut legend, empty states."
+        "purpose": "Card footers, line buttons (tabular), toolbar, shortcut legend, empty states."
       },
       "code": {
         "displayName": "Code",
@@ -471,7 +471,7 @@
       },
       "code-small": {
         "displayName": "Code Small",
-        "purpose": "Tab counts, line buttons, legend keys."
+        "purpose": "Tab counts and legend keys."
       }
     },
     "shadows": [
@@ -512,7 +512,7 @@
       "refersTo": "feed-card",
       "description": "One run entry; the 3px left edge names its kind.",
       "html": "<article class=\"ds-card ds-card-query\"><header class=\"ds-card-head\"><span>Query</span><button class=\"ds-card-line\" type=\"button\">line 4</button></header><pre class=\"ds-card-body\">select * from \"users\" where \"id\" = 1</pre><footer class=\"ds-card-foot\"><span class=\"ds-tag-warning\">slow</span><span>142.3 ms</span><span>·</span><span>sqlite</span></footer></article>",
-      "css": ".ds-card{background:var(--surface,#f7f8f8);color:var(--fg,#1a2228);border-bottom:1px solid var(--line,#c3cad0);border-left:3px solid var(--line,#c3cad0);padding:12px 16px;font-family:'IBM Plex Sans',system-ui,sans-serif}.ds-card-query{border-left-color:var(--accent,#196ca2)}.ds-card-head{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;font-weight:500;color:var(--muted,#55626c)}.ds-card-line{font:12px 'IBM Plex Mono',Menlo,monospace;font-variant-numeric:tabular-nums;color:var(--muted,#55626c);background:none;border:0;border-radius:4px;padding:4px 6px;cursor:pointer}.ds-card-line:hover{background:color-mix(in srgb,var(--line,#c3cad0) 50%,transparent);color:var(--fg,#1a2228)}.ds-card-line:focus-visible{outline:2px solid var(--accent,#196ca2);outline-offset:2px}.ds-card-body{margin:8px 0 0;font:14px/1.43 'IBM Plex Mono',Menlo,monospace;overflow-x:auto}.ds-card-foot{margin-top:8px;display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted,#55626c)}.ds-tag-warning{color:var(--warn,#9a4d00);background:color-mix(in srgb,var(--warn,#9a4d00) 15%,transparent);border-radius:4px;padding:2px 6px;font-weight:500}"
+      "css": ".ds-card{background:var(--surface,#f7f8f8);color:var(--fg,#1a2228);border-bottom:1px solid var(--line,#c3cad0);border-left:3px solid var(--line,#c3cad0);padding:12px 16px;font-family:'IBM Plex Sans',system-ui,sans-serif}.ds-card-query{border-left-color:var(--accent,#196ca2)}.ds-card-head{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;font-weight:500;color:var(--muted,#55626c)}.ds-card-line{font:12px 'IBM Plex Sans',system-ui,sans-serif;font-variant-numeric:tabular-nums;color:var(--muted,#55626c);background:none;border:0;border-radius:4px;padding:4px 6px;cursor:pointer}.ds-card-line:hover{background:color-mix(in srgb,var(--line,#c3cad0) 50%,transparent);color:var(--fg,#1a2228)}.ds-card-line:focus-visible{outline:2px solid var(--accent,#196ca2);outline-offset:2px}.ds-card-body{margin:8px 0 0;font:14px/1.43 'IBM Plex Mono',Menlo,monospace;overflow-x:auto}.ds-card-foot{margin-top:8px;display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted,#55626c)}.ds-tag-warning{color:var(--warn,#9a4d00);background:color-mix(in srgb,var(--warn,#9a4d00) 15%,transparent);border-radius:4px;padding:2px 6px;font-weight:500}"
     },
     {
       "name": "Feed Card (Exception)",
@@ -596,7 +596,7 @@
       },
       {
         "name": "The Machine Voice Rule",
-        "body": "Monospace is for code, keys, and numbers. UI prose, labels, and error messages are always sans.",
+        "body": "Monospace is for code, keys, and measured values (run summary, timeline, tab counts). UI prose, labels, card metadata, and error messages are sans.",
         "section": "typography"
       },
       {
@@ -620,7 +620,7 @@
       "**Do** give a new feed kind its own edge color only if it is signal; otherwise leave it on Scribe Line.",
       "**Do** use the global Coolant Blue focus ring; replace it only with an equally visible Coolant Blue border.",
       "**Do** keep the Monaco theme hexes in step with the CSS tokens; Monaco cannot read custom properties.",
-      "**Do** keep numbers tabular and in Plex Mono.",
+      "**Do** give numbers that sit in a column or update in place tabular figures (see The Tabular Rule).",
       "**Do** collapse long content behind an explicit Show all / Show less control instead of clipping it with CSS."
     ],
     "donts": [

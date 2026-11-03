@@ -190,13 +190,13 @@ A cool, low-chroma metal palette with a small set of coded signal colors. Every 
 - **Body** (400, 14px, 1.43): tab labels, card content, timeline rows, empty-state messages.
 - **Card Label** (500, 14px, 1.43): the kind label at the top of each feed card. Sentence case.
 - **Label** (500, 12px, 1.33): log levels, warning tags, palette group headings. Sentence case.
-- **Caption** (400, 12px, 1.33): card footer metadata, the output toolbar, the shortcut legend, empty-feed messages.
+- **Caption** (400, 12px, 1.33): card footer metadata, `line N` buttons (with tabular figures), the output toolbar, the shortcut legend, empty-feed messages.
 - **Code** (400 to 500, 14px, 1.43): feed output, the project/snippet breadcrumb, palette input and results, run summary values.
 - **Editor** (400, 16px, 28px line height): the Monaco editor only. Larger than feed code because it is where the user types for hours.
-- **Code Small** (400, 12px): counts on tabs, `line N` buttons, the keys in the shortcut legend. Counts and line numbers use tabular figures.
+- **Code Small** (400, 12px): counts on tabs and the keys in the shortcut legend. Tab counts use tabular figures.
 
 ### Named Rules
-**The Machine Voice Rule.** Monospace is for code, keys, and numbers. UI prose, labels, and error messages are always sans.
+**The Machine Voice Rule.** Monospace is for code, keys, and measured values (run summary, timeline, tab counts). UI prose, labels, card metadata, and error messages are sans.
 
 **The Sentence Case Rule.** No all-caps labels and nothing below 12px. Acronyms keep their case ("N+1", "HTTP", "SQL").
 
@@ -270,7 +270,7 @@ Rows on a four-column grid under a Steel Muted 0/50/100% scale ticked every 10%.
 - **Do** give a new feed kind its own edge color only if it is signal; otherwise leave it on Scribe Line.
 - **Do** use the global Coolant Blue focus ring; replace it only with an equally visible Coolant Blue border.
 - **Do** keep the Monaco theme hexes in step with the CSS tokens; Monaco cannot read custom properties.
-- **Do** keep numbers tabular and in Plex Mono.
+- **Do** give numbers that sit in a column or update in place tabular figures (see The Tabular Rule).
 - **Do** collapse long content behind an explicit Show all / Show less control instead of clipping it with CSS.
 
 ### Don't:
