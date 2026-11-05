@@ -83,7 +83,6 @@
             "composer lint --working-dir=packages/runner",
             "npm run lint"
         ],
-        "test:vet": "vet -n",
         "test:composer": [
             "@composer validate --strict",
             "composer test:composer --working-dir=packages/runner"
@@ -121,7 +120,6 @@
         "test": [
             "@php artisan config:clear --ansi",
             "@test:composer",
-            "@test:vet",
             "@test:lint",
             "@test:type-coverage",
             "@test:types",

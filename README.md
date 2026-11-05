@@ -86,7 +86,7 @@ Vet trust checks remain active.
 
 ## Testing
 
-Run the full quality gate (composer.json validation, dependency vetting, formatting, type coverage, static analysis, and the PHP, JS, runner, and browser test suites):
+Run the full quality gate (composer.json validation, formatting, type coverage, static analysis, and the PHP, JS, runner, and browser test suites):
 
 ```bash
 composer test
