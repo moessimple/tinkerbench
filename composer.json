@@ -122,7 +122,6 @@
             "@php artisan config:clear --ansi",
             "@test:composer",
             "@test:vet",
-            "@test:audit",
             "@test:lint",
             "@test:type-coverage",
             "@test:types",
@@ -169,12 +168,15 @@
             "laravel/vet": true
         },
         "autoloader-suffix": "TinkerbenchInternal",
-        "audit": {
-            "ignore-abandoned": [
-                "symplify/rule-doc-generator-contracts"
-            ]
-        },
         "policy": {
+            "abandoned": {
+                "ignore": {
+                    "symplify/rule-doc-generator-contracts": {
+                        "constraint": "^11.2",
+                        "reason": "Dev only: driftingly/rector-laravel requires it and has no replacement yet."
+                    }
+                }
+            },
             "cooldown": {
                 "period": "3 days"
             }
