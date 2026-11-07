@@ -430,6 +430,10 @@
             "version": "2.19.0",
             "hash": "tree-v2:ae35947ac63645f48735d1b8a4b7db3f5dd0df2fb595fde555a75d0f00438dbd"
         },
+        "fruitcake/laravel-debugbar": {
+            "version": "v4.4.5",
+            "hash": "tree-v2:9dd19faf4fe27b43d8da6a108fc7f2cd4f0a55a77bcc1822d215bb92682085d4"
+        },
         "hamcrest/hamcrest-php": {
             "version": "v3.0.0",
             "hash": "tree-v2:49f1c99167659adb6f9f9bf1aa7abca02fcd773f3c19041f7983dd50b83d85e7"
@@ -549,6 +553,14 @@
         "phar-io/version": {
             "version": "3.2.1",
             "hash": "tree-v2:0409e2019377650177c2b10da803617abc85e49d5b02b8697d450c007eab42b4"
+        },
+        "php-debugbar/php-debugbar": {
+            "version": "v3.8.1",
+            "hash": "tree-v2:7d6ac2c76c8047281147aeee29f0935f79d59c95daa154927310cc4f86ed9eec"
+        },
+        "php-debugbar/symfony-bridge": {
+            "version": "v1.1.0",
+            "hash": "tree-v2:8269aa5afe1f773f0f86add49534d4dc4554d4045242bd3255842ba64b4e8a72"
         },
         "phpdocumentor/reflection-common": {
             "version": "2.2.1",
