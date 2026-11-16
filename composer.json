@@ -124,6 +124,7 @@
             "@test:lint",
             "@test:type-coverage",
             "@test:types",
+            "npm run build",
             "@test:unit",
             "@test:browser"
         ],
@@ -134,7 +135,8 @@
             "@composer bump --working-dir=packages/runner",
             "@composer update --working-dir=packages/runner/tests/fixtures/laravel-12",
             "composer build --working-dir=packages/runner",
-            "npm update --save"
+            "npm update --save",
+            "npm run build"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",

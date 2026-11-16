@@ -24,8 +24,10 @@ const copyText = computed(
         @navigate="$emit('navigate', $event)"
     >
         <p class="wrap-anywhere">
-            <strong class="text-warn">{{ entry.model }}</strong
-            >::{{ entry.relation }} lazy-loaded {{ entry.count }}×
+            <strong class="text-warn">{{ entry.model }}</strong>::{{
+                entry.relation
+            }}
+            lazy-loaded {{ entry.count }}×
         </p>
         <p class="mt-1.5 font-sans text-xs text-muted">
             Eager-load with

@@ -48,8 +48,8 @@ function frameCountLabel(frames: ExceptionFrame[]): string {
         @navigate="$emit('navigate', $event)"
     >
         <p class="wrap-anywhere">
-            <strong class="text-danger">{{ entry.type }}</strong
-            >: {{ entry.message }}
+            <strong class="text-danger">{{ entry.type }}</strong>:
+            {{ entry.message }}
         </p>
         <details v-if="hasTrace(entry.frames)" class="mt-2 text-xs">
             <summary
