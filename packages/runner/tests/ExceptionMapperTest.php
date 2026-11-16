@@ -12,7 +12,7 @@ use Tinkerbench\Runner\FeedItems\ExceptionFeedItem;
 function nestedRuntimeException(): RuntimeException
 {
     try {
-        collect([1])->each(fn () => throw new RuntimeException('boom'));
+        collect([1])->each(fn (): never => throw new RuntimeException('boom'));
     } catch (RuntimeException $runtimeException) {
         return $runtimeException;
     }

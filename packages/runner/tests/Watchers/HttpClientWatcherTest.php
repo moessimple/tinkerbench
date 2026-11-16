@@ -173,7 +173,7 @@ it('leaves a streamed response body to the snippet and records it as empty', fun
 
 it('emits nothing for a request that fails to connect, leaving it to the uncaught-exception path', function (): void {
     Http::fake([
-        'https://example.test/*' => fn () => throw new ConnectionException('Connection failed'),
+        'https://example.test/*' => fn (): never => throw new ConnectionException('Connection failed'),
     ]);
 
     $emitted = [];
