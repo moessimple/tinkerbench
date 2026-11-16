@@ -84,6 +84,11 @@ Vet trust checks remain active.
 
 `composer test:audit` checks both `composer.lock` files and `package-lock.json` for known CVEs on demand. Dependabot alerts report new advisories for the lockfiles.
 
+## Development
+
+The Debugbar is disabled by default. To enable it during development, set
+`DEBUGBAR_ENABLED=true` in your `.env`.
+
 ## Testing
 
 Run the full quality gate (composer.json validation, formatting, type coverage, static analysis, and the PHP, JS, runner, and browser test suites):
